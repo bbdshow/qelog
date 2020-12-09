@@ -24,13 +24,16 @@ type WriteSync struct {
 	size    int64
 	maxSize int64
 
-	ttl time.Duration // 0 永久保存
+	ttl  time.Duration // 0 永久保存
+	once sync.Once
 
 	compress    bool
 	compressing chan struct{} // 正在压缩
 
 	// 文件对象
 	file *os.File
+
+	exit bool
 }
 
 type WriteConfig struct {
@@ -56,7 +59,7 @@ func DefaultWriteConfig(filename string) WriteConfig {
 }
 
 func NewWriteSync(cfg WriteConfig) *WriteSync {
-	return &WriteSync{
+	ws := &WriteSync{
 		mutex:       sync.Mutex{},
 		dir:         path.Dir(cfg.Filename),
 		filename:    cfg.Filename,
@@ -67,6 +70,10 @@ func NewWriteSync(cfg WriteConfig) *WriteSync {
 		compressing: make(chan struct{}, 1),
 		file:        nil,
 	}
+	ws.once.Do(func() {
+		go ws.forkDelExpiredFile()
+	})
+	return ws
 }
 
 func (ws *WriteSync) Write(b []byte) (n int, err error) {
@@ -98,6 +105,7 @@ func (ws *WriteSync) Sync() error {
 func (ws *WriteSync) Close() error {
 	// 如果正在压缩，等压缩完再退出
 	ws.compressing <- struct{}{}
+	ws.exit = true
 	if ws.file != nil {
 		return ws.file.Close()
 	}
@@ -204,26 +212,36 @@ func (ws *WriteSync) isRotate(n int) error {
 			}
 		}()
 	}
-	//  检查一下过期文件
-	go ws.delExpiredFile()
 	return nil
 }
 
 func (ws *WriteSync) rotateFilename() string {
-	filename := strings.Replace(ws.filename, ".log", fmt.Sprintf("%s.log", time.Now().Format("20060102150405.00")), 1)
+	filename := strings.Replace(ws.filename, ".log", fmt.Sprintf("%s.bak.log", time.Now().Format("20060102150405.00")), 1)
 	return filename
 }
-func (ws *WriteSync) delExpiredFile() {
+
+// 删除滚动切割出来的日志
+func (ws *WriteSync) forkDelExpiredFile() {
 	if ws.ttl > 0 {
-		expired := time.Now().Add(-ws.ttl)
-		fs, err := ioutil.ReadDir(ws.dir)
-		if err == nil {
-			for _, f := range fs {
-				if !f.IsDir() {
-					// 只删除 .log 或者 .log.gz
-					if strings.HasSuffix(f.Name(), ".log") || strings.HasSuffix(f.Name(), ".log.gz") {
-						if f.ModTime().Before(expired) {
-							_ = os.Remove(path.Join(ws.dir, f.Name()))
+		tick := time.NewTicker(30 * time.Second)
+		for {
+			select {
+			case <-tick.C:
+				if ws.exit {
+					return
+				}
+				expired := time.Now().Add(-ws.ttl)
+				fs, err := ioutil.ReadDir(ws.dir)
+				if err == nil {
+					for _, f := range fs {
+						if !f.IsDir() {
+							// 只删除 .log 或者 .log.gz
+							if strings.HasSuffix(f.Name(), ".bak.log") ||
+								strings.HasSuffix(f.Name(), ".bak.log.gz") {
+								if f.ModTime().Before(expired) {
+									_ = os.Remove(path.Join(ws.dir, f.Name()))
+								}
+							}
 						}
 					}
 				}

@@ -50,3 +50,24 @@ func TestWriteSync_isRotate(t *testing.T) {
 		t.Fatal("remove", hitFilename)
 	}
 }
+
+func TestWrite_delExpiredFile(t *testing.T) {
+	cfg := DefaultWriteConfig("logger.log")
+	cfg.MaxSize = 1024
+	cfg.TTL = 10 * time.Second
+	ws := NewWriteSync(cfg)
+	go func() {
+		tick := time.NewTicker(30 * time.Second)
+		for {
+			select {
+			case <-tick.C:
+				tick.Stop()
+				return
+			default:
+				ws.Write([]byte("hello write sync"))
+				time.Sleep(10 * time.Millisecond)
+			}
+		}
+	}()
+	time.Sleep(90 * time.Second)
+}
