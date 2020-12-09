@@ -1,0 +1,2 @@
+# qelog
+quick easy log
