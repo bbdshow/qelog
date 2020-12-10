@@ -1,33 +1,21 @@
 package wrapzap
 
 import (
-	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"testing"
 	"time"
 )
 
-type jsonMessage struct {
-	Time  string `json:"time"`
-	Level string `json:"level"`
-	Field string `json:"field"`
-}
-
-func (m jsonMessage) String() string {
-	b, _ := json.Marshal(m)
-	return string(b)
-}
-
-func TestPackets_PutFailedPacket(t *testing.T) {
+func TestPackets_WritePacket(t *testing.T) {
 	p := NewPackets(1024)
-	n, err := p.PutFailedPacket(FailedPacket{
+	n, err := p.WritePacket(DataPacket{
 		ID: "2",
-		Data: jsonMessage{
+		Data: []string{_jsonMessage{
 			Time:  time.Now().String(),
 			Level: "INFO",
-			Field: "Backup",
-		}.String(),
+			Field: "Bac\nkup",
+		}.String()},
 	})
 
 	if b, err := ioutil.ReadFile(p.bakFilename); err != nil {
@@ -41,20 +29,28 @@ func TestPackets_PutFailedPacket(t *testing.T) {
 func TestPackets_FailedPacket(t *testing.T) {
 	p := NewPackets(1024)
 	for i := 0; i < 5; i++ {
-		fp := FailedPacket{}
-		ok, err := p.GetFailedPacket(&fp)
+		dp := DataPacket{}
+		ok, err := p.ReadPacket(&dp)
 		if err != nil {
 			t.Fatal(err)
 		}
 		if ok {
-			fmt.Println(fp)
+			fmt.Print(dp)
 		}
 	}
 }
 
 func TestPackets_AddPacket(t *testing.T) {
 	p := NewPackets(1024)
-	buf, flush := p.AddPacket([]byte(RandString(512)))
+	buf, flush := p.AddPacket([]byte(RandString(246)))
+	if !flush {
+		t.Fatal("flush should hash true")
+	}
+	if len(buf) != 1 {
+		t.Fatal("buf should has value")
+	}
+
+	buf, flush = p.AddPacket([]byte(RandString(512)))
 	if flush {
 		t.Fatal("flush should false")
 	}
@@ -71,7 +67,8 @@ func TestPackets_AddPacket(t *testing.T) {
 	if len(buf) < 0 {
 		t.Fatal("buf should has value")
 	}
-	buf, flush = p.AddPacket([]byte(RandString(256)))
+	fb := NewDataPacket(RandString(16), []string{"测试换行\n符的影响"})
+	buf, flush = p.AddPacket(fb.Marshal())
 	if flush {
 		t.Fatal("flush should false")
 	}
@@ -86,5 +83,8 @@ func TestPackets_AddPacket(t *testing.T) {
 	}
 	if len(buf) < 0 {
 		t.Fatal("buf should has value")
+	}
+	for _, b := range buf {
+		fmt.Println(string(b))
 	}
 }

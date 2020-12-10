@@ -71,7 +71,7 @@ func NewWriteSync(cfg WriteSyncConfig) *WriteSync {
 		file:        nil,
 	}
 	ws.once.Do(func() {
-		go ws.forkDelExpiredFile()
+		go ws.backgroundDelExpiredFile()
 	})
 	return ws
 }
@@ -221,7 +221,7 @@ func (ws *WriteSync) rotateFilename() string {
 }
 
 // 删除滚动切割出来的日志
-func (ws *WriteSync) forkDelExpiredFile() {
+func (ws *WriteSync) backgroundDelExpiredFile() {
 	if ws.ttl > 0 {
 		tick := time.NewTicker(30 * time.Second)
 		for {

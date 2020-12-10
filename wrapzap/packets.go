@@ -6,39 +6,26 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"math/rand"
 	"os"
 	"sync"
 	"time"
 )
 
 const (
-	defaultFlushInterval = 3 // time.Second
+	defaultFlushInterval = 2 // time.Second
 )
 
 type Packets struct {
 	mutex          sync.Mutex
 	maxSize        int
-	flushTimestamp int64 // 3秒一个周期
+	flushTimestamp int64 // 2秒一个周期
 
 	bufferSize int
-	buffers    bytes.Buffer
+	buffers    *bytes.Buffer
 
 	w           *WriteSync
 	bakFilename string
 	offset      int64
-}
-
-type FailedPacket struct {
-	ID   string
-	Data string
-}
-
-func NewFailedPacket(data string) FailedPacket {
-	return FailedPacket{
-		ID:   RandString(16),
-		Data: data,
-	}
 }
 
 func NewPackets(maxSize int) *Packets {
@@ -47,9 +34,9 @@ func NewPackets(maxSize int) *Packets {
 	}
 	p := &Packets{
 		maxSize:        maxSize,
-		flushTimestamp: time.Now().Unix(),
+		flushTimestamp: 0,
 		bufferSize:     0,
-		buffers:        bytes.Buffer{},
+		buffers:        &bytes.Buffer{},
 		bakFilename:    "./failed.bak/packets.bak",
 		offset:         0,
 	}
@@ -64,17 +51,19 @@ func NewPackets(maxSize int) *Packets {
 	return p
 }
 
-func (p *Packets) AddPacket(b []byte) (buffers []byte, flush bool) {
+func (p *Packets) AddPacket(b []byte) (buffers [][]byte, flush bool) {
 	p.mutex.Lock()
-
 	// 缓存起，超过一定时间/容量再发送
 	n, _ := p.buffers.Write(b)
 	p.bufferSize += n
+	// 换行符
+	p.buffers.WriteByte('\n')
 
 	if p.bufferSize >= p.maxSize || time.Now().Unix()-p.flushTimestamp > defaultFlushInterval {
 		flush = true
-		buffers = p.buffers.Bytes()
-
+		buffers = bytes.FieldsFunc(p.buffers.Bytes(), func(r rune) bool {
+			return r == '\n'
+		})
 		p.buffers.Reset()
 		p.bufferSize = 0
 		p.flushTimestamp = time.Now().Unix()
@@ -85,7 +74,7 @@ func (p *Packets) AddPacket(b []byte) (buffers []byte, flush bool) {
 	return buffers, flush
 }
 
-func (p *Packets) PutFailedPacket(v interface{}) (n int, err error) {
+func (p *Packets) WritePacket(v interface{}) (n int, err error) {
 	p.mutex.Lock()
 	b, _ := json.Marshal(v)
 	n, err = fmt.Fprintln(p.w, string(b))
@@ -93,7 +82,7 @@ func (p *Packets) PutFailedPacket(v interface{}) (n int, err error) {
 	return
 }
 
-func (p *Packets) GetFailedPacket(v interface{}) (ok bool, err error) {
+func (p *Packets) ReadPacket(v interface{}) (ok bool, err error) {
 	p.mutex.Lock()
 	defer p.mutex.Unlock()
 
@@ -140,15 +129,4 @@ func (p *Packets) GetFailedPacket(v interface{}) (ok bool, err error) {
 	}
 
 	return true, nil
-}
-
-func RandString(length int) string {
-	baseChar := "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
-	byteChar := []byte(baseChar)
-	str := ""
-	for i := 0; i < length; i++ {
-		rand.New(rand.NewSource(time.Now().UnixNano() + rand.Int63n(1000000)))
-		str += string(byteChar[rand.Intn(len(byteChar))])
-	}
-	return str
 }
