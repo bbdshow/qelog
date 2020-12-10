@@ -36,7 +36,7 @@ type WriteSync struct {
 	exit bool
 }
 
-type WriteConfig struct {
+type WriteSyncConfig struct {
 	Filename string
 	// 单文件最大 bytes
 	MaxSize int64
@@ -46,11 +46,11 @@ type WriteConfig struct {
 	GzipCompress bool
 }
 
-func DefaultWriteConfig(filename string) WriteConfig {
+func DefaultWriteSyncConfig(filename string) WriteSyncConfig {
 	if filename == "" {
 		panic("write sync filename required")
 	}
-	return WriteConfig{
+	return WriteSyncConfig{
 		Filename:     filename,
 		MaxSize:      200 << 20, // 200MB
 		TTL:          0,         // 保存永久
@@ -58,7 +58,7 @@ func DefaultWriteConfig(filename string) WriteConfig {
 	}
 }
 
-func NewWriteSync(cfg WriteConfig) *WriteSync {
+func NewWriteSync(cfg WriteSyncConfig) *WriteSync {
 	ws := &WriteSync{
 		mutex:       sync.Mutex{},
 		dir:         path.Dir(cfg.Filename),
@@ -235,7 +235,7 @@ func (ws *WriteSync) forkDelExpiredFile() {
 				if err == nil {
 					for _, f := range fs {
 						if !f.IsDir() {
-							// 只删除 .log 或者 .log.gz
+							// 只删除 .bak.log 或者 .bak.log.gz
 							if strings.HasSuffix(f.Name(), ".bak.log") ||
 								strings.HasSuffix(f.Name(), ".bak.log.gz") {
 								if f.ModTime().Before(expired) {

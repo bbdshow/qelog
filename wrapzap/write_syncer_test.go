@@ -9,7 +9,7 @@ import (
 )
 
 func TestWriteSync_Write(t *testing.T) {
-	cfg := DefaultWriteConfig("logger.log")
+	cfg := DefaultWriteSyncConfig("logger.log")
 	ws := NewWriteSync(cfg)
 
 	n, err := ws.Write([]byte("hello write sync"))
@@ -22,7 +22,7 @@ func TestWriteSync_Write(t *testing.T) {
 }
 
 func TestWriteSync_isRotate(t *testing.T) {
-	cfg := DefaultWriteConfig("logger.log")
+	cfg := DefaultWriteSyncConfig("logger.log")
 	cfg.MaxSize = 1024
 	ws := NewWriteSync(cfg)
 	ws.Write([]byte("hello write sync"))
@@ -52,7 +52,7 @@ func TestWriteSync_isRotate(t *testing.T) {
 }
 
 func TestWrite_delExpiredFile(t *testing.T) {
-	cfg := DefaultWriteConfig("logger.log")
+	cfg := DefaultWriteSyncConfig("logger.log")
 	cfg.MaxSize = 1024
 	cfg.TTL = 10 * time.Second
 	ws := NewWriteSync(cfg)
