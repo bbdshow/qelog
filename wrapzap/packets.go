@@ -12,6 +12,10 @@ import (
 	"time"
 )
 
+const (
+	defaultFlushInterval = 3 // time.Second
+)
+
 type Packets struct {
 	mutex          sync.Mutex
 	maxSize        int
@@ -67,7 +71,7 @@ func (p *Packets) AddPacket(b []byte) (buffers []byte, flush bool) {
 	n, _ := p.buffers.Write(b)
 	p.bufferSize += n
 
-	if p.bufferSize >= p.maxSize || time.Now().Unix()-p.flushTimestamp > 3 {
+	if p.bufferSize >= p.maxSize || time.Now().Unix()-p.flushTimestamp > defaultFlushInterval {
 		flush = true
 		buffers = p.buffers.Bytes()
 
