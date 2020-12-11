@@ -64,7 +64,7 @@ func NewWriteRemote(cfg WriteRemoteConfig) *WriteRemote {
 func (wr *WriteRemote) Write(b []byte) (n int, err error) {
 	data, flush := wr.packets.AddPacket(b)
 	if flush && len(data) > 0 {
-		err = wr.push(RandString(16), data)
+		err = wr.push(NewDataPacket(wr.cfg.ModuleName, data))
 	}
 	return len(b), err
 }
@@ -76,19 +76,14 @@ func (wr *WriteRemote) pullPacket() {
 		case <-tick.C:
 			data, flush := wr.packets.PullPacket()
 			if flush && len(data) > 0 {
-				_ = wr.push(RandString(16), data)
+				_ = wr.push(NewDataPacket(wr.cfg.ModuleName, data))
 			}
 		}
 	}
 }
 
-func (wr *WriteRemote) push(id string, data []string) error {
-	dp := DataPacket{
-		Name: wr.cfg.ModuleName,
-		ID:   id,
-		Data: data,
-	}
-	fmt.Println("data", data)
+func (wr *WriteRemote) push(dp DataPacket) error {
+	fmt.Println("data", dp)
 	// 如果发送者满负荷，则直接丢文件
 	if wr.pusher.Concurrent() >= wr.cfg.MaxConcurrent {
 		_, _ = wr.packets.WritePacket(dp)
@@ -119,7 +114,7 @@ func (wr *WriteRemote) backgroundRetry() {
 				fmt.Println("packets retry", err.Error())
 			}
 			if ok {
-				_ = wr.push(v.ID, v.Data)
+				_ = wr.push(v)
 			}
 		}
 	}
@@ -128,7 +123,7 @@ func (wr *WriteRemote) backgroundRetry() {
 func (wr *WriteRemote) Sync() error {
 	data, flush := wr.packets.PullPacket()
 	if flush && len(data) > 0 {
-		return wr.push(RandString(16), data)
+		return wr.push(NewDataPacket(wr.cfg.ModuleName, data))
 	}
 	return nil
 }
