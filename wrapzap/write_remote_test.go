@@ -6,7 +6,7 @@ import (
 )
 
 func TestWriteRemote_Write(t *testing.T) {
-	wr := NewWriteRemote(NewWriteRemoteConfig("http://127.0.0.1:8080/v1/qzlog/write", "test"))
+	wr := NewWriteRemote(NewWriteRemoteConfig("http://127.0.0.1:31081/v1/receive/packet", "test"))
 	msg := _jsonMessage{
 		Time:  time.Now().String(),
 		Level: "INFO",

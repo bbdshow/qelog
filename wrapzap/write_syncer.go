@@ -38,18 +38,21 @@ type WriteSync struct {
 
 type WriteSyncConfig struct {
 	Filename string
-	// 单文件最大 bytes
-	MaxSize int64
+	MaxSize  int64 // 超过大小 滚动 默认 0 不滚动
 	// 保留文件时间
-	TTL time.Duration
+	TTL time.Duration // 滚动日志文件最大时间， 默认 0 永久
 	// Gzip 压缩
-	GzipCompress bool
+	GzipCompress bool // 滚动日志是否Gzip压缩， 默认 false 不压缩
 }
 
-func DefaultWriteSyncConfig(filename string) WriteSyncConfig {
-	if filename == "" {
-		panic("write sync filename required")
+func (cfg WriteSyncConfig) Validate() error {
+	if cfg.Filename == "" {
+		return fmt.Errorf("filename required")
 	}
+	return nil
+}
+
+func NewWriteSyncConfig(filename string) WriteSyncConfig {
 	return WriteSyncConfig{
 		Filename:     filename,
 		MaxSize:      200 << 20, // 200MB

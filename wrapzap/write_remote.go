@@ -3,6 +3,7 @@ package wrapzap
 import (
 	"context"
 	"fmt"
+	"net/url"
 	"sync"
 	"time"
 )
@@ -11,9 +12,20 @@ type WriteRemoteConfig struct {
 	URL        string
 	ModuleName string
 
-	MaxConcurrent int
-	MaxPacket     int
-	WriteTimeout  time.Duration
+	MaxConcurrent int           // 默认 1 个并发
+	MaxPacket     int           // 默认不缓冲
+	WriteTimeout  time.Duration // 默认不超时
+}
+
+func (cfg WriteRemoteConfig) Validate() error {
+	_, err := url.Parse(cfg.URL)
+	if err != nil {
+		return err
+	}
+	if cfg.ModuleName == "" {
+		return fmt.Errorf("moduleName required")
+	}
+	return nil
 }
 
 func NewWriteRemoteConfig(url, moduleName string) WriteRemoteConfig {
@@ -28,8 +40,9 @@ func NewWriteRemoteConfig(url, moduleName string) WriteRemoteConfig {
 }
 
 type WriteRemote struct {
-	cfg     WriteRemoteConfig
-	pusher  Pusher
+	cfg    WriteRemoteConfig
+	pusher Pusher
+
 	packets *Packets
 
 	once sync.Once
@@ -43,20 +56,30 @@ func NewWriteRemote(cfg WriteRemoteConfig) *WriteRemote {
 	}
 	wr.once.Do(func() {
 		go wr.backgroundRetry()
+		go wr.pullPacket()
 	})
 	return wr
 }
 
 func (wr *WriteRemote) Write(b []byte) (n int, err error) {
-	buffers, flush := wr.packets.AddPacket(b)
-	if flush {
-		data := make([]string, len(buffers))
-		for i, buf := range buffers {
-			data[i] = string(buf)
-		}
+	data, flush := wr.packets.AddPacket(b)
+	if flush && len(data) > 0 {
 		err = wr.push(RandString(16), data)
 	}
 	return len(b), err
+}
+
+func (wr *WriteRemote) pullPacket() {
+	tick := time.NewTicker(2 * time.Second)
+	for {
+		select {
+		case <-tick.C:
+			data, flush := wr.packets.PullPacket()
+			if flush && len(data) > 0 {
+				_ = wr.push(RandString(16), data)
+			}
+		}
+	}
 }
 
 func (wr *WriteRemote) push(id string, data []string) error {
@@ -65,6 +88,7 @@ func (wr *WriteRemote) push(id string, data []string) error {
 		ID:   id,
 		Data: data,
 	}
+	fmt.Println("data", data)
 	// 如果发送者满负荷，则直接丢文件
 	if wr.pusher.Concurrent() >= wr.cfg.MaxConcurrent {
 		_, _ = wr.packets.WritePacket(dp)
@@ -101,4 +125,10 @@ func (wr *WriteRemote) backgroundRetry() {
 	}
 }
 
-func (wr *WriteRemote) Sync() error { return nil }
+func (wr *WriteRemote) Sync() error {
+	data, flush := wr.packets.PullPacket()
+	if flush && len(data) > 0 {
+		return wr.push(RandString(16), data)
+	}
+	return nil
+}

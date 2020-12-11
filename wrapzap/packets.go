@@ -2,26 +2,19 @@ package wrapzap
 
 import (
 	"bufio"
-	"bytes"
 	"encoding/json"
 	"fmt"
 	"io"
 	"os"
 	"sync"
-	"time"
-)
-
-const (
-	defaultFlushInterval = 2 // time.Second
 )
 
 type Packets struct {
-	mutex          sync.Mutex
-	maxSize        int
-	flushTimestamp int64 // 2秒一个周期
+	mutex sync.Mutex
 
-	bufferSize int
-	buffers    *bytes.Buffer
+	maxSize  int
+	dataSize int
+	data     []string
 
 	w           *WriteSync
 	bakFilename string
@@ -33,12 +26,11 @@ func NewPackets(maxSize int) *Packets {
 		maxSize = 0
 	}
 	p := &Packets{
-		maxSize:        maxSize,
-		flushTimestamp: 0,
-		bufferSize:     0,
-		buffers:        &bytes.Buffer{},
-		bakFilename:    "./failed.bak/packets.bak",
-		offset:         0,
+		maxSize:     maxSize,
+		dataSize:    0,
+		data:        make([]string, 0, 1024),
+		bakFilename: "./failed.bak/packets.bak",
+		offset:      0,
 	}
 
 	p.w = NewWriteSync(WriteSyncConfig{
@@ -51,28 +43,71 @@ func NewPackets(maxSize int) *Packets {
 	return p
 }
 
-func (p *Packets) AddPacket(b []byte) (buffers [][]byte, flush bool) {
+func (p *Packets) AddPacket(b []byte) (data []string, flush bool) {
 	p.mutex.Lock()
 	// 缓存起，超过一定时间/容量再发送
-	n, _ := p.buffers.Write(b)
-	p.bufferSize += n
-	// 换行符
-	p.buffers.WriteByte('\n')
+	p.data = append(p.data, string(b))
+	p.dataSize += len(b)
 
-	if p.bufferSize >= p.maxSize || time.Now().Unix()-p.flushTimestamp > defaultFlushInterval {
+	if p.dataSize >= p.maxSize {
+		data = make([]string, len(p.data))
+		copy(data, p.data)
+
 		flush = true
-		buffers = bytes.FieldsFunc(p.buffers.Bytes(), func(r rune) bool {
-			return r == '\n'
-		})
-		p.buffers.Reset()
-		p.bufferSize = 0
-		p.flushTimestamp = time.Now().Unix()
+		// reset
+		p.data = p.data[:0]
+		p.dataSize = 0
 	}
-
 	p.mutex.Unlock()
 
-	return buffers, flush
+	return data, flush
 }
+
+func (p *Packets) PullPacket() (data []string, flush bool) {
+	p.mutex.Lock()
+	if p.dataSize > 0 {
+		data = make([]string, len(p.data))
+		copy(data, p.data)
+
+		flush = true
+		// reset
+		p.data = p.data[:0]
+		p.dataSize = 0
+	}
+	p.mutex.Unlock()
+	return data, flush
+}
+
+//func (p *Packets) PushPacket(data chan []string) {
+//	tick := time.NewTicker(defaultFlushInterval)
+//	for {
+//
+//		getData := func(p *Packets) []string {
+//
+//			value := make([]string, len(p.data))
+//			copy(value, p.data)
+//
+//			// rest
+//			p.data = p.data[:0]
+//			p.dataSize = 0
+//
+//			return value
+//		}
+//
+//		select {
+//		case <-tick.C:
+//			p.mutex.Lock()
+//			if p.dataSize > 0 {
+//				data <- getData(p)
+//			}
+//			p.mutex.Unlock()
+//		case <-p.pushChan:
+//			p.mutex.Lock()
+//			data <- getData(p)
+//			p.mutex.Unlock()
+//		}
+//	}
+//}
 
 func (p *Packets) WritePacket(v interface{}) (n int, err error) {
 	p.mutex.Lock()
