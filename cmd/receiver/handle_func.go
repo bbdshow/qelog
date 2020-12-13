@@ -1,7 +1,9 @@
 package receiver
 
 import (
-	"fmt"
+	"github.com/huzhongqing/qelog/model/mongoclient"
+
+	"github.com/huzhongqing/qelog/service/receiver"
 
 	"github.com/gin-gonic/gin"
 	"github.com/huzhongqing/qelog/types/entity"
@@ -9,21 +11,22 @@ import (
 )
 
 type HandleFunc struct {
+	srv *receiver.Service
 }
 
-func NewHandleFunc() *HandleFunc {
-	hf := &HandleFunc{}
+func NewHandleFunc(database *mongoclient.Database) *HandleFunc {
+	h := &HandleFunc{
+		srv: receiver.NewService(database),
+	}
 
-	return hf
+	return h
 }
 
-func (hf *HandleFunc) ReceivePacket(c *gin.Context) {
+func (h *HandleFunc) ReceivePacket(c *gin.Context) {
 	var arg entity.DataPacket
 	if err := c.ShouldBind(&arg); err != nil {
 		entity.RespError(c, errors.ErrArgsInvalid)
 		return
 	}
-	for _, d := range arg.Data {
-		fmt.Println(d)
-	}
+
 }

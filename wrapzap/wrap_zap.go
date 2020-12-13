@@ -40,7 +40,7 @@ func NewWrapZap(cfg Config, level zapcore.Level) *zap.Logger {
 
 	if cfg.EnableRemote {
 		remoteEnc := zapcore.NewJSONEncoder(zapcore.EncoderConfig{
-			MessageKey:       "_message",
+			MessageKey:       "_short",
 			LevelKey:         "_level",
 			TimeKey:          "_time",
 			NameKey:          "_name",
@@ -49,7 +49,7 @@ func NewWrapZap(cfg Config, level zapcore.Level) *zap.Logger {
 			StacktraceKey:    "_stack",
 			LineEnding:       "",
 			EncodeLevel:      zapcore.CapitalLevelEncoder,
-			EncodeTime:       zapcore.ISO8601TimeEncoder,
+			EncodeTime:       zapcore.EpochMillisTimeEncoder,
 			EncodeDuration:   zapcore.SecondsDurationEncoder,
 			EncodeCaller:     zapcore.ShortCallerEncoder,
 			EncodeName:       zapcore.FullNameEncoder,

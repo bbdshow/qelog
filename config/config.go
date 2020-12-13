@@ -8,6 +8,7 @@ type Config struct {
 	Env          string
 	ReceiverAddr string
 	QueryAddr    string
+	MongoDB      MongoDB
 }
 
 func InitConfig(filename string) *Config {
