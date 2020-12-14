@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/huzhongqing/qelog/model/mongoclient"
+	"github.com/huzhongqing/qelog/libs/mongoclient"
 
 	"github.com/gin-gonic/gin"
 	"github.com/huzhongqing/qelog/config"

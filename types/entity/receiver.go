@@ -60,6 +60,16 @@ func (dec Decoder) Condition(num int) string {
 	return ""
 }
 
+// 删除一些不必要的字段，节约存储
+func (dec Decoder) Full() string {
+	delFields := []string{"_level", "_time", "_short"}
+	for _, v := range delFields {
+		delete(dec.Val, v)
+	}
+	b, _ := Marshal(dec.Val)
+	return string(b)
+}
+
 func LevelStr2Int(lvl string) int {
 	switch strings.ToUpper(lvl) {
 	case "DEBUG":

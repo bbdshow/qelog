@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/huzhongqing/qelog/model/mongoclient"
+	"github.com/huzhongqing/qelog/libs/mongoclient"
 
 	"github.com/huzhongqing/qelog/storage"
 
@@ -35,11 +35,11 @@ func (srv *Service) decodePacket(uk, ip string, packet entity.DataPacket) []*mod
 	records := make([]*model.Logging, 0, len(packet.Data))
 	for _, v := range packet.Data {
 		r := &model.Logging{
-			UniqueKey:     uk,
-			Module:        packet.Name,
-			IP:            ip,
-			Full:          v,
-			MillTimeStamp: time.Now().UnixNano() / 1e6,
+			UniqueKey: uk,
+			Module:    packet.Name,
+			IP:        ip,
+			Full:      v,
+			TimeStamp: time.Now().Unix(),
 		}
 		val := make(map[string]interface{})
 		if err := entity.Unmarshal([]byte(v), &val); err == nil {
@@ -49,7 +49,8 @@ func (srv *Service) decodePacket(uk, ip string, packet entity.DataPacket) []*mod
 			r.Condition1 = dec.Condition(1)
 			r.Condition2 = dec.Condition(2)
 			r.Condition3 = dec.Condition(3)
-			r.MillTimeStamp = dec.Time()
+			r.Full = dec.Full()
+			r.Time = dec.Time()
 		}
 		records = append(records, r)
 	}

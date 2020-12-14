@@ -1,7 +1,7 @@
 package receiver
 
 import (
-	"github.com/huzhongqing/qelog/model/mongoclient"
+	"github.com/huzhongqing/qelog/libs/mongoclient"
 
 	"github.com/huzhongqing/qelog/service/receiver"
 
