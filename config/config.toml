@@ -1,3 +1,0 @@
-env = "dev"
-receiverAddr = "0.0.0.0:31081"
-queryAddr = "0.0.0.0:31080"

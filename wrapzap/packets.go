@@ -78,37 +78,6 @@ func (p *Packets) PullPacket() (data []string, flush bool) {
 	return data, flush
 }
 
-//func (p *Packets) PushPacket(data chan []string) {
-//	tick := time.NewTicker(defaultFlushInterval)
-//	for {
-//
-//		getData := func(p *Packets) []string {
-//
-//			value := make([]string, len(p.data))
-//			copy(value, p.data)
-//
-//			// rest
-//			p.data = p.data[:0]
-//			p.dataSize = 0
-//
-//			return value
-//		}
-//
-//		select {
-//		case <-tick.C:
-//			p.mutex.Lock()
-//			if p.dataSize > 0 {
-//				data <- getData(p)
-//			}
-//			p.mutex.Unlock()
-//		case <-p.pushChan:
-//			p.mutex.Lock()
-//			data <- getData(p)
-//			p.mutex.Unlock()
-//		}
-//	}
-//}
-
 func (p *Packets) WritePacket(v interface{}) (n int, err error) {
 	p.mutex.Lock()
 	b, _ := json.Marshal(v)

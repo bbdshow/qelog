@@ -1,6 +1,7 @@
 package sharding
 
 import (
+	"context"
 	"fmt"
 	"sync"
 	"time"
@@ -20,7 +21,7 @@ type Sharding struct {
 	format string
 	prefix string
 }
-type QueryNames func() ([]string, error)
+type QueryNames func(ctx context.Context) ([]string, error)
 
 func NewSharding(format Format, prefix ...string) *Sharding {
 	s := &Sharding{
@@ -41,14 +42,14 @@ func (s *Sharding) GenerateName(bucket string, unix int64) string {
 	return name
 }
 
-func (s *Sharding) NameExists(name string, queryNames QueryNames) (bool, error) {
+func (s *Sharding) NameExists(ctx context.Context, name string, queryNames QueryNames) (bool, error) {
 	s.mutex.Lock()
 	defer s.mutex.Unlock()
 	_, ok := s.names[name]
 	if ok {
 		return true, nil
 	}
-	names, err := queryNames()
+	names, err := queryNames(ctx)
 	if err != nil {
 		return false, err
 	}

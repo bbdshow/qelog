@@ -114,6 +114,7 @@ func (wr *WriteRemote) backgroundRetry() {
 				fmt.Println("packets retry", err.Error())
 			}
 			if ok {
+				v.IsRetry = true
 				_ = wr.push(v)
 			}
 		}

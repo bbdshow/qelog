@@ -18,7 +18,7 @@ func TestNewWrapZap(t *testing.T) {
 
 	zapLog := NewWrapZap(cfg, zap.DebugLevel)
 
-	zapLog.Debug("Debug", zap.String("k", "v"), zap.String("l", RandString(1024)))
+	zapLog.Debug("Debug", zap.String("k", "v"), zap.String("l", _RandString(1024)))
 	zapLog.Info("Info", zap.String("k", "v"), zap.String("k1", "v1"))
 	zapLog.Warn("Warn", zap.String("k", "v"))
 	zapLog.Error("Error", zap.String("k", "v"))
