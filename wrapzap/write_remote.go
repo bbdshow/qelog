@@ -29,11 +29,6 @@ func (cfg WriteRemoteConfig) Validate() error {
 	return nil
 }
 
-func (cfg *WriteRemoteConfig) SetHTTPTransport() *WriteRemoteConfig {
-	cfg.Transport = "http"
-	return cfg
-}
-
 func NewWriteRemoteConfig(addrs []string, moduleName string) WriteRemoteConfig {
 	return WriteRemoteConfig{
 		Transport:     "grpc",

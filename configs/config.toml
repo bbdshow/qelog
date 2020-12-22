@@ -1,6 +1,6 @@
 env = "dev"
-receiverAddr = "0.0.0.0:31181"
-receiverGRPCAddr = ":31182"
+receiverAddr = "0.0.0.0:31081"
+receiverGRPCAddr = ":31082"
 queryAddr = "0.0.0.0:31080"
 
 [mongodb]

@@ -13,7 +13,8 @@ const (
 
 func TestNewWrapZap(t *testing.T) {
 
-	cfg := NewConfig("./log/logger.log", true, []string{_URL}, "test")
+	cfg := NewConfig([]string{_URL}, "test")
+	cfg.SetHTTPTransport()
 	cfg.WriteRemote.MaxPacket = 1024
 
 	zapLog := NewWrapZap(cfg, zap.DebugLevel)

@@ -12,16 +12,32 @@ type Config struct {
 	WriteRemote  WriteRemoteConfig
 }
 
-func NewConfig(filename string, enableRemote bool, addrs []string, moduleName string) Config {
-	cfg := Config{
-		WriteSync:    NewWriteSyncConfig(filename),
-		EnableRemote: enableRemote,
+func NewConfig(addrs []string, moduleName string) *Config {
+	defaultFilename := "./log/qzlogger.log"
+	cfg := &Config{
+		WriteSync:    NewWriteSyncConfig(defaultFilename),
+		EnableRemote: true,
 		WriteRemote:  NewWriteRemoteConfig(addrs, moduleName),
 	}
 	return cfg
 }
 
-func NewWrapZap(cfg Config, level zapcore.Level) *zap.Logger {
+func (cfg *Config) SetFilename(filename string) *Config {
+	cfg.WriteSync.Filename = filename
+	return cfg
+}
+
+func (cfg *Config) SetEnableRemote(enable bool) *Config {
+	cfg.EnableRemote = enable
+	return cfg
+}
+
+func (cfg *Config) SetHTTPTransport() *Config {
+	cfg.WriteRemote.Transport = "http"
+	return cfg
+}
+
+func NewWrapZap(cfg *Config, level zapcore.Level) *zap.Logger {
 	if err := cfg.WriteSync.Validate(); err != nil {
 		panic(err)
 	}
