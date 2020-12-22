@@ -42,7 +42,7 @@ var (
 	ErrSystemException = Error{Code: ErrCodeSystemException, Message: CodeMessage[ErrCodeSystemException]}
 )
 
-func New(code int, message string) Error {
+func NewError(code int, message string) Error {
 	return Error{Code: code, Message: message}
 }
 

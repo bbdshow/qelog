@@ -19,6 +19,8 @@ type Config struct {
 	ReceiverGRPCAddr string
 	QueryAddr        string
 	MongoDB          MongoDB
+	// 不同的模块存储不同的集合前缀里 (类似 redis db0-15 ...)
+	DBSize int32
 }
 
 func InitConfig(filename string) *Config {

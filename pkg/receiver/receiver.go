@@ -2,11 +2,13 @@ package receiver
 
 import (
 	"context"
+	"fmt"
+	"sync"
 	"time"
 
-	"github.com/huzhongqing/qelog/pkg/common/push"
+	"github.com/huzhongqing/qelog/pkg/httputil"
 
-	"github.com/huzhongqing/qelog/libs/sharding"
+	"github.com/huzhongqing/qelog/pkg/common/push"
 
 	"github.com/huzhongqing/qelog/pkg/common/model"
 	"github.com/huzhongqing/qelog/pkg/storage"
@@ -14,15 +16,21 @@ import (
 )
 
 type Service struct {
-	store    *storage.Store
-	sharding *sharding.Sharding
+	store *storage.Store
+
+	mutex       sync.RWMutex
+	modules     map[string]*model.ModuleRegister
+	collections map[string]struct{}
 }
 
 func NewService(store *storage.Store) *Service {
 	srv := &Service{
-		store:    store,
-		sharding: sharding.NewSharding(sharding.FormatMonth, "logging"),
+		store:       store,
+		modules:     make(map[string]*model.ModuleRegister, 0),
+		collections: make(map[string]struct{}, 0),
 	}
+
+	go srv.intervalSyncModule()
 
 	return srv
 }
@@ -31,15 +39,22 @@ func (srv *Service) InsertPacket(ctx context.Context, ip string, in *push.Packet
 	if len(in.Data) <= 0 {
 		return nil
 	}
-	docs := srv.decodePacket("aaa", ip, in)
-	bucket := "test"
+	// 判断 module 是否有效，如果无效，则不接受写入
+	srv.mutex.RLock()
+	mReg, ok := srv.modules[in.Module]
+	srv.mutex.RUnlock()
+	if !ok {
+		return httputil.NewError(httputil.ErrCodeNotFound, "module unregistered")
+	}
+
+	docs := srv.decodePacket(ip, in)
+	sMap := srv.loggingShardingByTimestamp(mReg.DBIndex, docs)
+
 	if ctx == nil {
 		ctx, _ = context.WithTimeout(context.Background(), 5*time.Second)
 	}
-	sMap := srv.shardingLogging(bucket, docs)
-
 	for collectionName, docs := range sMap {
-		ok, err := srv.sharding.NameExists(ctx, collectionName, srv.store.ListAllCollectionNames)
+		ok, err := srv.collectionExists(collectionName)
 		if err != nil {
 			return err
 		}
@@ -58,15 +73,14 @@ func (srv *Service) InsertPacket(ctx context.Context, ip string, in *push.Packet
 	return nil
 }
 
-func (srv *Service) decodePacket(uk, ip string, in *push.Packet) []*model.Logging {
+func (srv *Service) decodePacket(ip string, in *push.Packet) []*model.Logging {
 	records := make([]*model.Logging, 0, len(in.Data))
 	for _, v := range in.Data {
 		r := &model.Logging{
-			UniqueKey: uk,
 			Module:    in.Module,
 			IP:        ip,
 			Full:      v,
-			TimeStamp: time.Now().Unix(),
+			Timestamp: time.Now().Unix(),
 		}
 		val := make(map[string]interface{})
 		if err := types.Unmarshal([]byte(v), &val); err == nil {
@@ -84,10 +98,38 @@ func (srv *Service) decodePacket(uk, ip string, in *push.Packet) []*model.Loggin
 	return records
 }
 
-func (srv *Service) shardingLogging(bucket string, docs []*model.Logging) map[string][]interface{} {
+// 判断集合是否存在，如果不存在需要创建索引
+func (srv *Service) collectionExists(collectionName string) (bool, error) {
+	srv.mutex.Lock()
+	defer srv.mutex.Unlock()
+	if _, ok := srv.collections[collectionName]; ok {
+		return true, nil
+	}
+	ctx, _ := context.WithTimeout(context.Background(), 3*time.Second)
+	names, err := srv.store.ListAllCollectionNames(ctx)
+	if err != nil {
+		return false, err
+	}
+	exists := false
+	for _, n := range names {
+		if n == collectionName {
+			exists = true
+		}
+		srv.collections[n] = struct{}{}
+	}
+	return exists, nil
+}
+func (srv *Service) collectionName(dbIndex int32, unix int64) string {
+	name := fmt.Sprintf("logging_%d_%s",
+		dbIndex, time.Unix(unix, 0).Format("20060102"))
+	return name
+}
+
+// 因为是合并包，有少数情况下，根据时间分集合，一个包的内容会写入到不同的集合中区
+func (srv *Service) loggingShardingByTimestamp(dbIndex int32, docs []*model.Logging) map[string][]interface{} {
 	out := make(map[string][]interface{})
 	for _, v := range docs {
-		name := srv.sharding.GenerateName(bucket, v.TimeStamp)
+		name := srv.collectionName(dbIndex, v.Timestamp)
 		val, ok := out[name]
 		if ok {
 			out[name] = append(val, v)
@@ -96,4 +138,22 @@ func (srv *Service) shardingLogging(bucket string, docs []*model.Logging) map[st
 		}
 	}
 	return out
+}
+
+func (srv *Service) intervalSyncModule() {
+	tick := time.NewTicker(30 * time.Second)
+	for {
+		ctx, _ := context.WithTimeout(context.Background(), 5*time.Second)
+		docs, err := srv.store.FindAllModuleRegister(ctx)
+		if err == nil {
+			srv.mutex.Lock()
+			for _, v := range docs {
+				srv.modules[v.ModuleName] = v
+			}
+			srv.mutex.Unlock()
+		}
+		select {
+		case <-tick.C:
+		}
+	}
 }

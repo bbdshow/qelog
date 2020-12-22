@@ -8,7 +8,6 @@ import (
 
 type Logging struct {
 	ID         primitive.ObjectID `bson:"_id,omitempty"`
-	UniqueKey  string             `bson:"uk"`
 	Module     string             `bson:"m"`
 	IP         string             `bson:"ip"`
 	Level      int                `bson:"l"`
@@ -18,7 +17,7 @@ type Logging struct {
 	Condition2 string             `bson:"c2"`
 	Condition3 string             `bson:"c3"`
 	Time       int64              `bson:"t"`  // 日志打印时间
-	TimeStamp  int64              `bson:"ts"` // 秒, 用于建立秒级别索引
+	Timestamp  int64              `bson:"ts"` // 秒, 用于建立秒级别索引
 
 }
 
@@ -30,7 +29,6 @@ func LoggingIndexMany(collectionName string) []mongo.Index {
 		{
 			Collection: collectionName,
 			Keys: bson.M{
-				"uk": 1,
 				"m":  1,
 				"ts": -1,
 				// uk, m, t 是必要查询条件，所以放在最前面
