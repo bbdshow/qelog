@@ -14,10 +14,11 @@ func SetGlobalConfig(cfg *Config) {
 }
 
 type Config struct {
-	Env          string
-	ReceiverAddr string
-	QueryAddr    string
-	MongoDB      MongoDB
+	Env              string
+	ReceiverAddr     string
+	ReceiverGRPCAddr string
+	QueryAddr        string
+	MongoDB          MongoDB
 }
 
 func InitConfig(filename string) *Config {

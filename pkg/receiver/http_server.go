@@ -5,55 +5,72 @@ import (
 	"os"
 	"time"
 
+	"github.com/huzhongqing/qelog/pkg/common/push"
+	"github.com/huzhongqing/qelog/pkg/httputil"
+
 	"github.com/huzhongqing/qelog/pkg/storage"
 
 	"github.com/gin-gonic/gin"
 	"github.com/huzhongqing/qelog/libs/mongo"
 )
 
-type Receiver struct {
+type HTTPService struct {
 	database *mongo.Database
 	server   *http.Server
-	srv      *Service
+	receiver *Service
 }
 
-func New(database *mongo.Database) *Receiver {
-	r := &Receiver{
+func NewHTTPService(database *mongo.Database) *HTTPService {
+	srv := &HTTPService{
 		database: database,
-		srv:      NewService(storage.New(database)),
+		receiver: NewService(storage.New(database)),
 	}
-	return r
+	return srv
 }
 
-func (rec *Receiver) Run(addr string) error {
+func (srv *HTTPService) Run(addr string) error {
 	handler := gin.Default()
 	if os.Getenv("ENV") == gin.ReleaseMode {
 		gin.SetMode(gin.ReleaseMode)
 		handler = gin.New()
 	}
 
-	rec.route(handler)
+	srv.route(handler)
 
-	rec.server = &http.Server{
+	srv.server = &http.Server{
 		Addr:         addr,
 		Handler:      handler,
 		ReadTimeout:  90 * time.Second,
 		WriteTimeout: 120 * time.Second,
 	}
 
-	return rec.server.ListenAndServe()
+	return srv.server.ListenAndServe()
 }
 
-func (rec *Receiver) Close() error {
-	if rec.server != nil {
-		_ = rec.server.Close()
+func (srv *HTTPService) Close() error {
+	if srv.server != nil {
+		_ = srv.server.Close()
 	}
 	return nil
 }
 
-func (rec *Receiver) route(handler *gin.Engine, middleware ...gin.HandlerFunc) {
+func (srv *HTTPService) route(handler *gin.Engine, middleware ...gin.HandlerFunc) {
 	handler.HEAD("/", func(c *gin.Context) { c.Status(200) })
 
 	handler.Use(middleware...)
-	handler.POST("/v1/receive/packet", rec.ReceivePacket)
+	handler.POST("/v1/receive/packet", srv.ReceivePacket)
+}
+
+func (srv *HTTPService) ReceivePacket(c *gin.Context) {
+	var arg push.Packet
+	if err := c.ShouldBind(&arg); err != nil {
+		httputil.RespError(c, httputil.ErrArgsInvalid)
+		return
+	}
+
+	if err := srv.receiver.InsertPacket(c.Request.Context(), c.ClientIP(), &arg); err != nil {
+		httputil.RespError(c, httputil.ErrClaimsNotFound)
+		return
+	}
+	httputil.RespSuccess(c)
 }

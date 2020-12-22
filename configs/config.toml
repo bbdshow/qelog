@@ -1,7 +1,8 @@
 env = "dev"
-receiverAddr = "0.0.0.0:31081"
+receiverAddr = "0.0.0.0:31181"
+receiverGRPCAddr = ":31182"
 queryAddr = "0.0.0.0:31080"
 
 [mongodb]
 database = "qzlog"
-uri = ""
+uri = "mongodb://127.0.0.1:27017/admin"

@@ -4,9 +4,10 @@ import (
 	"context"
 	"time"
 
+	"github.com/huzhongqing/qelog/pkg/common/push"
+
 	"github.com/huzhongqing/qelog/libs/sharding"
 
-	"github.com/huzhongqing/qelog/pkg/common/entity"
 	"github.com/huzhongqing/qelog/pkg/common/model"
 	"github.com/huzhongqing/qelog/pkg/storage"
 	"github.com/huzhongqing/qelog/pkg/types"
@@ -26,14 +27,15 @@ func NewService(store *storage.Store) *Service {
 	return srv
 }
 
-func (srv *Service) InsertPacket(uk, ip string, packet entity.DataPacket) error {
-	if len(packet.Data) <= 0 {
+func (srv *Service) InsertPacket(ctx context.Context, ip string, in *push.Packet) error {
+	if len(in.Data) <= 0 {
 		return nil
 	}
-	docs := srv.decodePacket(uk, ip, packet)
+	docs := srv.decodePacket("aaa", ip, in)
 	bucket := "test"
-
-	ctx, _ := context.WithTimeout(context.Background(), 5*time.Second)
+	if ctx == nil {
+		ctx, _ = context.WithTimeout(context.Background(), 5*time.Second)
+	}
 	sMap := srv.shardingLogging(bucket, docs)
 
 	for collectionName, docs := range sMap {
@@ -56,12 +58,12 @@ func (srv *Service) InsertPacket(uk, ip string, packet entity.DataPacket) error 
 	return nil
 }
 
-func (srv *Service) decodePacket(uk, ip string, packet entity.DataPacket) []*model.Logging {
-	records := make([]*model.Logging, 0, len(packet.Data))
-	for _, v := range packet.Data {
+func (srv *Service) decodePacket(uk, ip string, in *push.Packet) []*model.Logging {
+	records := make([]*model.Logging, 0, len(in.Data))
+	for _, v := range in.Data {
 		r := &model.Logging{
 			UniqueKey: uk,
-			Module:    packet.Module,
+			Module:    in.Module,
 			IP:        ip,
 			Full:      v,
 			TimeStamp: time.Now().Unix(),

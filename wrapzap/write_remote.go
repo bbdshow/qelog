@@ -3,13 +3,15 @@ package wrapzap
 import (
 	"context"
 	"fmt"
-	"net/url"
 	"sync"
 	"time"
+
+	"github.com/huzhongqing/wrapzap/push"
 )
 
 type WriteRemoteConfig struct {
-	URL        string
+	Transport  string // 支持 http grpc 默认 grpc
+	Addrs      []string
 	ModuleName string
 
 	MaxConcurrent int           // 默认 1 个并发
@@ -18,9 +20,8 @@ type WriteRemoteConfig struct {
 }
 
 func (cfg WriteRemoteConfig) Validate() error {
-	_, err := url.Parse(cfg.URL)
-	if err != nil {
-		return err
+	if len(cfg.Addrs) == 0 {
+		return fmt.Errorf("address required, grpc [ip:port]  http[url]")
 	}
 	if cfg.ModuleName == "" {
 		return fmt.Errorf("moduleName required")
@@ -28,9 +29,15 @@ func (cfg WriteRemoteConfig) Validate() error {
 	return nil
 }
 
-func NewWriteRemoteConfig(url, moduleName string) WriteRemoteConfig {
+func (cfg *WriteRemoteConfig) SetHTTPTransport() *WriteRemoteConfig {
+	cfg.Transport = "http"
+	return cfg
+}
+
+func NewWriteRemoteConfig(addrs []string, moduleName string) WriteRemoteConfig {
 	return WriteRemoteConfig{
-		URL:           url,
+		Transport:     "grpc",
+		Addrs:         addrs,
 		ModuleName:    moduleName,
 		MaxConcurrent: 20,
 		MaxPacket:     500 * 1024,
@@ -41,7 +48,7 @@ func NewWriteRemoteConfig(url, moduleName string) WriteRemoteConfig {
 
 type WriteRemote struct {
 	cfg    WriteRemoteConfig
-	pusher Pusher
+	pusher push.Pusher
 
 	packets *Packets
 
@@ -49,11 +56,28 @@ type WriteRemote struct {
 }
 
 func NewWriteRemote(cfg WriteRemoteConfig) *WriteRemote {
+	if err := cfg.Validate(); err != nil {
+		panic("config validate error " + err.Error())
+	}
 	wr := &WriteRemote{
 		cfg:     cfg,
-		pusher:  NewHttpPush(cfg.URL, cfg.MaxConcurrent),
 		packets: NewPackets(cfg.MaxPacket),
 	}
+
+	if cfg.Transport == "http" {
+		pusher, err := push.NewHttpPush(cfg.Addrs[0], cfg.MaxConcurrent)
+		if err != nil {
+			panic("init http push error " + err.Error())
+		}
+		wr.pusher = pusher
+	} else {
+		pusher, err := push.NewGRPCPush(cfg.Addrs, cfg.MaxConcurrent)
+		if err != nil {
+			panic("init grpc push error " + err.Error())
+		}
+		wr.pusher = pusher
+	}
+
 	wr.once.Do(func() {
 		go wr.backgroundRetry()
 		go wr.pullPacket()
@@ -64,7 +88,7 @@ func NewWriteRemote(cfg WriteRemoteConfig) *WriteRemote {
 func (wr *WriteRemote) Write(b []byte) (n int, err error) {
 	data, flush := wr.packets.AddPacket(b)
 	if flush && len(data) > 0 {
-		err = wr.push(NewDataPacket(wr.cfg.ModuleName, data))
+		err = wr.push(push.NewPacket(wr.cfg.ModuleName, data))
 	}
 	return len(b), err
 }
@@ -76,17 +100,16 @@ func (wr *WriteRemote) pullPacket() {
 		case <-tick.C:
 			data, flush := wr.packets.PullPacket()
 			if flush && len(data) > 0 {
-				_ = wr.push(NewDataPacket(wr.cfg.ModuleName, data))
+				_ = wr.push(push.NewPacket(wr.cfg.ModuleName, data))
 			}
 		}
 	}
 }
 
-func (wr *WriteRemote) push(dp DataPacket) error {
-	fmt.Println("data", dp)
+func (wr *WriteRemote) push(in *push.Packet) error {
 	// 如果发送者满负荷，则直接丢文件
 	if wr.pusher.Concurrent() >= wr.cfg.MaxConcurrent {
-		_, _ = wr.packets.WritePacket(dp)
+		_, _ = wr.packets.WritePacket(in)
 		return nil
 	}
 
@@ -94,10 +117,10 @@ func (wr *WriteRemote) push(dp DataPacket) error {
 	if wr.cfg.WriteTimeout > 0 {
 		ctx, _ = context.WithTimeout(context.Background(), wr.cfg.WriteTimeout)
 	}
-	if err := wr.pusher.Push(ctx, dp.Marshal()); err != nil {
-		fmt.Println("pusher", err.Error())
+
+	if err := wr.pusher.PushPacket(ctx, in); err != nil {
 		// 放入错误备份文件里
-		_, _ = wr.packets.WritePacket(dp)
+		_, _ = wr.packets.WritePacket(in)
 		return err
 	}
 	return nil
@@ -108,8 +131,8 @@ func (wr *WriteRemote) backgroundRetry() {
 	for {
 		select {
 		case <-tick.C:
-			v := DataPacket{}
-			ok, err := wr.packets.ReadPacket(&v)
+			v := &push.Packet{}
+			ok, err := wr.packets.ReadPacket(v)
 			if err != nil {
 				fmt.Println("packets retry", err.Error())
 			}
@@ -124,7 +147,7 @@ func (wr *WriteRemote) backgroundRetry() {
 func (wr *WriteRemote) Sync() error {
 	data, flush := wr.packets.PullPacket()
 	if flush && len(data) > 0 {
-		return wr.push(NewDataPacket(wr.cfg.ModuleName, data))
+		return wr.push(push.NewPacket(wr.cfg.ModuleName, data))
 	}
 	return nil
 }

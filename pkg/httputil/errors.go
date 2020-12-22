@@ -33,12 +33,13 @@ var CodeMessage = map[int]string{
 }
 
 var (
-	ErrArgsRequired   = Error{Code: ErrCodeArgsRequired, Message: "arguments required"}
-	ErrArgsInvalid    = Error{Code: ErrCodeArgsInvalid, Message: CodeMessage[ErrCodeArgsInvalid]}
-	ErrClaimsNotFound = Error{Code: ErrCodeUnauthorized, Message: "auth context nil"}
-	ErrNotFound       = Error{Code: ErrCodeNotFound, Message: CodeMessage[ErrCodeNotFound]}
-	ErrSignException  = Error{Code: ErrCodeSignException, Message: CodeMessage[ErrCodeSignException]}
-	ErrContextNil     = Error{Code: ErrCodeContextNil, Message: CodeMessage[ErrCodeContextNil]}
+	ErrArgsRequired    = Error{Code: ErrCodeArgsRequired, Message: "arguments required"}
+	ErrArgsInvalid     = Error{Code: ErrCodeArgsInvalid, Message: CodeMessage[ErrCodeArgsInvalid]}
+	ErrClaimsNotFound  = Error{Code: ErrCodeUnauthorized, Message: "auth context nil"}
+	ErrNotFound        = Error{Code: ErrCodeNotFound, Message: CodeMessage[ErrCodeNotFound]}
+	ErrSignException   = Error{Code: ErrCodeSignException, Message: CodeMessage[ErrCodeSignException]}
+	ErrContextNil      = Error{Code: ErrCodeContextNil, Message: CodeMessage[ErrCodeContextNil]}
+	ErrSystemException = Error{Code: ErrCodeSystemException, Message: CodeMessage[ErrCodeSystemException]}
 )
 
 func New(code int, message string) Error {

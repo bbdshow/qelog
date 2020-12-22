@@ -12,11 +12,11 @@ type Config struct {
 	WriteRemote  WriteRemoteConfig
 }
 
-func NewConfig(filename string, enableRemote bool, url, moduleName string) Config {
+func NewConfig(filename string, enableRemote bool, addrs []string, moduleName string) Config {
 	cfg := Config{
 		WriteSync:    NewWriteSyncConfig(filename),
 		EnableRemote: enableRemote,
-		WriteRemote:  NewWriteRemoteConfig(url, moduleName),
+		WriteRemote:  NewWriteRemoteConfig(addrs, moduleName),
 	}
 	return cfg
 }

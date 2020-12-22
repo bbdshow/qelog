@@ -24,17 +24,26 @@ func main() {
 		log.Fatalln("mongo connect failed ", err.Error())
 	}
 
-	rec := receiver.New(database)
+	httpSrv := receiver.NewHTTPService(database)
 
 	go func() {
-		if err := rec.Run(cfg.ReceiverAddr); err != nil {
+		log.Println("http server listen ", cfg.ReceiverAddr)
+		if err := httpSrv.Run(cfg.ReceiverAddr); err != nil {
 			log.Fatalln("http server listen failed ", err.Error())
 		}
-		log.Println("http server listen ", cfg.ReceiverAddr)
+	}()
+
+	grpcSrv := receiver.NewGRPCService(database)
+	go func() {
+		log.Println("grpc server listen ", cfg.ReceiverGRPCAddr)
+		if err := grpcSrv.Run(cfg.ReceiverGRPCAddr); err != nil {
+			log.Fatalln("grpc server listen failed ", err.Error())
+		}
 	}()
 
 	signalAccept()
-	_ = rec.Close()
+	_ = httpSrv.Close()
+	_ = grpcSrv.Close()
 	_ = database.Client().Disconnect(nil)
 }
 
