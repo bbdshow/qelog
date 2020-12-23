@@ -1,4 +1,4 @@
-package qzzap
+package qezap
 
 import (
 	"context"
@@ -7,7 +7,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/huzhongqing/qzzap/push"
+	"github.com/huzhongqing/qelog/qezap/push"
 )
 
 type WriteRemoteConfig struct {

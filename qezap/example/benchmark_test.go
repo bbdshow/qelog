@@ -3,19 +3,20 @@ package main
 import (
 	"testing"
 
-	"github.com/huzhongqing/qzzap"
+	"github.com/huzhongqing/qelog/qezap"
+
 	"go.uber.org/zap"
 )
 
 func BenchmarkQzzap(b *testing.B) {
 	addrs := []string{"127.0.0.1:31082"}
-	cfg := qzzap.NewConfig(addrs, "example")
+	cfg := qezap.NewConfig(addrs, "example")
 
 	// 如果设置 false，可以 addrs = nil
 	// cfg.SetEnableRemote(false)
 
 	// 如果对默认配置不满足，可直接设置
-	qzLog := qzzap.New(cfg, zap.DebugLevel)
+	qzLog := qezap.New(cfg, zap.DebugLevel)
 
 	b.ResetTimer()
 
@@ -28,13 +29,13 @@ func BenchmarkQzzap(b *testing.B) {
 
 func BenchmarkQzzapHTTP(b *testing.B) {
 	addrs := []string{"http://127.0.0.1:31081/v1/receiver/packet"}
-	cfg := qzzap.NewConfig(addrs, "example")
+	cfg := qezap.NewConfig(addrs, "example")
 	cfg.SetHTTPTransport()
 	// 如果设置 false，可以 addrs = nil
 	// cfg.SetEnableRemote(false)
 
 	// 如果对默认配置不满足，可直接设置
-	qzLog := qzzap.New(cfg, zap.DebugLevel)
+	qzLog := qezap.New(cfg, zap.DebugLevel)
 
 	b.ResetTimer()
 

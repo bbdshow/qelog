@@ -1,4 +1,4 @@
-module github.com/huzhongqing/qzzap
+module github.com/huzhongqing/qelog/qezap
 
 go 1.14
 

@@ -8,6 +8,8 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/huzhongqing/qelog/libs/logs"
+
 	"github.com/huzhongqing/qelog/pkg/manager"
 
 	"github.com/huzhongqing/qelog/libs/mongo"
@@ -23,6 +25,8 @@ func main() {
 	if err != nil {
 		log.Fatalln("mongo connect failed ", err.Error())
 	}
+
+	logs.InitQezap([]string{"127.0.0.1:31081"}, "qelog")
 
 	httpSrv := manager.NewHTTPService(database)
 

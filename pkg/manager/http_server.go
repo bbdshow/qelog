@@ -5,6 +5,8 @@ import (
 	"os"
 	"time"
 
+	"github.com/huzhongqing/qelog/libs/logs"
+
 	"github.com/huzhongqing/qelog/pkg/common/model"
 
 	"github.com/huzhongqing/qelog/pkg/common/entity"
@@ -35,12 +37,12 @@ func (srv *HTTPService) Run(addr string) error {
 	handler := gin.Default()
 	if os.Getenv("ENV") == gin.ReleaseMode {
 		gin.SetMode(gin.ReleaseMode)
-		handler = gin.New()
 	} else {
 		if err := srv.database.UpsertCollectionIndexMany(model.ModuleRegisterIndexMany()); err != nil {
 			return err
 		}
 	}
+	gin.DefaultErrorWriter = logs.Qezap
 
 	srv.route(handler)
 
@@ -50,7 +52,6 @@ func (srv *HTTPService) Run(addr string) error {
 		ReadTimeout:  90 * time.Second,
 		WriteTimeout: 120 * time.Second,
 	}
-
 	return srv.server.ListenAndServe()
 }
 
@@ -74,7 +75,7 @@ func (srv *HTTPService) CreateModuleRegister(c *gin.Context) {
 		httputil.RespError(c, httputil.ErrArgsInvalid.MergeError(err))
 		return
 	}
-
+	panic("1111111111111")
 	if err := srv.manager.CreateModuleRegister(c.Request.Context(), &arg); err != nil {
 		httputil.RespError(c, httputil.ErrSystemException.MergeError(err))
 		return

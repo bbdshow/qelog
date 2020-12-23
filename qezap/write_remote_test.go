@@ -1,4 +1,4 @@
-package qzzap
+package qezap
 
 import (
 	"strconv"

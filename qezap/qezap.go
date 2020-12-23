@@ -1,4 +1,4 @@
-package qzzap
+package qezap
 
 import (
 	"go.uber.org/zap"
@@ -66,7 +66,11 @@ func (c *Condition) StringFiled(val string) zap.Field {
 	return zap.String(c.key, val)
 }
 
-func New(cfg *Config, level zapcore.Level) *zap.Logger {
+type Logger struct {
+	*zap.Logger
+}
+
+func New(cfg *Config, level zapcore.Level) *Logger {
 	if err := cfg.WriteSync.Validate(); err != nil {
 		panic(err)
 	}
@@ -108,5 +112,11 @@ func New(cfg *Config, level zapcore.Level) *zap.Logger {
 		core = localCore
 	}
 
-	return zap.New(core, zap.AddCaller(), zap.AddStacktrace(zap.DPanicLevel))
+	return &Logger{Logger: zap.New(core, zap.AddCaller(), zap.AddStacktrace(zap.DPanicLevel))}
+}
+
+// 实现 Writer 就使用 info 等级
+func (log *Logger) Write(b []byte) (n int, err error) {
+	log.Info("qzzap.Write", zap.ByteString("value", b))
+	return
 }
