@@ -66,7 +66,7 @@ func (c *Condition) StringFiled(val string) zap.Field {
 	return zap.String(c.key, val)
 }
 
-func NewWrapZap(cfg *Config, level zapcore.Level) *zap.Logger {
+func New(cfg *Config, level zapcore.Level) *zap.Logger {
 	if err := cfg.WriteSync.Validate(); err != nil {
 		panic(err)
 	}

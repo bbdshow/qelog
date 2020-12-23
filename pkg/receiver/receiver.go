@@ -121,7 +121,7 @@ func (srv *Service) collectionExists(collectionName string) (bool, error) {
 }
 func (srv *Service) collectionName(dbIndex int32, unix int64) string {
 	name := fmt.Sprintf("logging_%d_%s",
-		dbIndex, time.Unix(unix, 0).Format("20060102"))
+		dbIndex, time.Unix(unix, 0).Format("200601"))
 	return name
 }
 

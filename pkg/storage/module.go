@@ -15,3 +15,8 @@ func (store *Store) FindAllModuleRegister(ctx context.Context) ([]*model.ModuleR
 	err := store.database.Find(ctx, coll, bson.M{}, &docs)
 	return docs, err
 }
+
+func (store *Store) InsertModuleRegister(ctx context.Context, doc *model.ModuleRegister) error {
+	_, err := store.database.Collection(doc.CollectionName()).InsertOne(ctx, doc)
+	return err
+}

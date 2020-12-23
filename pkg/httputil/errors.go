@@ -33,24 +33,29 @@ var CodeMessage = map[int]string{
 }
 
 var (
-	ErrArgsRequired    = Error{Code: ErrCodeArgsRequired, Message: "arguments required"}
-	ErrArgsInvalid     = Error{Code: ErrCodeArgsInvalid, Message: CodeMessage[ErrCodeArgsInvalid]}
-	ErrClaimsNotFound  = Error{Code: ErrCodeUnauthorized, Message: "auth context nil"}
-	ErrNotFound        = Error{Code: ErrCodeNotFound, Message: CodeMessage[ErrCodeNotFound]}
-	ErrSignException   = Error{Code: ErrCodeSignException, Message: CodeMessage[ErrCodeSignException]}
-	ErrContextNil      = Error{Code: ErrCodeContextNil, Message: CodeMessage[ErrCodeContextNil]}
-	ErrSystemException = Error{Code: ErrCodeSystemException, Message: CodeMessage[ErrCodeSystemException]}
+	ErrClaimsNotFound  = NewError(ErrCodeUnauthorized, "auth context nil")
+	ErrArgsRequired    = NewError(ErrCodeArgsRequired, "arguments required")
+	ErrArgsInvalid     = NewError(ErrCodeArgsInvalid, CodeMessage[ErrCodeArgsInvalid])
+	ErrNotFound        = NewError(ErrCodeNotFound, CodeMessage[ErrCodeNotFound])
+	ErrSystemException = NewError(ErrCodeSystemException, CodeMessage[ErrCodeSystemException])
 )
 
-func NewError(code int, message string) Error {
-	return Error{Code: code, Message: message}
+func NewError(code int, message string) *Error {
+	return &Error{Code: code, Message: message}
 }
 
 type Error struct {
-	Code    int
-	Message string
+	Code    int    `json:"code"`
+	Message string `json:"message"`
 }
 
-func (e Error) Error() string {
+func (e *Error) Error() string {
 	return fmt.Sprintf("%d  %s", e.Code, e.Message)
+}
+
+func (e *Error) MergeError(err error) *Error {
+	if err != nil {
+		e.Message += " " + err.Error()
+	}
+	return e
 }

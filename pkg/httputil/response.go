@@ -59,7 +59,7 @@ func RespStatusCodeWithError(c *gin.Context, statusCode int, err error) {
 	code := CodeFailed
 	message := ""
 
-	if e, ok := err.(Error); ok {
+	if e, ok := err.(*Error); ok {
 		// 如果是自定义错误，就重写 code
 		code = e.Code
 		message = e.Message

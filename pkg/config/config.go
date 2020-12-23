@@ -17,7 +17,7 @@ type Config struct {
 	Env              string
 	ReceiverAddr     string
 	ReceiverGRPCAddr string
-	QueryAddr        string
+	ManagerAddr      string
 	MongoDB          MongoDB
 	// 不同的模块存储不同的集合前缀里 (类似 redis db0-15 ...)
 	DBSize int32

@@ -8,6 +8,8 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/huzhongqing/qelog/pkg/manager"
+
 	"github.com/huzhongqing/qelog/libs/mongo"
 
 	"github.com/huzhongqing/qelog/pkg/config"
@@ -22,14 +24,14 @@ func main() {
 		log.Fatalln("mongo connect failed ", err.Error())
 	}
 
-	//rec := receiver.New(database)
-	//
-	//go func() {
-	//	if err := rec.Run(cfg.ReceiverAddr); err != nil {
-	//		log.Fatalln("http server listen failed ", err.Error())
-	//	}
-	//	log.Println("http server listen ", cfg.ReceiverAddr)
-	//}()
+	httpSrv := manager.NewHTTPService(database)
+
+	go func() {
+		if err := httpSrv.Run(cfg.ManagerAddr); err != nil {
+			log.Fatalln("http server listen failed ", err.Error())
+		}
+		log.Println("http server listen ", cfg.ManagerAddr)
+	}()
 
 	signalAccept()
 
