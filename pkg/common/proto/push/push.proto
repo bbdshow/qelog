@@ -20,6 +20,4 @@ message Packet {
     string module = 2;
     // 包具体的数据
     repeated string data = 3;
-    // 是否是重试发送的包
-    bool isRetry = 4;
 }
