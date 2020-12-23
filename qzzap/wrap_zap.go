@@ -1,4 +1,4 @@
-package wrapzap
+package qzzap
 
 import (
 	"go.uber.org/zap"
@@ -35,6 +35,35 @@ func (cfg *Config) SetEnableRemote(enable bool) *Config {
 func (cfg *Config) SetHTTPTransport() *Config {
 	cfg.WriteRemote.Transport = "http"
 	return cfg
+}
+
+type Condition struct {
+	key string
+}
+
+// 生成一个可以条件查询的字段
+func NewCondition() *Condition {
+	return &Condition{}
+}
+
+func (c *Condition) setKey(k string) *Condition {
+	c.key = k
+	return c
+}
+func (c *Condition) One() *Condition {
+	return c.setKey("_c1")
+}
+func (c *Condition) Two() *Condition {
+	return c.setKey("_c2")
+}
+func (c *Condition) Three() *Condition {
+	return c.setKey("_c3")
+}
+func (c *Condition) StringFiled(val string) zap.Field {
+	if c.key == "" {
+		c.One()
+	}
+	return zap.String(c.key, val)
 }
 
 func NewWrapZap(cfg *Config, level zapcore.Level) *zap.Logger {

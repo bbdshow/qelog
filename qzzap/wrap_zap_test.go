@@ -1,4 +1,4 @@
-package wrapzap
+package qzzap
 
 import (
 	"testing"
