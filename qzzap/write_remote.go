@@ -7,7 +7,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/huzhongqing/wrapzap/push"
+	"github.com/huzhongqing/qzzap/push"
 )
 
 type WriteRemoteConfig struct {

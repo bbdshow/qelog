@@ -1,4 +1,4 @@
-module github.com/huzhongqing/wrapzap
+module github.com/huzhongqing/qzzap
 
 go 1.14
 

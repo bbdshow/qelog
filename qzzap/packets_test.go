@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/huzhongqing/wrapzap/push"
+	"github.com/huzhongqing/qzzap/push"
 )
 
 func TestPackets_WritePacket(t *testing.T) {

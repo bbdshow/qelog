@@ -58,7 +58,7 @@ func (srv *HTTPService) route(handler *gin.Engine, middleware ...gin.HandlerFunc
 	handler.HEAD("/", func(c *gin.Context) { c.Status(200) })
 
 	handler.Use(middleware...)
-	handler.POST("/v1/receive/packet", srv.ReceivePacket)
+	handler.POST("/v1/receiver/packet", srv.ReceivePacket)
 }
 
 func (srv *HTTPService) ReceivePacket(c *gin.Context) {

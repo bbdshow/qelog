@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"time"
 
-	qzzap "github.com/huzhongqing/wrapzap"
+	"github.com/huzhongqing/qzzap"
 
 	"go.uber.org/zap"
 )
