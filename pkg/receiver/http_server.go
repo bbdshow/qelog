@@ -5,7 +5,7 @@ import (
 	"os"
 	"time"
 
-	"github.com/huzhongqing/qelog/pkg/common/push"
+	"github.com/huzhongqing/qelog/pkg/common/proto/push"
 	"github.com/huzhongqing/qelog/pkg/httputil"
 
 	"github.com/huzhongqing/qelog/pkg/storage"

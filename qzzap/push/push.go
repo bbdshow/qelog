@@ -6,7 +6,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"math/rand"
 	"net/http"
+	"strconv"
 	"time"
 
 	"google.golang.org/grpc/balancer/roundrobin"
@@ -18,7 +20,8 @@ import (
 
 func NewPacket(module string, data []string) *Packet {
 	return &Packet{
-		Id:      time.Now().UnixNano(),
+		// 尽可能唯一ID, 后面随机3位，是防止多进程同一时刻
+		Id:      strconv.FormatInt(time.Now().UnixNano()/1e6, 10) + "_" + strconv.FormatInt(rand.Int63n(1000), 10),
 		Module:  module,
 		Data:    data,
 		IsRetry: false,

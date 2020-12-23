@@ -18,7 +18,7 @@ type Logging struct {
 	Condition3 string             `bson:"c3"`
 	Time       int64              `bson:"t"`  // 日志打印时间
 	Timestamp  int64              `bson:"ts"` // 秒, 用于建立秒级别索引
-
+	MessageID  string             `bson:"mi"` // 如果重复写入，可以通过此ID区分
 }
 
 // 因为有分片的机制，那么同一collection下面，同一uniqueKey module 占多数情况。

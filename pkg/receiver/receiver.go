@@ -3,12 +3,13 @@ package receiver
 import (
 	"context"
 	"fmt"
+	"strconv"
 	"sync"
 	"time"
 
 	"github.com/huzhongqing/qelog/pkg/httputil"
 
-	"github.com/huzhongqing/qelog/pkg/common/push"
+	"github.com/huzhongqing/qelog/pkg/common/proto/push"
 
 	"github.com/huzhongqing/qelog/pkg/common/model"
 	"github.com/huzhongqing/qelog/pkg/storage"
@@ -75,11 +76,12 @@ func (srv *Service) InsertPacket(ctx context.Context, ip string, in *push.Packet
 
 func (srv *Service) decodePacket(ip string, in *push.Packet) []*model.Logging {
 	records := make([]*model.Logging, 0, len(in.Data))
-	for _, v := range in.Data {
+	for i, v := range in.Data {
 		r := &model.Logging{
 			Module:    in.Module,
 			IP:        ip,
 			Full:      v,
+			MessageID: in.Id + "_" + strconv.Itoa(i),
 			Timestamp: time.Now().Unix(),
 		}
 		val := make(map[string]interface{})

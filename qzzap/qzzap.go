@@ -51,13 +51,13 @@ func (c *Condition) setKey(k string) *Condition {
 	return c
 }
 func (c *Condition) One() *Condition {
-	return c.setKey("_c1")
+	return c.setKey("_condition1")
 }
 func (c *Condition) Two() *Condition {
-	return c.setKey("_c2")
+	return c.setKey("_condition2")
 }
 func (c *Condition) Three() *Condition {
-	return c.setKey("_c3")
+	return c.setKey("_condition3")
 }
 func (c *Condition) StringFiled(val string) zap.Field {
 	if c.key == "" {
