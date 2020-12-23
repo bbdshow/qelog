@@ -34,6 +34,8 @@ func NewHTTPService(database *mongo.Database) *HTTPService {
 }
 
 func (srv *HTTPService) Run(addr string) error {
+	gin.DefaultErrorWriter = logs.Qezap
+
 	handler := gin.Default()
 	if os.Getenv("ENV") == gin.ReleaseMode {
 		gin.SetMode(gin.ReleaseMode)
@@ -42,7 +44,6 @@ func (srv *HTTPService) Run(addr string) error {
 			return err
 		}
 	}
-	gin.DefaultErrorWriter = logs.Qezap
 
 	srv.route(handler)
 

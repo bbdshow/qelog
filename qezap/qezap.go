@@ -117,6 +117,6 @@ func New(cfg *Config, level zapcore.Level) *Logger {
 
 // 实现 Writer 就使用 info 等级
 func (log *Logger) Write(b []byte) (n int, err error) {
-	log.Info("qzzap.Write", zap.ByteString("value", b))
+	log.Info("qezap.Write", zap.ByteString("value", b))
 	return
 }

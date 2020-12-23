@@ -26,7 +26,7 @@ func main() {
 		log.Fatalln("mongo connect failed ", err.Error())
 	}
 
-	logs.InitQezap([]string{"127.0.0.1:31081"}, "qelog")
+	logs.InitQezap([]string{"127.0.0.1:31082"}, "example")
 
 	httpSrv := manager.NewHTTPService(database)
 
