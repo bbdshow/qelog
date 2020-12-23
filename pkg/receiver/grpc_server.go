@@ -63,7 +63,14 @@ func (srv *GRPCService) Close() error {
 func (srv *GRPCService) PushPacket(ctx context.Context, in *push.Packet) (*push.BaseResp, error) {
 	// 获取 clientIP
 	if err := srv.receiver.InsertPacket(ctx, srv.clientIP(ctx), in); err != nil {
-		return nil, httputil.ErrSystemException.MergeError(err)
+		e, ok := err.(httputil.Error)
+		if ok {
+			return &push.BaseResp{
+				Code:    int32(e.Code),
+				Message: e.Message,
+			}, nil
+		}
+		return nil, err
 	}
 
 	return &push.BaseResp{

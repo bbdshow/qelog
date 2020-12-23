@@ -4,8 +4,10 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io/ioutil"
+	"log"
 	"math/rand"
 	"net/http"
 	"strconv"
@@ -26,6 +28,10 @@ func NewPacket(module string, data []string) *Packet {
 		Data:   data,
 	}
 }
+
+var (
+	ErrUnavailable = errors.New("Push Unavailable")
+)
 
 type Pusher interface {
 	PushPacket(ctx context.Context, in *Packet) error
@@ -89,8 +95,11 @@ func (gp *GRRCPush) PushPacket(ctx context.Context, in *Packet) error {
 func (gp *GRRCPush) push(ctx context.Context, in *Packet) error {
 	resp, err := gp.cli.PushPacket(ctx, in)
 	if err != nil {
-		return err
+		// 认为服务不可用
+		log.Printf("grpc push %s\n", err)
+		return ErrUnavailable
 	}
+
 	if resp.Code != 0 {
 		return fmt.Errorf("response error %s", resp.String())
 	}
@@ -162,7 +171,9 @@ func (hp *HttpPush) push(data []byte) error {
 	contentType := "application/json"
 	resp, err := hp.client.Post(hp.addr, contentType, bytes.NewReader(data))
 	if err != nil {
-		return err
+		// 认为服务不可用
+		log.Printf("http push %s\n", err)
+		return ErrUnavailable
 	}
 	defer resp.Body.Close()
 

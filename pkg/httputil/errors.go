@@ -40,8 +40,8 @@ var (
 	ErrSystemException = NewError(ErrCodeSystemException, CodeMessage[ErrCodeSystemException])
 )
 
-func NewError(code int, message string) *Error {
-	return &Error{Code: code, Message: message}
+func NewError(code int, message string) Error {
+	return Error{Code: code, Message: message}
 }
 
 type Error struct {
@@ -49,13 +49,10 @@ type Error struct {
 	Message string `json:"message"`
 }
 
-func (e *Error) Error() string {
+func (e Error) Error() string {
 	return fmt.Sprintf("%d  %s", e.Code, e.Message)
 }
 
-func (e *Error) MergeError(err error) *Error {
-	if err != nil {
-		e.Message += " " + err.Error()
-	}
-	return e
+func (e Error) MergeError(err error) Error {
+	return NewError(e.Code, e.Message+" "+err.Error())
 }

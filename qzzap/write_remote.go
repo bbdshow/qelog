@@ -3,6 +3,7 @@ package qzzap
 import (
 	"context"
 	"fmt"
+	"log"
 	"sync"
 	"time"
 
@@ -10,7 +11,7 @@ import (
 )
 
 type WriteRemoteConfig struct {
-	Transport  string // 支持 http grpc 默认 grpc
+	Transport  string // 支持 http || grpc 默认grpc
 	Addrs      []string
 	ModuleName string
 
@@ -34,11 +35,11 @@ func NewWriteRemoteConfig(addrs []string, moduleName string) WriteRemoteConfig {
 		Transport:     "grpc",
 		Addrs:         addrs,
 		ModuleName:    moduleName,
-		MaxConcurrent: 20,
-		MaxPacket:     500 * 1024,
+		MaxConcurrent: 200,
+		MaxPacket:     16 * 1000, // 约 16 kb
 		WriteTimeout:  5 * time.Second,
 	}
-	// 此配置当百兆网络畅通时, 理论，支持每秒10MB日志生成不卡顿， 如果超出，直接写入文件，缓慢背景发送
+	// 如果超出并发限制，直接写入文件，缓慢背景发送
 }
 
 type WriteRemote struct {
@@ -59,21 +60,8 @@ func NewWriteRemote(cfg WriteRemoteConfig) *WriteRemote {
 		packets: NewPackets(cfg.MaxPacket),
 	}
 
-	if cfg.Transport == "http" {
-		pusher, err := push.NewHttpPush(cfg.Addrs[0], cfg.MaxConcurrent)
-		if err != nil {
-			panic("init http push error " + err.Error())
-		}
-		wr.pusher = pusher
-	} else {
-		pusher, err := push.NewGRPCPush(cfg.Addrs, cfg.MaxConcurrent)
-		if err != nil {
-			panic("init grpc push error " + err.Error())
-		}
-		wr.pusher = pusher
-	}
-
 	wr.once.Do(func() {
+		go wr.initPusher()
 		go wr.backgroundRetry()
 		go wr.pullPacket()
 	})
@@ -83,9 +71,9 @@ func NewWriteRemote(cfg WriteRemoteConfig) *WriteRemote {
 func (wr *WriteRemote) Write(b []byte) (n int, err error) {
 	data, flush := wr.packets.AddPacket(b)
 	if flush && len(data) > 0 {
-		err = wr.push(push.NewPacket(wr.cfg.ModuleName, data))
+		_ = wr.push(push.NewPacket(wr.cfg.ModuleName, data))
 	}
-	return len(b), err
+	return len(b), nil
 }
 
 func (wr *WriteRemote) pullPacket() {
@@ -102,27 +90,64 @@ func (wr *WriteRemote) pullPacket() {
 }
 
 func (wr *WriteRemote) push(in *push.Packet) error {
+	if wr.pusher == nil {
+		_, _ = wr.packets.WritePacket(in)
+		return nil
+	}
 	// 如果发送者满负荷，则直接丢文件
 	if wr.pusher.Concurrent() >= wr.cfg.MaxConcurrent {
 		_, _ = wr.packets.WritePacket(in)
 		return nil
 	}
-
 	ctx := context.Background()
 	if wr.cfg.WriteTimeout > 0 {
 		ctx, _ = context.WithTimeout(context.Background(), wr.cfg.WriteTimeout)
 	}
 
 	if err := wr.pusher.PushPacket(ctx, in); err != nil {
-		// 放入错误备份文件里
-		_, _ = wr.packets.WritePacket(in)
+		if err == push.ErrUnavailable {
+			// 只有当服务不可用时，放入错误备份文件里
+			_, _ = wr.packets.WritePacket(in)
+			return nil
+		}
+		log.Printf("write remote push packet %s\n", err.Error())
 		return err
 	}
 	return nil
 }
 
+func (wr *WriteRemote) initPusher() {
+	// 在发送的时候，才去链接， 如果链接不通，不能影响主进程
+	tick := time.NewTicker(3 * time.Second)
+	for {
+		if wr.pusher == nil {
+			if wr.cfg.Transport == "http" {
+				pusher, err := push.NewHttpPush(wr.cfg.Addrs[0], wr.cfg.MaxConcurrent)
+				if err != nil {
+					log.Printf("init http push error %s\n", err.Error())
+					goto next
+				}
+				wr.pusher = pusher
+			} else {
+				pusher, err := push.NewGRPCPush(wr.cfg.Addrs, wr.cfg.MaxConcurrent)
+				if err != nil {
+					log.Printf("init grpc push error %s\n", err.Error())
+					goto next
+				}
+				wr.pusher = pusher
+			}
+			tick.Stop()
+			return
+		}
+	next:
+		select {
+		case <-tick.C:
+		}
+	}
+}
+
 func (wr *WriteRemote) backgroundRetry() {
-	tick := time.NewTicker(time.Second)
+	tick := time.NewTicker(500 * time.Millisecond)
 	for {
 		select {
 		case <-tick.C:

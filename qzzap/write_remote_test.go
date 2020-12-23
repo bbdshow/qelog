@@ -1,6 +1,7 @@
 package qzzap
 
 import (
+	"strconv"
 	"testing"
 	"time"
 )
@@ -22,18 +23,21 @@ func TestWriteRemote_Write(t *testing.T) {
 
 func TestWriteRemote_Grpc(t *testing.T) {
 	addrs := []string{"127.0.0.1:31082", "127.0.0.1:31182"}
-	cfg := NewWriteRemoteConfig(addrs, "test")
+	cfg := NewWriteRemoteConfig(addrs, "example")
 	wr := NewWriteRemote(cfg)
-	for range time.Tick(3 * time.Second) {
+	count := 100
+	for count >= 0 {
+		count--
 		msg := _jsonMessage{
 			Time:  time.Now().String(),
 			Level: "INFO",
-			Field: "哈哈\n嘿嘿",
+			Field: strconv.Itoa(count),
 		}
 		_, err := wr.Write(msg.Marshal())
 		if err != nil {
 			t.Fatal(err)
 		}
+		time.Sleep(time.Second)
 	}
 
 	time.Sleep(time.Minute)

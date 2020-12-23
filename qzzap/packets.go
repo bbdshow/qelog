@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log"
 	"os"
 	"sync"
 )
@@ -32,15 +33,18 @@ func NewPackets(maxSize int) *Packets {
 		bakFilename: "./failed.bak/packets.bak",
 		offset:      0,
 	}
+	p.initWrite()
 
+	return p
+}
+
+func (p *Packets) initWrite() {
 	p.w = NewWriteSync(WriteSyncConfig{
 		Filename:     p.bakFilename,
 		MaxSize:      0, // 不滚动
 		TTL:          0, // 不切割
 		GzipCompress: false,
 	})
-
-	return p
 }
 
 func (p *Packets) AddPacket(b []byte) (data []string, flush bool) {
@@ -81,6 +85,9 @@ func (p *Packets) PullPacket() (data []string, flush bool) {
 func (p *Packets) WritePacket(v interface{}) (n int, err error) {
 	p.mutex.Lock()
 	b, _ := json.Marshal(v)
+	if p.w == nil {
+		p.initWrite()
+	}
 	n, err = fmt.Fprintln(p.w, string(b))
 	p.mutex.Unlock()
 	return
@@ -94,16 +101,10 @@ func (p *Packets) ReadPacket(v interface{}) (ok bool, err error) {
 	if os.IsNotExist(err) {
 		return false, nil
 	}
-
 	f, err := os.Open(p.bakFilename)
 	if err != nil {
 		return false, err
 	}
-	defer func() {
-		if f != nil {
-			_ = f.Close()
-		}
-	}()
 	if _, err := f.Seek(p.offset, io.SeekStart); err != nil {
 		return false, err
 	}
@@ -115,8 +116,13 @@ func (p *Packets) ReadPacket(v interface{}) (ok bool, err error) {
 				// 文件读取完了，就删除了
 				// 关闭 file io
 				_ = f.Close()
+				_ = p.w.Close()
+
+				p.w = nil
 				if err := os.Remove(p.bakFilename); err == nil {
 					p.offset = 0
+				} else {
+					log.Printf("os remove %s error %s\n", p.bakFilename, err.Error())
 				}
 				break
 			}
@@ -128,7 +134,7 @@ func (p *Packets) ReadPacket(v interface{}) (ok bool, err error) {
 		if err := json.Unmarshal(b, &v); err != nil {
 			return false, err
 		}
-
+		_ = f.Close()
 		break
 	}
 
