@@ -168,10 +168,10 @@ func (p *Packets) ReadBakPacket(v interface{}) (ok bool, err error) {
 			return false, err
 		}
 		_ = f.Close()
-		break
+		return true, nil
 	}
 
-	return true, nil
+	return false, nil
 }
 
 func (p *Packets) Close() error {

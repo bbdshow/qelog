@@ -14,7 +14,4 @@ func InitQezap(addrs []string, moduleName string) {
 	}
 
 	Qezap = qezap.New(cfg, zap.DebugLevel)
-
-	Qezap.SetWriteLevel(zap.ErrorLevel)
-	Qezap.SetWritePrefix("ginRecovery")
 }

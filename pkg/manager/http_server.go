@@ -5,6 +5,8 @@ import (
 	"os"
 	"time"
 
+	"go.uber.org/zap"
+
 	"github.com/huzhongqing/qelog/libs/logs"
 
 	"github.com/huzhongqing/qelog/pkg/common/model"
@@ -34,7 +36,7 @@ func NewHTTPService(database *mongo.Database) *HTTPService {
 }
 
 func (srv *HTTPService) Run(addr string) error {
-	gin.DefaultErrorWriter = logs.Qezap
+	gin.DefaultErrorWriter = logs.Qezap.Clone().SetWritePrefix("ginRecovery").SetWriteLevel(zap.ErrorLevel)
 
 	handler := gin.Default()
 	if os.Getenv("ENV") == gin.ReleaseMode {
