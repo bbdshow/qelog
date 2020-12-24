@@ -5,9 +5,8 @@ import (
 	"os"
 	"time"
 
-	"go.uber.org/zap"
-
 	"github.com/huzhongqing/qelog/libs/logs"
+	"go.uber.org/zap"
 
 	"github.com/huzhongqing/qelog/pkg/common/model"
 
@@ -36,11 +35,12 @@ func NewHTTPService(database *mongo.Database) *HTTPService {
 }
 
 func (srv *HTTPService) Run(addr string) error {
-	gin.DefaultErrorWriter = logs.Qezap.Clone().SetWritePrefix("ginRecovery").SetWriteLevel(zap.ErrorLevel)
 
 	handler := gin.Default()
 	if os.Getenv("ENV") == gin.ReleaseMode {
 		gin.SetMode(gin.ReleaseMode)
+		gin.DefaultErrorWriter = logs.Qezap.Clone().SetWritePrefix("ginError").SetWriteLevel(zap.ErrorLevel)
+		gin.DefaultWriter = logs.Qezap.Clone().SetWritePrefix("ginDebug").SetWriteLevel(zap.DebugLevel)
 	} else {
 		if err := srv.database.UpsertCollectionIndexMany(model.ModuleRegisterIndexMany()); err != nil {
 			return err
@@ -78,7 +78,6 @@ func (srv *HTTPService) CreateModuleRegister(c *gin.Context) {
 		httputil.RespError(c, httputil.ErrArgsInvalid.MergeError(err))
 		return
 	}
-	panic("1111111111111")
 	if err := srv.manager.CreateModuleRegister(c.Request.Context(), &arg); err != nil {
 		httputil.RespError(c, httputil.ErrSystemException.MergeError(err))
 		return

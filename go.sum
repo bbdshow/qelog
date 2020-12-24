@@ -84,6 +84,8 @@ github.com/huzhongqing/qelog/qezap v0.0.0-20201224075534-fd9ce3187532 h1:MatFO++
 github.com/huzhongqing/qelog/qezap v0.0.0-20201224075534-fd9ce3187532/go.mod h1:55CaJL88OcEn445ymq6DszXkCiA+4UQK7oUXjkawB0I=
 github.com/huzhongqing/qelog/qezap v0.0.0-20201224081122-1f606eeaac4d h1:VMtlzCT4l6RtuJ+FwXWsjE7hxLxB++YuQ/Z6HC/KECQ=
 github.com/huzhongqing/qelog/qezap v0.0.0-20201224081122-1f606eeaac4d/go.mod h1:55CaJL88OcEn445ymq6DszXkCiA+4UQK7oUXjkawB0I=
+github.com/huzhongqing/qelog/qezap v0.0.0-20201224082815-512d9ed04632 h1:SnfbUqYhz7/PCCVKsfcn21R980CEbidvQ2luakOTb4A=
+github.com/huzhongqing/qelog/qezap v0.0.0-20201224082815-512d9ed04632/go.mod h1:55CaJL88OcEn445ymq6DszXkCiA+4UQK7oUXjkawB0I=
 github.com/inconshreveable/mousetrap v1.0.0/go.mod h1:PxqpIevigyE2G7u3NXJIT2ANytuPF1OarO4DADm73n8=
 github.com/jmespath/go-jmespath v0.4.0 h1:BEgLn5cpjn8UN1mAw4NjwDrS35OdebyEtFe+9YPoQUg=
 github.com/jmespath/go-jmespath v0.4.0/go.mod h1:T8mJZnbsbmF+m6zOOFylbeCJqk5+pHWvzYPziyZiYoo=

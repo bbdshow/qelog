@@ -3,6 +3,7 @@ package httputil
 import (
 	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -58,8 +59,7 @@ func RespStatusCodeWithError(c *gin.Context, statusCode int, err error) {
 	}
 	code := CodeFailed
 	message := ""
-
-	if e, ok := err.(*Error); ok {
+	if e, ok := err.(Error); ok {
 		// 如果是自定义错误，就重写 code
 		code = e.Code
 		message = e.Message
@@ -72,7 +72,11 @@ func RespStatusCodeWithError(c *gin.Context, statusCode int, err error) {
 			HandlerFunc: c.HandlerName(),
 			Err:         err.Error(),
 		}
-		fmt.Println(e)
+
+		if gin.DefaultErrorWriter != nil {
+			l := log.New(gin.DefaultErrorWriter, "", log.LstdFlags)
+			l.Println(e)
+		}
 	}
 
 	c.JSON(statusCode, BaseResp{
