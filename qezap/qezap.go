@@ -119,7 +119,7 @@ func New(cfg *Config, level zapcore.Level) *Logger {
 // 暴露Write方法，用于替换使用  io.Writer 接口的地方
 func (log *Logger) Write(b []byte) (n int, err error) {
 	ec := log.Check(log.WriteLevel, log.WritePrefix)
-	ec.Write(zap.Any("write_value", b))
+	ec.Write(zap.String("write_value", string(b)))
 	return len(b), nil
 }
 

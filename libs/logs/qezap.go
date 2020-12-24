@@ -12,5 +12,9 @@ func InitQezap(addrs []string, moduleName string) {
 	if len(addrs) == 0 {
 		cfg.SetEnableRemote(false)
 	}
+
 	Qezap = qezap.New(cfg, zap.DebugLevel)
+
+	Qezap.SetWriteLevel(zap.ErrorLevel)
+	Qezap.SetWritePrefix("ginRecovery")
 }
