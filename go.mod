@@ -6,7 +6,7 @@ require (
 	github.com/BurntSushi/toml v0.3.1
 	github.com/gin-gonic/gin v1.6.3
 	github.com/golang/protobuf v1.4.3
-	github.com/huzhongqing/qelog/qezap v0.0.0-20201224065205-0722214e9679
+	github.com/huzhongqing/qelog/qezap v0.0.0-20201224070415-f921c53d7e47
 	go.mongodb.org/mongo-driver v1.4.4
 	go.uber.org/multierr v1.6.0 // indirect
 	go.uber.org/zap v1.16.0
