@@ -35,8 +35,8 @@ func NewWriteRemoteConfig(addrs []string, moduleName string) WriteRemoteConfig {
 		Transport:     "grpc",
 		Addrs:         addrs,
 		ModuleName:    moduleName,
-		MaxConcurrent: 200,
-		MaxPacket:     16 * 1000, // 约 16 kb
+		MaxConcurrent: 100,
+		MaxPacket:     128 * 1024,
 		WriteTimeout:  5 * time.Second,
 	}
 	// 如果超出并发限制，直接写入文件，缓慢背景发送

@@ -13,7 +13,7 @@ type Config struct {
 }
 
 func NewConfig(addrs []string, moduleName string) *Config {
-	defaultFilename := "./log/qzlogger.log"
+	defaultFilename := "./log/qelogger.log"
 	cfg := &Config{
 		WriteSync:    NewWriteSyncConfig(defaultFilename),
 		EnableRemote: true,
@@ -68,6 +68,8 @@ func (c *Condition) StringFiled(val string) zap.Field {
 
 type Logger struct {
 	*zap.Logger
+	WritePrefix string
+	WriteLevel  zapcore.Level
 }
 
 func New(cfg *Config, level zapcore.Level) *Logger {
@@ -101,7 +103,6 @@ func New(cfg *Config, level zapcore.Level) *Logger {
 			EncodeTime:       zapcore.EpochMillisTimeEncoder,
 			EncodeDuration:   zapcore.SecondsDurationEncoder,
 			EncodeCaller:     zapcore.ShortCallerEncoder,
-			EncodeName:       zapcore.FullNameEncoder,
 			ConsoleSeparator: zapcore.DefaultLineEnding,
 		})
 
@@ -115,8 +116,19 @@ func New(cfg *Config, level zapcore.Level) *Logger {
 	return &Logger{Logger: zap.New(core, zap.AddCaller(), zap.AddStacktrace(zap.DPanicLevel))}
 }
 
-// 实现 Writer 就使用 info 等级
+// 暴露Write方法，用于替换使用  io.Writer 接口的地方
 func (log *Logger) Write(b []byte) (n int, err error) {
-	log.Info("qezap.Write", zap.ByteString("value", b))
-	return
+	ec := log.Check(log.WriteLevel, log.WritePrefix)
+	ec.Write(zap.Any("write_value", b))
+	return len(b), nil
+}
+
+func (log *Logger) SetWriteLevel(lvl zapcore.Level) *Logger {
+	log.WriteLevel = lvl
+	return log
+}
+
+func (log *Logger) SetWritePrefix(s string) *Logger {
+	log.WritePrefix = s
+	return log
 }
