@@ -4,5 +4,5 @@ receiverGRPCAddr = ":31082"
 managerAddr = "0.0.0.0:31080"
 
 [mongodb]
-database = "qzlog"
+database = "qelog"
 uri = "mongodb://127.0.0.1:27017/admin"

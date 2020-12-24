@@ -6,12 +6,12 @@ import (
 	"testing"
 	"time"
 
-	"github.com/huzhongqing/qzzap/push"
+	"github.com/huzhongqing/qelog/qezap/push"
 )
 
 func TestPackets_WritePacket(t *testing.T) {
 	p := NewPackets(1024)
-	n, err := p.WritePacket(push.NewPacket("test", []string{_jsonMessage{
+	n, err := p.WriteBakPacket(push.NewPacket("test", []string{_jsonMessage{
 		Time:  time.Now().String(),
 		Level: "INFO",
 		Field: "Bac\nkup",
@@ -29,7 +29,7 @@ func TestPackets_FailedPacket(t *testing.T) {
 	p := NewPackets(1024)
 	for i := 0; i < 5; i++ {
 		dp := push.Packet{}
-		ok, err := p.ReadPacket(&dp)
+		ok, err := p.ReadBakPacket(&dp)
 		if err != nil {
 			t.Fatal(err)
 		}
