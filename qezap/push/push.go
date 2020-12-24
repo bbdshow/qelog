@@ -76,20 +76,9 @@ func (gp *GRRCPush) PushPacket(ctx context.Context, in *Packet) error {
 		<-gp.cChan
 	}()
 	if ctx == nil {
-		ctx, _ = context.WithTimeout(context.Background(), 30*time.Second)
+		ctx, _ = context.WithTimeout(context.Background(), 10*time.Second)
 	}
-
-	resp := make(chan error, 1)
-	go func() {
-		resp <- gp.push(ctx, in)
-	}()
-
-	select {
-	case err := <-resp:
-		return err
-	case <-ctx.Done():
-		return ctx.Err()
-	}
+	return gp.push(ctx, in)
 }
 
 func (gp *GRRCPush) push(ctx context.Context, in *Packet) error {
@@ -146,30 +135,24 @@ func (hp *HttpPush) PushPacket(ctx context.Context, in *Packet) error {
 		<-hp.cChan
 	}()
 	if ctx == nil {
-		ctx = context.Background()
+		ctx, _ = context.WithTimeout(context.Background(), 10*time.Second)
 	}
-
-	resp := make(chan error, 1)
-	go func() {
-		byt, err := json.Marshal(in)
-		if err != nil {
-			resp <- err
-			return
-		}
-		resp <- hp.push(byt)
-	}()
-
-	select {
-	case err := <-resp:
-		return err
-	case <-ctx.Done():
-		return ctx.Err()
-	}
+	return hp.push(ctx, in)
 }
 
-func (hp *HttpPush) push(data []byte) error {
+func (hp *HttpPush) push(ctx context.Context, body interface{}) error {
+	byt, err := json.Marshal(body)
+	if err != nil {
+		return err
+	}
+
 	contentType := "application/json"
-	resp, err := hp.client.Post(hp.addr, contentType, bytes.NewReader(data))
+	req, err := http.NewRequestWithContext(ctx, "POST", hp.addr, bytes.NewReader(byt))
+	if err != nil {
+		return err
+	}
+	req.Header.Set("Content-Type", contentType)
+	resp, err := hp.client.Do(req)
 	if err != nil {
 		// 认为服务不可用
 		log.Printf("http push %s\n", err)
