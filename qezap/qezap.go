@@ -132,3 +132,11 @@ func (log *Logger) SetWritePrefix(s string) *Logger {
 	log.WritePrefix = s
 	return log
 }
+
+func (log *Logger) Clone() *Logger {
+	return &Logger{
+		Logger:      log.Logger,
+		WritePrefix: "",
+		WriteLevel:  0,
+	}
+}
