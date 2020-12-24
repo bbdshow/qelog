@@ -95,6 +95,10 @@ func (wr *WriteRemote) pullPacket() {
 }
 
 func (wr *WriteRemote) push(in *push.Packet) {
+	if len(in.Data) <= 0 {
+		// 没有类容的包，直接丢掉
+		return
+	}
 	if wr.pusher == nil {
 		_, _ = wr.packets.WriteBakPacket(in)
 		return
@@ -161,7 +165,7 @@ func (wr *WriteRemote) backgroundRetry() {
 			if err != nil {
 				fmt.Println("packets retry", err.Error())
 			}
-			if ok {
+			if ok && len(v.Data) > 0 {
 				wr.push(v)
 			}
 		}

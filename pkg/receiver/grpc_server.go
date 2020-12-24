@@ -2,10 +2,8 @@ package receiver
 
 import (
 	"context"
-	"fmt"
 	"net"
 	"strings"
-	"time"
 
 	"google.golang.org/grpc/peer"
 
@@ -63,8 +61,6 @@ func (srv *GRPCService) Close() error {
 }
 
 func (srv *GRPCService) PushPacket(ctx context.Context, in *push.Packet) (*push.BaseResp, error) {
-	fmt.Println(in)
-	s := time.Now()
 	// 获取 clientIP
 	if err := srv.receiver.InsertPacket(ctx, srv.clientIP(ctx), in); err != nil {
 		e, ok := err.(httputil.Error)
@@ -76,7 +72,6 @@ func (srv *GRPCService) PushPacket(ctx context.Context, in *push.Packet) (*push.
 		}
 		return nil, err
 	}
-	fmt.Println(time.Now().Sub(s))
 	return &push.BaseResp{
 		Code:    httputil.CodeSuccess,
 		Message: "success",

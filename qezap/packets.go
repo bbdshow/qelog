@@ -141,29 +141,29 @@ func (p *Packets) ReadBakPacket(v interface{}) (ok bool, err error) {
 	if _, err := f.Seek(p.offset, io.SeekStart); err != nil {
 		return false, err
 	}
+
 	buf := bufio.NewReader(f)
-	for {
-		b, err := buf.ReadBytes('\n')
-		if err != nil {
-			if err == io.EOF {
-				// 文件读取完了，就删除了
-				// 关闭 file io
-				_ = f.Close()
-				_ = p.backWrite.Close()
+	b, err := buf.ReadBytes('\n')
+	if err != nil {
+		if err == io.EOF {
+			// 文件读取完了，就删除了
+			// 关闭 file io
+			_ = f.Close()
+			_ = p.backWrite.Close()
 
-				p.backWrite = nil
-				if err := os.Remove(p.bakFilename); err == nil {
-					p.offset = 0
-				} else {
-					log.Printf("os remove %s error %s\n", p.bakFilename, err.Error())
-				}
-				break
+			p.backWrite = nil
+			if err := os.Remove(p.bakFilename); err == nil {
+				p.offset = 0
+			} else {
+				log.Printf("os remove %s error %s\n", p.bakFilename, err.Error())
 			}
-			return false, err
+			return false, nil
 		}
+		return false, err
+	}
 
+	if len(b) > 0 {
 		p.offset += int64(len(b))
-
 		if err := json.Unmarshal(b, &v); err != nil {
 			return false, err
 		}

@@ -38,3 +38,22 @@ func TestQezapLoopWrite(t *testing.T) {
 	time.Sleep(5 * time.Minute)
 	qeLog.Sync()
 }
+
+func TestQezapWrite(t *testing.T) {
+	// 持续写一段时间
+	addrs := []string{"127.0.0.1:31082"}
+	cfg := qezap.NewConfig(addrs, "example")
+
+	// 如果设置 false，可以 addrs = nil
+	//cfg.SetEnableRemote(false)
+	// 如果对默认配置不满足，可直接设置
+	qeLog := qezap.New(cfg, zap.DebugLevel)
+	time.Sleep(2 * time.Second)
+
+	for i := 0; i < 10; i++ {
+		qeLog.Info(strconv.Itoa(i), zap.Int("index", i))
+	}
+
+	time.Sleep(5 * time.Minute)
+	qeLog.Sync()
+}
