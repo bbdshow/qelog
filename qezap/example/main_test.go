@@ -53,7 +53,13 @@ func TestQezapWrite(t *testing.T) {
 	for i := 0; i < 10; i++ {
 		qeLog.Info(strconv.Itoa(i), zap.Int("index", i))
 	}
-
+	go func() {
+		count := 0
+		for range time.Tick(3 * time.Second) {
+			count++
+			qeLog.Info(strconv.Itoa(count), zap.Int("index", 1))
+		}
+	}()
 	time.Sleep(5 * time.Minute)
 	qeLog.Sync()
 }

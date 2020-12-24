@@ -2,6 +2,7 @@ package receiver
 
 import (
 	"context"
+	"fmt"
 	"net"
 	"strings"
 
@@ -61,6 +62,7 @@ func (srv *GRPCService) Close() error {
 }
 
 func (srv *GRPCService) PushPacket(ctx context.Context, in *push.Packet) (*push.BaseResp, error) {
+	fmt.Println(in)
 	// 获取 clientIP
 	if err := srv.receiver.InsertPacket(ctx, srv.clientIP(ctx), in); err != nil {
 		e, ok := err.(httputil.Error)
