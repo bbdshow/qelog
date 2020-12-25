@@ -10,8 +10,8 @@ import (
 )
 
 const (
-	MaxDBIndex          = 16
-	LoggingShardingTime = "200601"
+	MaxDBIndex          int32 = 16
+	LoggingShardingTime       = "200601"
 )
 
 type Logging struct {

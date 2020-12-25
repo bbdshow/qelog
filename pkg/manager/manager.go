@@ -3,6 +3,7 @@ package manager
 import (
 	"context"
 	"fmt"
+	"sort"
 	"time"
 
 	"github.com/huzhongqing/qelog/pkg/httputil"
@@ -43,7 +44,7 @@ func (srv *Service) FindLoggingList(ctx context.Context, in *entity.FindLoggingL
 	in.BeginUnix = b.Unix()
 	in.EndUnix = e.Unix()
 
-	c, records, err := srv.store.FindLoggingList(ctx, collectionName, in)
+	c, docs, err := srv.store.FindLoggingList(ctx, collectionName, in)
 	if err != nil {
 		return httputil.ErrSystemException.MergeError(err)
 	}
@@ -52,8 +53,8 @@ func (srv *Service) FindLoggingList(ctx context.Context, in *entity.FindLoggingL
 
 	// 去除极低可能重复写入的日志信息
 	hitMap := map[string]struct{}{}
-	list := make([]*entity.FindLoggingList, 0, len(records))
-	for _, v := range records {
+	list := make([]*entity.FindLoggingList, 0, len(docs))
+	for _, v := range docs {
 		if _, ok := hitMap[v.MessageID]; ok {
 			continue
 		} else {
@@ -74,6 +75,50 @@ func (srv *Service) FindLoggingList(ctx context.Context, in *entity.FindLoggingL
 		list = append(list, d)
 	}
 	out.List = list
+
+	return nil
+}
+
+type AscDBIndexState []entity.DBIndexState
+
+func (v AscDBIndexState) Len() int           { return len(v) }
+func (v AscDBIndexState) Swap(i, j int)      { v[i], v[j] = v[j], v[i] }
+func (v AscDBIndexState) Less(i, j int) bool { return v[i].Use < v[j].Use }
+
+func (srv *Service) GetDBIndex(ctx context.Context, out *entity.GetDBIndexResp) error {
+	docs, err := srv.store.FindAllModule(ctx)
+	if err != nil {
+		return httputil.ErrSystemException.MergeError(err)
+	}
+	state := make(map[int32]int)
+	for i := int32(1); i <= model.MaxDBIndex; i++ {
+		state[i] = 0
+	}
+	for _, v := range docs {
+		num, ok := state[v.DBIndex]
+		if ok {
+			state[v.DBIndex] = num + 1
+		}
+	}
+
+	states := make([]entity.DBIndexState, 0, len(state))
+	for k, v := range state {
+		states = append(states, entity.DBIndexState{
+			Index: k,
+			Use:   v,
+		})
+	}
+	sort.Sort(AscDBIndexState(states))
+
+	// 找到最小的，作为推荐
+	suggestDBIndex := model.MaxDBIndex
+	if len(states) > 0 {
+		suggestDBIndex = states[0].Index
+	}
+
+	out.SuggestDBIndex = suggestDBIndex
+	out.MaxDBIndex = model.MaxDBIndex
+	out.UseState = states
 
 	return nil
 }

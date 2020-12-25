@@ -80,7 +80,7 @@ func (srv *HTTPService) route(handler *gin.Engine, middleware ...gin.HandlerFunc
 	v1.DELETE("/module")
 
 	// 获取 db 信息
-	v1.GET("/db-index")
+	v1.GET("/db-index", srv.GetDBIndex)
 
 	v1.POST("/logging/list", srv.FindLoggingList)
 
@@ -111,5 +111,14 @@ func (srv *HTTPService) FindLoggingList(c *gin.Context) {
 		return
 	}
 
+	httputil.RespData(c, http.StatusOK, out)
+}
+
+func (srv *HTTPService) GetDBIndex(c *gin.Context) {
+	out := &entity.GetDBIndexResp{}
+	if err := srv.manager.GetDBIndex(c.Request.Context(), out); err != nil {
+		httputil.RespError(c, err)
+		return
+	}
 	httputil.RespData(c, http.StatusOK, out)
 }

@@ -73,3 +73,11 @@ func TestFindLoggingList(t *testing.T) {
 	JSONOutput(resp, t)
 
 }
+
+func TestGetDBIndex(t *testing.T) {
+	resp, err := http.Get(fmt.Sprintf("%s/v1/db-index", host))
+	if err != nil {
+		t.Fatal(err)
+	}
+	JSONOutput(resp, t)
+}

@@ -97,9 +97,13 @@ type DeleteModuleReq struct {
 }
 
 type GetDBIndexResp struct {
-	SuggestDBIndex int32           `json:"suggest_db_index"`
-	MaxDBIndex     int32           `json:"max_db_index"`
-	UseState       map[int32]int32 `json:"use_state"`
+	SuggestDBIndex int32          `json:"suggest_db_index"`
+	MaxDBIndex     int32          `json:"max_db_index"`
+	UseState       []DBIndexState `json:"use_state"`
+}
+type DBIndexState struct {
+	Index int32 `json:"index"`
+	Use   int   `json:"use"`
 }
 
 type FindLoggingListReq struct {

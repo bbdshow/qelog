@@ -67,14 +67,14 @@ func (store *Store) FindLoggingList(ctx context.Context, collectionName string, 
 	in.SetPage(findOpt)
 	findOpt.SetSort(bson.M{"ts": -1})
 
-	records := make([]*model.Logging, 0, in.PageSize)
-	err := store.database.Find(ctx, store.database.Collection(collectionName), filter, &records)
+	docs := make([]*model.Logging, 0, in.PageSize)
+	err := store.database.Find(ctx, store.database.Collection(collectionName), filter, &docs)
 	if err != nil {
 		return 0, nil, err
 	}
 
 	select {
 	case c := <-countResp:
-		return c, records, nil
+		return c, docs, nil
 	}
 }
