@@ -8,6 +8,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"testing"
+	"time"
 
 	"github.com/huzhongqing/qelog/pkg/common/entity"
 )
@@ -39,15 +40,36 @@ func JSONOutput(resp *http.Response, t *testing.T) {
 	}
 }
 
-func TestCreateModuleRegister(t *testing.T) {
-	in := entity.CreateModuleRegisterReq{
-		ModuleName: "example",
-		DBIndex:    1,
-		Desc:       "example 演示",
+func TestCreateModule(t *testing.T) {
+	in := entity.CreateModuleReq{
+		Name:    "example",
+		DBIndex: 1,
+		Desc:    "example 演示",
 	}
 	resp, err := http.Post(fmt.Sprintf("%s/v1/module", host), ContentTypeJSON, JSONReader(in))
 	if err != nil {
 		t.Fatal(err)
 	}
 	JSONOutput(resp, t)
+}
+
+func TestFindLoggingList(t *testing.T) {
+	in := entity.FindLoggingListReq{
+		DBIndex:        1,
+		ModuleName:     "example",
+		ShortMsg:       "",
+		Level:          -1,
+		IP:             "",
+		ConditionOne:   "",
+		ConditionTwo:   "",
+		ConditionThree: "",
+		TimeReq:        entity.TimeReq{BeginUnix: time.Now().Add(-48 * time.Hour).Unix()},
+		PageReq:        entity.PageReq{},
+	}
+	resp, err := http.Post(fmt.Sprintf("%s/v1/logging/list", host), ContentTypeJSON, JSONReader(in))
+	if err != nil {
+		t.Fatal(err)
+	}
+	JSONOutput(resp, t)
+
 }

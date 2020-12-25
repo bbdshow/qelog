@@ -11,27 +11,27 @@ import (
 )
 
 const (
-	CollectionNameModuleRegister = "module_register"
+	CollectionNameModule = "module"
 )
 
-type ModuleRegister struct {
+type Module struct {
 	ID             primitive.ObjectID `bson:"_id,omitempty" json:"id"`
-	ModuleName     string             `bson:"module_name" json:"module_name"`
+	Name           string             `bson:"name" json:"name"`
 	Desc           string             `bson:"desc" json:"desc"`
 	DBIndex        int32              `bson:"db_index" json:"db_index"`
 	HistoryDBIndex []int32            `bson:"history_db_index" json:"history_db_index"`
 	UpdatedAt      time.Time          `bson:"updated_at" json:"updated_at"`
 }
 
-func (m ModuleRegister) CollectionName() string {
-	return CollectionNameModuleRegister
+func (m Module) CollectionName() string {
+	return CollectionNameModule
 }
 
-func ModuleRegisterIndexMany() []mongo.Index {
+func ModuleIndexMany() []mongo.Index {
 	return []mongo.Index{
 		{
-			Collection: CollectionNameModuleRegister,
-			Keys:       bson.M{"module_name": 1},
+			Collection: CollectionNameModule,
+			Keys:       bson.M{"name": 1},
 			Unique:     true,
 			Background: true,
 		},

@@ -9,14 +9,14 @@ import (
 )
 
 // module 注册不会太多，超过 500 个，就不太适合此系统了
-func (store *Store) FindAllModuleRegister(ctx context.Context) ([]*model.ModuleRegister, error) {
-	docs := make([]*model.ModuleRegister, 0)
-	coll := store.database.Collection(model.CollectionNameModuleRegister)
+func (store *Store) FindAllModule(ctx context.Context) ([]*model.Module, error) {
+	docs := make([]*model.Module, 0)
+	coll := store.database.Collection(model.CollectionNameModule)
 	err := store.database.Find(ctx, coll, bson.M{}, &docs)
 	return docs, err
 }
 
-func (store *Store) InsertModuleRegister(ctx context.Context, doc *model.ModuleRegister) error {
+func (store *Store) InsertModule(ctx context.Context, doc *model.Module) error {
 	_, err := store.database.Collection(doc.CollectionName()).InsertOne(ctx, doc)
 	return err
 }

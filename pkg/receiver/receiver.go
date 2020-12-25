@@ -2,7 +2,6 @@ package receiver
 
 import (
 	"context"
-	"fmt"
 	"strconv"
 	"sync"
 	"time"
@@ -20,14 +19,14 @@ type Service struct {
 	store *storage.Store
 
 	mutex       sync.RWMutex
-	modules     map[string]*model.ModuleRegister
+	modules     map[string]*model.Module
 	collections map[string]struct{}
 }
 
 func NewService(store *storage.Store) *Service {
 	srv := &Service{
 		store:       store,
-		modules:     make(map[string]*model.ModuleRegister, 0),
+		modules:     make(map[string]*model.Module, 0),
 		collections: make(map[string]struct{}, 0),
 	}
 
@@ -121,17 +120,12 @@ func (srv *Service) collectionExists(collectionName string) (bool, error) {
 	}
 	return exists, nil
 }
-func (srv *Service) collectionName(dbIndex int32, unix int64) string {
-	name := fmt.Sprintf("logging_%d_%s",
-		dbIndex, time.Unix(unix, 0).Format("200601"))
-	return name
-}
 
 // 因为是合并包，有少数情况下，根据时间分集合，一个包的内容会写入到不同的集合中区
 func (srv *Service) loggingShardingByTimestamp(dbIndex int32, docs []*model.Logging) map[string][]interface{} {
 	out := make(map[string][]interface{})
 	for _, v := range docs {
-		name := srv.collectionName(dbIndex, v.Timestamp)
+		name := model.LoggingCollectionName(dbIndex, v.Timestamp)
 		val, ok := out[name]
 		if ok {
 			out[name] = append(val, v)
@@ -146,11 +140,11 @@ func (srv *Service) intervalSyncModule() {
 	tick := time.NewTicker(30 * time.Second)
 	for {
 		ctx, _ := context.WithTimeout(context.Background(), 5*time.Second)
-		docs, err := srv.store.FindAllModuleRegister(ctx)
+		docs, err := srv.store.FindAllModule(ctx)
 		if err == nil {
 			srv.mutex.Lock()
 			for _, v := range docs {
-				srv.modules[v.ModuleName] = v
+				srv.modules[v.Name] = v
 			}
 			srv.mutex.Unlock()
 		}

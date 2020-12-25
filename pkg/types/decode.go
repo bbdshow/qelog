@@ -56,7 +56,7 @@ func (dec Decoder) Condition(num int) string {
 
 // 删除一些不必要的字段，节约存储
 func (dec Decoder) Full() string {
-	delFields := []string{"_level", "_time", "_short"}
+	delFields := []string{"_level", "_time", "_short", "_condition1", "_condition2", "_condition3"}
 	for _, v := range delFields {
 		delete(dec.Val, v)
 	}

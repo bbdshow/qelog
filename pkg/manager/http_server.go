@@ -42,7 +42,8 @@ func (srv *HTTPService) Run(addr string) error {
 		gin.DefaultErrorWriter = logs.Qezap.Clone().SetWritePrefix("ginError").SetWriteLevel(zap.ErrorLevel)
 		gin.DefaultWriter = logs.Qezap.Clone().SetWritePrefix("ginDebug").SetWriteLevel(zap.DebugLevel)
 	} else {
-		if err := srv.database.UpsertCollectionIndexMany(model.ModuleRegisterIndexMany()); err != nil {
+		if err := srv.database.UpsertCollectionIndexMany(
+			model.ModuleIndexMany()); err != nil {
 			return err
 		}
 	}
@@ -68,19 +69,47 @@ func (srv *HTTPService) Close() error {
 func (srv *HTTPService) route(handler *gin.Engine, middleware ...gin.HandlerFunc) {
 	handler.HEAD("/", func(c *gin.Context) { c.Status(200) })
 
+	handler.POST("/login")
+
 	v1 := handler.Group("/v1", middleware...)
-	v1.POST("/module", srv.CreateModuleRegister)
+
+	v1.GET("/module/list")
+	v1.GET("/module")
+	v1.POST("/module", srv.CreateModule)
+	v1.PUT("/module")
+	v1.DELETE("/module")
+
+	// 获取 db 信息
+	v1.GET("/db-index")
+
+	v1.POST("/logging/list", srv.FindLoggingList)
+
 }
 
-func (srv *HTTPService) CreateModuleRegister(c *gin.Context) {
-	var arg entity.CreateModuleRegisterReq
-	if err := c.ShouldBind(&arg); err != nil {
+func (srv *HTTPService) CreateModule(c *gin.Context) {
+	in := &entity.CreateModuleReq{}
+	if err := c.ShouldBind(in); err != nil {
 		httputil.RespError(c, httputil.ErrArgsInvalid.MergeError(err))
 		return
 	}
-	if err := srv.manager.CreateModuleRegister(c.Request.Context(), &arg); err != nil {
+	if err := srv.manager.CreateModule(c.Request.Context(), in); err != nil {
 		httputil.RespError(c, httputil.ErrSystemException.MergeError(err))
 		return
 	}
 	httputil.RespSuccess(c)
+}
+
+func (srv *HTTPService) FindLoggingList(c *gin.Context) {
+	in := &entity.FindLoggingListReq{}
+	if err := c.ShouldBind(in); err != nil {
+		httputil.RespError(c, httputil.ErrArgsInvalid.MergeError(err))
+		return
+	}
+	out := &entity.ListResp{}
+	if err := srv.manager.FindLoggingList(c.Request.Context(), in, out); err != nil {
+		httputil.RespError(c, err)
+		return
+	}
+
+	httputil.RespData(c, http.StatusOK, out)
 }

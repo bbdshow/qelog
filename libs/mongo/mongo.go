@@ -117,40 +117,42 @@ func (i Index) Validate() error {
 	return nil
 }
 
-func (db *Database) UpsertCollectionIndexMany(indexMany []Index) error {
+func (db *Database) UpsertCollectionIndexMany(indexMany ...[]Index) error {
 	indexModels := make(map[string][]mongo.IndexModel)
-	for _, index := range indexMany {
-		if err := index.Validate(); err != nil {
-			return err
-		}
-		model := mongo.IndexModel{
-			Keys: index.Keys,
-		}
-		opt := options.Index()
-		if index.Name != "" {
-			opt.SetName(index.Name)
-		}
-		opt.SetUnique(index.Unique)
-		opt.SetBackground(index.Background)
+	for _, many := range indexMany {
+		for _, index := range many {
+			if err := index.Validate(); err != nil {
+				return err
+			}
+			model := mongo.IndexModel{
+				Keys: index.Keys,
+			}
+			opt := options.Index()
+			if index.Name != "" {
+				opt.SetName(index.Name)
+			}
+			opt.SetUnique(index.Unique)
+			opt.SetBackground(index.Background)
 
-		if index.ExpireAfterSeconds > 0 {
-			opt.SetExpireAfterSeconds(index.ExpireAfterSeconds)
+			if index.ExpireAfterSeconds > 0 {
+				opt.SetExpireAfterSeconds(index.ExpireAfterSeconds)
+			}
+
+			model.Options = opt
+
+			v, ok := indexModels[index.Collection]
+			if ok {
+				indexModels[index.Collection] = append(v, model)
+			} else {
+				indexModels[index.Collection] = []mongo.IndexModel{model}
+			}
 		}
 
-		model.Options = opt
-
-		v, ok := indexModels[index.Collection]
-		if ok {
-			indexModels[index.Collection] = append(v, model)
-		} else {
-			indexModels[index.Collection] = []mongo.IndexModel{model}
-		}
-	}
-
-	for collection, index := range indexModels {
-		_, err := db.Collection(collection).Indexes().CreateMany(context.Background(), index)
-		if err != nil {
-			return err
+		for collection, index := range indexModels {
+			_, err := db.Collection(collection).Indexes().CreateMany(context.Background(), index)
+			if err != nil {
+				return err
+			}
 		}
 	}
 

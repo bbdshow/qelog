@@ -1,9 +1,17 @@
 package model
 
 import (
+	"fmt"
+	"time"
+
 	"github.com/huzhongqing/qelog/libs/mongo"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
+)
+
+const (
+	MaxDBIndex          = 16
+	LoggingShardingTime = "200601"
 )
 
 type Logging struct {
@@ -19,6 +27,12 @@ type Logging struct {
 	Time       int64              `bson:"t"`  // 日志打印时间
 	Timestamp  int64              `bson:"ts"` // 秒, 用于建立秒级别索引
 	MessageID  string             `bson:"mi"` // 如果重复写入，可以通过此ID区分
+}
+
+func LoggingCollectionName(dbIndex int32, unix int64) string {
+	name := fmt.Sprintf("logging_%d_%s",
+		dbIndex, time.Unix(unix, 0).Format(LoggingShardingTime))
+	return name
 }
 
 // 因为有分片的机制，那么同一collection下面，同一uniqueKey module 占多数情况。
