@@ -85,6 +85,7 @@ func (srv *HTTPService) route(handler *gin.Engine, middleware ...gin.HandlerFunc
 	v1.POST("/logging/list", srv.FindLoggingList)
 
 }
+func (srv *HTTPService) FindModuleList(c *gin.Context) {}
 
 func (srv *HTTPService) CreateModule(c *gin.Context) {
 	in := &entity.CreateModuleReq{}
@@ -98,6 +99,12 @@ func (srv *HTTPService) CreateModule(c *gin.Context) {
 	}
 	httputil.RespSuccess(c)
 }
+
+func (srv *HTTPService) UpdateModule(c *gin.Context) {
+
+}
+
+func (srv *HTTPService) DeleteModule(c *gin.Context) {}
 
 func (srv *HTTPService) FindLoggingList(c *gin.Context) {
 	in := &entity.FindLoggingListReq{}
