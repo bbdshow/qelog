@@ -5,13 +5,15 @@ import (
 	"fmt"
 	"strings"
 	"time"
+
+	"github.com/huzhongqing/qelog/pkg/common/model"
 )
 
 type Decoder struct {
 	Val map[string]interface{}
 }
 
-func (dec Decoder) Level() int {
+func (dec Decoder) Level() model.Level {
 	interfaceV, ok := dec.Val["_level"]
 	if ok {
 		val, ok1 := interfaceV.(string)
@@ -64,7 +66,7 @@ func (dec Decoder) Full() string {
 	return string(b)
 }
 
-func LevelStr2Int(lvl string) int {
+func LevelStr2Int(lvl string) model.Level {
 	switch strings.ToUpper(lvl) {
 	case "DEBUG":
 		return 0
@@ -79,7 +81,7 @@ func LevelStr2Int(lvl string) int {
 	case "FATAL":
 		return 5
 	}
-	return 0
+	return -1
 }
 
 func Unmarshal(data []byte, v interface{}) error {

@@ -1,25 +1,135 @@
 package alarm
 
-import "github.com/huzhongqing/qelog/pkg/common/model"
+import (
+	"context"
+	"fmt"
+	"log"
+	"sync"
+	"sync/atomic"
+	"time"
+
+	"github.com/huzhongqing/qelog/pkg/common/model"
+)
 
 type Alarm struct {
-	ruleState map[string]State
+	mutex     sync.RWMutex
+	ruleState map[string]*RuleState
+	modules   map[string]bool
 }
 
+func NewAlarm() *Alarm {
+	a := &Alarm{
+		mutex:     sync.RWMutex{},
+		ruleState: make(map[string]*RuleState, 0),
+		modules:   make(map[string]bool),
+	}
+	return a
+}
+
+// 如果模块没有设置报警，则不用判断具体的状态了
 func (a *Alarm) ModuleIsEnable(name string) bool {
-	return false
-}
-func (a *Alarm) AlarmIfHitRule([]*model.Logging) error {
-	return nil
-}
-
-type State struct {
-	rule          model.AlarmRule
-	latestLogging *model.Logging
-	nextSendTime  int64
-	method        Methoder
+	a.mutex.RLock()
+	enable, ok := a.modules[name]
+	a.mutex.RUnlock()
+	return ok && enable
 }
 
-func (s *State) IsSend(v *model.Logging) bool {
-	return nil
+func (a *Alarm) AlarmIfHitRule(docs []*model.Logging) {
+	a.mutex.RLock()
+	defer a.mutex.RUnlock()
+	for _, v := range docs {
+		state, ok := a.ruleState[v.Key()]
+		if ok {
+			state.Send(v)
+		}
+	}
+}
+
+func (a *Alarm) InitRuleState(rules []*model.AlarmRule) {
+	modules := make(map[string]bool)
+	ruleState := make(map[string]*RuleState, len(rules))
+	for _, rule := range rules {
+		ruleState[rule.Key()] = new(RuleState).UpsertRule(rule)
+		modules[rule.ModuleName] = true
+	}
+	a.mutex.RLock()
+	for _, state := range a.ruleState {
+		v, ok := ruleState[state.Key()]
+		if ok {
+			ruleState[state.Key()] = state.UpsertRule(v.rule)
+		}
+	}
+	a.mutex.Unlock()
+	// 替换状态机
+	a.mutex.Lock()
+	a.ruleState = ruleState
+	a.modules = modules
+	a.mutex.Unlock()
+}
+
+type RuleState struct {
+	key            string
+	rule           *model.AlarmRule
+	count          int32
+	latestSendTime int64
+	method         Methoder
+}
+
+func (rs *RuleState) Send(v *model.Logging) {
+	if v == nil {
+		return
+	}
+	isSend := false
+	if atomic.LoadInt64(&rs.latestSendTime) == 0 {
+		//直接发送
+		isSend = true
+	} else if time.Now().Unix()-atomic.LoadInt64(&rs.latestSendTime) > rs.rule.RateUnix {
+		// 超出了间隔
+		isSend = true
+	}
+	if isSend {
+		ctx, _ := context.WithTimeout(context.Background(), 30*time.Second)
+		err := rs.method.Send(ctx, rs.content(v))
+		if err != nil {
+			log.Printf("alarm %s method send error %s \n", rs.method.Method(), err.Error())
+		} else {
+			atomic.StoreInt32(&rs.count, 0)
+			atomic.StoreInt64(&rs.latestSendTime, time.Now().Unix())
+		}
+	} else {
+		atomic.AddInt32(&rs.count, 1)
+	}
+	return
+}
+
+func (rs *RuleState) content(v *model.Logging) string {
+	return fmt.Sprintf(`[qelog]
+标签: %s
+IP: %s
+时间: %s
+等级: %s
+短消息: %s
+详情: %s
+频次: %d/%ds`, rs.rule.Tag, v.IP, time.Unix(v.Timestamp, 0), v.Level.String(), v.Short, v.Full, rs.count, rs.rule.RateUnix)
+}
+
+func (rs *RuleState) Key() string {
+	return rs.key
+}
+func (rs *RuleState) Rule() *model.AlarmRule {
+	return rs.rule
+}
+
+func (rs *RuleState) UpsertRule(new *model.AlarmRule) *RuleState {
+	if rs.rule.UpdatedAt != new.UpdatedAt {
+		rs.rule = new
+		rs.key = new.Key()
+		rs.latestSendTime = 0
+		switch rs.rule.Method {
+		case model.MethodDingDing:
+			rs.method = NewDingDingMethod()
+			rs.method.SetHookURL(rs.rule.HookURL)
+		}
+	}
+	return rs
 }

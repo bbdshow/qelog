@@ -6,6 +6,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/huzhongqing/qelog/pkg/alarm"
+
 	"github.com/huzhongqing/qelog/pkg/httputil"
 
 	"github.com/huzhongqing/qelog/pkg/common/proto/push"
@@ -21,6 +23,8 @@ type Service struct {
 	mutex       sync.RWMutex
 	modules     map[string]*model.Module
 	collections map[string]struct{}
+
+	alarm *alarm.Alarm
 }
 
 func NewService(store *storage.Store) *Service {
@@ -28,9 +32,14 @@ func NewService(store *storage.Store) *Service {
 		store:       store,
 		modules:     make(map[string]*model.Module, 0),
 		collections: make(map[string]struct{}, 0),
+		alarm:       alarm.NewAlarm(),
 	}
 
+	srv.syncModule()
+	srv.syncAlarmRule()
+
 	go srv.intervalSyncModule()
+	go srv.intervalSyncAlarmRule()
 
 	return srv
 }
@@ -136,20 +145,35 @@ func (srv *Service) loggingShardingByTimestamp(dbIndex int32, docs []*model.Logg
 	return out
 }
 
+func (srv *Service) syncModule() {
+	ctx, _ := context.WithTimeout(context.Background(), 5*time.Second)
+	docs, err := srv.store.FindAllModule(ctx)
+	if err == nil {
+		srv.mutex.Lock()
+		for _, v := range docs {
+			srv.modules[v.Name] = v
+		}
+		srv.mutex.Unlock()
+	}
+}
 func (srv *Service) intervalSyncModule() {
 	tick := time.NewTicker(30 * time.Second)
-	for {
-		ctx, _ := context.WithTimeout(context.Background(), 5*time.Second)
-		docs, err := srv.store.FindAllModule(ctx)
-		if err == nil {
-			srv.mutex.Lock()
-			for _, v := range docs {
-				srv.modules[v.Name] = v
-			}
-			srv.mutex.Unlock()
-		}
-		select {
-		case <-tick.C:
-		}
+	for range tick.C {
+		srv.syncModule()
+	}
+}
+
+func (srv *Service) syncAlarmRule() {
+	ctx, _ := context.WithTimeout(context.Background(), 5*time.Second)
+	docs, err := srv.store.FindAllAlarmRule(ctx)
+	if err == nil {
+		srv.alarm.InitRuleState(docs)
+	}
+}
+
+func (srv *Service) intervalSyncAlarmRule() {
+	tick := time.NewTicker(35 * time.Second)
+	for range tick.C {
+		srv.syncAlarmRule()
 	}
 }

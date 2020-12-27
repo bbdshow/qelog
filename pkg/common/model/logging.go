@@ -18,7 +18,7 @@ type Logging struct {
 	ID         primitive.ObjectID `bson:"_id,omitempty"`
 	Module     string             `bson:"m"`
 	IP         string             `bson:"ip"`
-	Level      int                `bson:"l"`
+	Level      Level              `bson:"l"`
 	Short      string             `bson:"s"`
 	Full       string             `json:"f"`
 	Condition1 string             `bson:"c1"`
@@ -27,6 +27,31 @@ type Logging struct {
 	Time       int64              `bson:"t"`  // 日志打印时间
 	Timestamp  int64              `bson:"ts"` // 秒, 用于建立秒级别索引
 	MessageID  string             `bson:"mi"` // 如果重复写入，可以通过此ID区分
+}
+
+func (l Logging) Key() string {
+	return fmt.Sprintf("%s_%s_%d", l.Module, l.Short, l.Level)
+}
+
+type Level int
+
+func (lvl Level) String() string {
+	v := "UNKNOWN"
+	switch lvl {
+	case 0:
+		v = "DEBUG"
+	case 1:
+		v = "INFO"
+	case 2:
+		v = "WARN"
+	case 3:
+		v = "ERROR"
+	case 4:
+		v = "PANIC"
+	case 5:
+		v = "FATAL"
+	}
+	return v
 }
 
 func LoggingCollectionName(dbIndex int32, unix int64) string {

@@ -1,6 +1,7 @@
 package model
 
 import (
+	"fmt"
 	"time"
 
 	"go.mongodb.org/mongo-driver/bson"
@@ -12,6 +13,10 @@ import (
 
 const (
 	CollectionNameAlarmRule = "alarm_rule"
+)
+
+const (
+	MethodDingDing = iota + 1
 )
 
 type AlarmRule struct {
@@ -29,6 +34,10 @@ type AlarmRule struct {
 
 func (AlarmRule) CollectionName() string {
 	return CollectionNameAlarmRule
+}
+
+func (am AlarmRule) Key() string {
+	return fmt.Sprintf("%s_%s_%d", am.ModuleName, am.Short, am.Level)
 }
 
 func AlarmRuleIndexMany() []mongo.Index {
