@@ -73,19 +73,40 @@ func (srv *HTTPService) route(handler *gin.Engine, middleware ...gin.HandlerFunc
 
 	v1 := handler.Group("/v1", middleware...)
 
-	v1.GET("/module/list")
-	v1.GET("/module")
+	v1.GET("/module/list", srv.FindModuleList)
+	//v1.GET("/module")
 	v1.POST("/module", srv.CreateModule)
-	v1.PUT("/module")
-	v1.DELETE("/module")
+	v1.PUT("/module", srv.UpdateModule)
+	v1.DELETE("/module", srv.DeleteModule)
+
+	// 配置报警规则
+	v1.GET("/alarm-rule/list")
+	v1.POST("/alarm-rule")
+	v1.PUT("/alarm-rule")
+	v1.DELETE("/alarm-rule")
 
 	// 获取 db 信息
 	v1.GET("/db-index", srv.GetDBIndex)
 
+	// 搜索日志
 	v1.POST("/logging/list", srv.FindLoggingList)
 
+	// 报表
 }
-func (srv *HTTPService) FindModuleList(c *gin.Context) {}
+func (srv *HTTPService) FindModuleList(c *gin.Context) {
+	in := &entity.FindModuleListReq{}
+	if err := c.ShouldBind(in); err != nil {
+		httputil.RespError(c, httputil.ErrArgsInvalid.MergeError(err))
+		return
+	}
+
+	out := &entity.ListResp{}
+	if err := srv.manager.FindModuleList(c.Request.Context(), in, out); err != nil {
+		httputil.RespError(c, err)
+		return
+	}
+	httputil.RespData(c, http.StatusOK, out)
+}
 
 func (srv *HTTPService) CreateModule(c *gin.Context) {
 	in := &entity.CreateModuleReq{}
@@ -94,17 +115,37 @@ func (srv *HTTPService) CreateModule(c *gin.Context) {
 		return
 	}
 	if err := srv.manager.CreateModule(c.Request.Context(), in); err != nil {
-		httputil.RespError(c, httputil.ErrSystemException.MergeError(err))
+		httputil.RespError(c, err)
 		return
 	}
 	httputil.RespSuccess(c)
 }
 
 func (srv *HTTPService) UpdateModule(c *gin.Context) {
-
+	in := &entity.UpdateModuleReq{}
+	if err := c.ShouldBind(in); err != nil {
+		httputil.RespError(c, httputil.ErrArgsInvalid.MergeError(err))
+		return
+	}
+	if err := srv.manager.UpdateModule(c.Request.Context(), in); err != nil {
+		httputil.RespError(c, err)
+		return
+	}
+	httputil.RespSuccess(c)
 }
 
-func (srv *HTTPService) DeleteModule(c *gin.Context) {}
+func (srv *HTTPService) DeleteModule(c *gin.Context) {
+	in := &entity.DeleteModuleReq{}
+	if err := c.ShouldBind(in); err != nil {
+		httputil.RespError(c, httputil.ErrArgsInvalid.MergeError(err))
+		return
+	}
+	if err := srv.manager.DeleteModule(c.Request.Context(), in); err != nil {
+		httputil.RespError(c, err)
+		return
+	}
+	httputil.RespSuccess(c)
+}
 
 func (srv *HTTPService) FindLoggingList(c *gin.Context) {
 	in := &entity.FindLoggingListReq{}

@@ -2,9 +2,14 @@ package storage
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"github.com/huzhongqing/qelog/libs/mongo"
+)
+
+var (
+	ErrNotMatched = errors.New("not matched")
 )
 
 type Store struct {
@@ -17,6 +22,7 @@ func New(database *mongo.Database) *Store {
 	}
 	return store
 }
+
 func (store *Store) ListAllCollectionNames(ctx context.Context) ([]string, error) {
 	names, err := store.database.ListAllCollectionNames(ctx)
 	return names, WrapError(err)

@@ -6,6 +6,8 @@ import (
 	"sort"
 	"time"
 
+	"go.mongodb.org/mongo-driver/bson"
+
 	"github.com/huzhongqing/qelog/pkg/httputil"
 
 	"github.com/huzhongqing/qelog/pkg/common/entity"
@@ -22,7 +24,30 @@ func NewService(store *storage.Store) *Service {
 	return srv
 }
 
+func (srv *Service) FindModuleList(ctx context.Context, in *entity.FindModuleListReq, out *entity.ListResp) error {
+	c, docs, err := srv.store.FindModuleList(ctx, in)
+	if err != nil {
+		return httputil.ErrSystemException.MergeError(err)
+	}
+	out.Count = c
+	list := make([]*entity.FindModuleList, 0, len(docs))
+	for _, v := range docs {
+		d := &entity.FindModuleList{
+			ID:             v.ID.Hex(),
+			Name:           v.Name,
+			Desc:           v.Desc,
+			DBIndex:        v.DBIndex,
+			HistoryDBIndex: v.HistoryDBIndex,
+			UpdatedAt:      v.UpdatedAt.Unix(),
+		}
+		list = append(list, d)
+	}
+	out.List = list
+	return nil
+}
+
 func (srv *Service) CreateModule(ctx context.Context, in *entity.CreateModuleReq) error {
+
 	doc := &model.Module{
 		Name:           in.Name,
 		Desc:           in.Desc,
@@ -30,7 +55,62 @@ func (srv *Service) CreateModule(ctx context.Context, in *entity.CreateModuleReq
 		HistoryDBIndex: make([]int32, 0),
 		UpdatedAt:      time.Now().Local(),
 	}
-	return srv.store.InsertModule(ctx, doc)
+	if err := srv.store.InsertModule(ctx, doc); err != nil {
+		return httputil.ErrSystemException.MergeError(err)
+	}
+	return nil
+}
+
+func (srv *Service) UpdateModule(ctx context.Context, in *entity.UpdateModuleReq) error {
+	id, err := in.ObjectID()
+	if err != nil {
+		return httputil.ErrArgsInvalid.MergeError(err)
+	}
+
+	doc := &model.Module{}
+	if ok, err := srv.store.FindOneModule(ctx, bson.M{"_id": id}, doc); err != nil {
+		return httputil.ErrSystemException.MergeError(err)
+	} else if !ok {
+		return httputil.ErrNotFound
+	}
+	update := bson.M{}
+	fields := bson.M{}
+	if doc.DBIndex != in.DBIndex {
+		fields["db_index"] = in.DBIndex
+		update["$addToSet"] = bson.M{"history_db_index": in.DBIndex}
+	}
+	if doc.Desc != in.Desc {
+		fields["desc"] = in.Desc
+	}
+	if len(fields) > 0 {
+		fields["updated_at"] = time.Now().Local()
+		update["$set"] = fields
+	}
+	if len(update) == 0 {
+		return nil
+	}
+	filter := bson.M{
+		"_id":        doc.ID,
+		"updated_at": doc.UpdatedAt,
+	}
+	return srv.store.UpdateModule(ctx, filter, update)
+}
+
+func (srv *Service) DeleteModule(ctx context.Context, in *entity.DeleteModuleReq) error {
+	id, err := in.ObjectID()
+	if err != nil {
+		return httputil.ErrArgsInvalid.MergeError(err)
+	}
+	doc := &model.Module{}
+	if ok, err := srv.store.FindOneModule(ctx, bson.M{"_id": id}, doc); err != nil {
+		return httputil.ErrSystemException.MergeError(err)
+	} else if !ok {
+		return httputil.ErrNotFound
+	}
+	if doc.Name != in.Name {
+		return httputil.ErrNotFound
+	}
+	return srv.store.DeleteModule(ctx, id)
 }
 
 func (srv *Service) FindLoggingList(ctx context.Context, in *entity.FindLoggingListReq, out *entity.ListResp) error {
@@ -64,7 +144,7 @@ func (srv *Service) FindLoggingList(ctx context.Context, in *entity.FindLoggingL
 		d := &entity.FindLoggingList{
 			ID:             v.ID.Hex(),
 			TimeUnixMill:   v.Time,
-			Level:          v.Level,
+			Level:          int(v.Level),
 			ShortMsg:       v.Short,
 			Full:           v.Full,
 			ConditionOne:   v.Condition1,

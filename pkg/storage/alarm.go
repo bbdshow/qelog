@@ -8,9 +8,9 @@ import (
 )
 
 // 当报警规则超过上千的规则，可优化语句
-func (store *Store) FindAllAlarmRule(ctx context.Context) ([]*model.AlarmRule, error) {
+func (store *Store) FindAllEnableAlarmRule(ctx context.Context) ([]*model.AlarmRule, error) {
 	docs := make([]*model.AlarmRule, 0)
 	coll := store.database.Collection(model.CollectionNameAlarmRule)
-	err := store.database.Find(ctx, coll, bson.M{}, &docs)
+	err := store.database.Find(ctx, coll, bson.M{"enable": true}, &docs)
 	return docs, err
 }

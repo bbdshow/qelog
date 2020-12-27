@@ -6,6 +6,9 @@ import (
 	"sync"
 	"time"
 
+	"github.com/huzhongqing/qelog/libs/logs"
+	"go.uber.org/zap"
+
 	"github.com/huzhongqing/qelog/pkg/alarm"
 
 	"github.com/huzhongqing/qelog/pkg/httputil"
@@ -35,8 +38,13 @@ func NewService(store *storage.Store) *Service {
 		alarm:       alarm.NewAlarm(),
 	}
 
-	srv.syncModule()
-	srv.syncAlarmRule()
+	if err := srv.syncModule(); err != nil {
+		panic(err)
+	}
+
+	if err := srv.syncAlarmRule(); err != nil {
+		panic(err)
+	}
 
 	go srv.intervalSyncModule()
 	go srv.intervalSyncAlarmRule()
@@ -57,6 +65,12 @@ func (srv *Service) InsertPacket(ctx context.Context, ip string, in *push.Packet
 	}
 
 	docs := srv.decodePacket(ip, in)
+
+	if srv.alarm.ModuleIsEnable(in.Module) {
+		// 异步执行报警逻辑
+		go srv.alarm.AlarmIfHitRule(docs)
+	}
+
 	sMap := srv.loggingShardingByTimestamp(mReg.DBIndex, docs)
 
 	if ctx == nil {
@@ -145,35 +159,45 @@ func (srv *Service) loggingShardingByTimestamp(dbIndex int32, docs []*model.Logg
 	return out
 }
 
-func (srv *Service) syncModule() {
+func (srv *Service) syncModule() error {
 	ctx, _ := context.WithTimeout(context.Background(), 5*time.Second)
 	docs, err := srv.store.FindAllModule(ctx)
-	if err == nil {
-		srv.mutex.Lock()
-		for _, v := range docs {
-			srv.modules[v.Name] = v
-		}
-		srv.mutex.Unlock()
+	if err != nil {
+		return err
 	}
+	srv.mutex.Lock()
+	for _, v := range docs {
+		srv.modules[v.Name] = v
+	}
+	srv.mutex.Unlock()
+	return nil
 }
 func (srv *Service) intervalSyncModule() {
 	tick := time.NewTicker(30 * time.Second)
 	for range tick.C {
-		srv.syncModule()
+		err := srv.syncModule()
+		if err != nil {
+			logs.Qezap.Error("receiver.service", zap.String("syncModule", err.Error()))
+		}
 	}
 }
 
-func (srv *Service) syncAlarmRule() {
+func (srv *Service) syncAlarmRule() error {
 	ctx, _ := context.WithTimeout(context.Background(), 5*time.Second)
-	docs, err := srv.store.FindAllAlarmRule(ctx)
-	if err == nil {
-		srv.alarm.InitRuleState(docs)
+	docs, err := srv.store.FindAllEnableAlarmRule(ctx)
+	if err != nil {
+		return err
 	}
+	srv.alarm.InitRuleState(docs)
+	return nil
 }
 
 func (srv *Service) intervalSyncAlarmRule() {
 	tick := time.NewTicker(35 * time.Second)
 	for range tick.C {
-		srv.syncAlarmRule()
+		err := srv.syncAlarmRule()
+		if err != nil {
+			logs.Qezap.Error("receiver.service", zap.String("syncAlarmRule", err.Error()))
+		}
 	}
 }

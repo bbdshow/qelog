@@ -67,9 +67,9 @@ type ListResp struct {
 }
 
 type CreateModuleReq struct {
-	Name    string `json:"name" binding:"required,gte=2,lte=24"`
+	Name    string `json:"name" binding:"required,gte=2,lte=24,hexadecimal,lowercase"`
 	DBIndex int32  `json:"db_index" binding:"required,min=1,max=16"`
-	Desc    string `json:"desc" binding:"required,lte=128"`
+	Desc    string `json:"desc" binding:"required,gte=1,lte=128"`
 }
 
 type FindModuleListReq struct {
@@ -83,12 +83,13 @@ type FindModuleList struct {
 	Desc           string  `json:"desc"`
 	DBIndex        int32   `json:"db_index"`
 	HistoryDBIndex []int32 `json:"history_db_index"`
-	UpdatedAt      string  `json:"updated_at"`
+	UpdatedAt      int64   `json:"updated_at"`
 }
 
 type UpdateModuleReq struct {
 	ObjectIDReq
-	DBIndex int32 `json:"db_index" binding:"required,min=1,max=16"`
+	DBIndex int32  `json:"db_index" binding:"required,min=1,max=16"`
+	Desc    string `json:"desc" binding:"required,gte=1,lte=128"`
 }
 
 type DeleteModuleReq struct {
