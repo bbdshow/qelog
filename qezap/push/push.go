@@ -13,6 +13,7 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/huzhongqing/qelog/pb"
 	"google.golang.org/grpc/balancer/roundrobin"
 
 	"google.golang.org/grpc/resolver"
@@ -20,8 +21,8 @@ import (
 	"google.golang.org/grpc"
 )
 
-func NewPacket(module string, data []string) *Packet {
-	return &Packet{
+func NewPacket(module string, data []string) *pb.Packet {
+	return &pb.Packet{
 		// 尽可能唯一ID, 后面随机3位，是防止多进程同一时刻
 		Id:     strconv.FormatInt(time.Now().UnixNano()/1e6, 10) + "_" + strconv.FormatInt(rand.Int63n(1000), 10),
 		Module: module,
@@ -34,12 +35,12 @@ var (
 )
 
 type Pusher interface {
-	PushPacket(ctx context.Context, in *Packet) error
+	PushPacket(ctx context.Context, in *pb.Packet) error
 	Concurrent() int
 }
 
 type GRRCPush struct {
-	cli   PushClient
+	cli   pb.PushClient
 	conn  *grpc.ClientConn
 	cChan chan struct{}
 }
@@ -62,7 +63,7 @@ func NewGRPCPush(addrs []string, concurrent int) (*GRRCPush, error) {
 	}
 
 	gp := &GRRCPush{
-		cli:   NewPushClient(conn),
+		cli:   pb.NewPushClient(conn),
 		conn:  conn,
 		cChan: make(chan struct{}, concurrent),
 	}
@@ -70,7 +71,7 @@ func NewGRPCPush(addrs []string, concurrent int) (*GRRCPush, error) {
 	return gp, nil
 }
 
-func (gp *GRRCPush) PushPacket(ctx context.Context, in *Packet) error {
+func (gp *GRRCPush) PushPacket(ctx context.Context, in *pb.Packet) error {
 	gp.cChan <- struct{}{}
 	defer func() {
 		<-gp.cChan
@@ -81,7 +82,7 @@ func (gp *GRRCPush) PushPacket(ctx context.Context, in *Packet) error {
 	return gp.push(ctx, in)
 }
 
-func (gp *GRRCPush) push(ctx context.Context, in *Packet) error {
+func (gp *GRRCPush) push(ctx context.Context, in *pb.Packet) error {
 	resp, err := gp.cli.PushPacket(ctx, in)
 	if err != nil {
 		// 认为服务不可用
@@ -129,7 +130,7 @@ func NewHttpPush(addr string, concurrent int) (*HttpPush, error) {
 	return hp, nil
 }
 
-func (hp *HttpPush) PushPacket(ctx context.Context, in *Packet) error {
+func (hp *HttpPush) PushPacket(ctx context.Context, in *pb.Packet) error {
 	hp.cChan <- struct{}{}
 	defer func() {
 		<-hp.cChan

@@ -5,7 +5,7 @@ import (
 	"os"
 	"time"
 
-	"github.com/huzhongqing/qelog/pkg/common/proto/push"
+	"github.com/huzhongqing/qelog/pb"
 	"github.com/huzhongqing/qelog/pkg/httputil"
 
 	"github.com/huzhongqing/qelog/pkg/storage"
@@ -62,13 +62,13 @@ func (srv *HTTPService) route(handler *gin.Engine, middleware ...gin.HandlerFunc
 }
 
 func (srv *HTTPService) ReceivePacket(c *gin.Context) {
-	var arg push.Packet
-	if err := c.ShouldBind(&arg); err != nil {
+	in := &pb.Packet{}
+	if err := c.ShouldBind(in); err != nil {
 		httputil.RespError(c, httputil.ErrArgsInvalid)
 		return
 	}
 
-	if err := srv.receiver.InsertPacket(c.Request.Context(), c.ClientIP(), &arg); err != nil {
+	if err := srv.receiver.InsertPacket(c.Request.Context(), c.ClientIP(), in); err != nil {
 		httputil.RespError(c, httputil.ErrClaimsNotFound)
 		return
 	}

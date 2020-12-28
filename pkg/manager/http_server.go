@@ -80,10 +80,10 @@ func (srv *HTTPService) route(handler *gin.Engine, middleware ...gin.HandlerFunc
 	v1.DELETE("/module", srv.DeleteModule)
 
 	// 配置报警规则
-	v1.GET("/alarm-rule/list")
-	v1.POST("/alarm-rule")
-	v1.PUT("/alarm-rule")
-	v1.DELETE("/alarm-rule")
+	v1.GET("/alarm-rule/list", srv.FindAlarmRuleList)
+	v1.POST("/alarm-rule", srv.CreateAlarmRule)
+	v1.PUT("/alarm-rule", srv.UpdateAlarmRule)
+	v1.DELETE("/alarm-rule", srv.DeleteAlarmRule)
 
 	// 获取 db 信息
 	v1.GET("/db-index", srv.GetDBIndex)
@@ -169,4 +169,58 @@ func (srv *HTTPService) GetDBIndex(c *gin.Context) {
 		return
 	}
 	httputil.RespData(c, http.StatusOK, out)
+}
+
+func (srv *HTTPService) FindAlarmRuleList(c *gin.Context) {
+	in := &entity.FindAlarmRuleListReq{}
+	if err := c.ShouldBind(in); err != nil {
+		httputil.RespError(c, httputil.ErrArgsInvalid.MergeError(err))
+		return
+	}
+
+	out := &entity.ListResp{}
+	if err := srv.manager.FindAlarmRuleList(c.Request.Context(), in, out); err != nil {
+		httputil.RespError(c, err)
+		return
+	}
+	httputil.RespData(c, http.StatusOK, out)
+}
+
+func (srv *HTTPService) CreateAlarmRule(c *gin.Context) {
+	in := &entity.CreateAlarmRuleReq{}
+	if err := c.ShouldBind(in); err != nil {
+		httputil.RespError(c, httputil.ErrArgsInvalid.MergeError(err))
+		return
+	}
+	if err := srv.manager.CreateAlarmRule(c.Request.Context(), in); err != nil {
+		httputil.RespError(c, err)
+		return
+	}
+	httputil.RespSuccess(c)
+}
+
+func (srv *HTTPService) UpdateAlarmRule(c *gin.Context) {
+	in := &entity.UpdateAlarmRuleReq{}
+	if err := c.ShouldBind(in); err != nil {
+		httputil.RespError(c, httputil.ErrArgsInvalid.MergeError(err))
+		return
+	}
+	if err := srv.manager.UpdateAlarmRule(c.Request.Context(), in); err != nil {
+		httputil.RespError(c, err)
+		return
+	}
+	httputil.RespSuccess(c)
+}
+
+func (srv *HTTPService) DeleteAlarmRule(c *gin.Context) {
+	in := &entity.DeleteAlarmRuleReq{}
+	if err := c.ShouldBind(in); err != nil {
+		httputil.RespError(c, httputil.ErrArgsInvalid.MergeError(err))
+		return
+	}
+	if err := srv.manager.DeleteAlarmRule(c.Request.Context(), in); err != nil {
+		httputil.RespError(c, err)
+		return
+	}
+	httputil.RespSuccess(c)
 }

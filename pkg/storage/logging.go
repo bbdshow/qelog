@@ -6,13 +6,8 @@ import (
 	"github.com/huzhongqing/qelog/libs/logs"
 	"go.uber.org/zap"
 
-	"go.mongodb.org/mongo-driver/mongo/options"
-
-	"go.mongodb.org/mongo-driver/bson/primitive"
-
-	"github.com/huzhongqing/qelog/pkg/common/entity"
-	"github.com/huzhongqing/qelog/pkg/common/model"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 func (store *Store) InsertManyLogging(ctx context.Context, name string, docs []interface{}) error {
@@ -20,34 +15,7 @@ func (store *Store) InsertManyLogging(ctx context.Context, name string, docs []i
 	return WrapError(err)
 }
 
-func (store *Store) FindLoggingList(ctx context.Context, collectionName string, in *entity.FindLoggingListReq) (int64, []*model.Logging, error) {
-	filter := bson.M{
-		"m": in.ModuleName,
-	}
-
-	// 必须存在时间
-	filter["ts"] = bson.M{"$gte": in.BeginUnix, "$lt": in.EndUnix}
-
-	if in.ShortMsg != "" {
-		// 区分大小写
-		filter["s"] = primitive.Regex{
-			Pattern: in.ShortMsg,
-		}
-	}
-
-	if in.Level >= 0 {
-		filter["l"] = in.Level
-	}
-
-	if in.ConditionOne != "" {
-		filter["c1"] = in.ConditionOne
-		if in.ConditionTwo != "" {
-			filter["c2"] = in.ConditionTwo
-			if in.ConditionThree != "" {
-				filter["c3"] = in.ConditionThree
-			}
-		}
-	}
+func (store *Store) FindLoggingList(ctx context.Context, collectionName string, filter bson.M, result interface{}, opt *options.FindOptions) (int64, error) {
 	// 异步统计Count
 	calcCount := func(ctx context.Context) (int64, error) {
 		countOpt := options.Count()
@@ -63,18 +31,13 @@ func (store *Store) FindLoggingList(ctx context.Context, collectionName string, 
 		countResp <- c
 	}()
 
-	findOpt := options.Find()
-	in.SetPage(findOpt)
-	findOpt.SetSort(bson.M{"ts": -1})
-
-	docs := make([]*model.Logging, 0, in.PageSize)
-	err := store.database.Find(ctx, store.database.Collection(collectionName), filter, &docs, findOpt)
+	err := store.database.Find(ctx, store.database.Collection(collectionName), filter, result, opt)
 	if err != nil {
-		return 0, nil, err
+		return 0, err
 	}
 
 	select {
 	case c := <-countResp:
-		return c, docs, nil
+		return c, nil
 	}
 }

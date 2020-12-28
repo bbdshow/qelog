@@ -33,8 +33,11 @@ func (l Logging) Key() string {
 	return fmt.Sprintf("%s_%s_%d", l.Module, l.Short, l.Level)
 }
 
-type Level int
+type Level int32
 
+func (lvl Level) Int32() int32 {
+	return int32(lvl)
+}
 func (lvl Level) String() string {
 	v := "UNKNOWN"
 	switch lvl {

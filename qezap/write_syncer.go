@@ -106,6 +106,9 @@ func (ws *WriteSync) Sync() error {
 }
 
 func (ws *WriteSync) Close() error {
+	if ws.exit {
+		return nil
+	}
 	// 如果正在压缩，等压缩完再退出
 	ws.compressing <- struct{}{}
 	ws.exit = true

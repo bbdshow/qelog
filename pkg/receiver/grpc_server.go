@@ -8,12 +8,10 @@ import (
 
 	"google.golang.org/grpc/peer"
 
-	"google.golang.org/grpc/reflection"
-
 	"github.com/huzhongqing/qelog/pkg/httputil"
 
 	"github.com/huzhongqing/qelog/libs/mongo"
-	"github.com/huzhongqing/qelog/pkg/common/proto/push"
+	"github.com/huzhongqing/qelog/pb"
 	"github.com/huzhongqing/qelog/pkg/storage"
 	"google.golang.org/grpc"
 )
@@ -42,9 +40,7 @@ func (srv *GRPCService) Run(addr string) error {
 	server := grpc.NewServer()
 	srv.server = server
 
-	push.RegisterPushServer(srv.server, srv)
-
-	reflection.Register(srv.server)
+	pb.RegisterPushServer(srv.server, srv)
 
 	if err := server.Serve(listen); err != nil {
 		return err
@@ -61,20 +57,24 @@ func (srv *GRPCService) Close() error {
 	return nil
 }
 
-func (srv *GRPCService) PushPacket(ctx context.Context, in *push.Packet) (*push.BaseResp, error) {
+func (srv *GRPCService) PushPacket(ctx context.Context, in *pb.Packet) (*pb.BaseResp, error) {
 	fmt.Println(in)
 	// 获取 clientIP
 	if err := srv.receiver.InsertPacket(ctx, srv.clientIP(ctx), in); err != nil {
 		e, ok := err.(httputil.Error)
 		if ok {
-			return &push.BaseResp{
+			// 数据库操作错误
+			if e.Code == httputil.ErrCodeSystemException {
+				return nil, httputil.ErrSystemException
+			}
+			return &pb.BaseResp{
 				Code:    int32(e.Code),
 				Message: e.Message,
 			}, nil
 		}
 		return nil, err
 	}
-	return &push.BaseResp{
+	return &pb.BaseResp{
 		Code:    httputil.CodeSuccess,
 		Message: "success",
 	}, nil

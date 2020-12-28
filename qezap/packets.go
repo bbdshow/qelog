@@ -175,5 +175,8 @@ func (p *Packets) ReadBakPacket(v interface{}) (ok bool, err error) {
 }
 
 func (p *Packets) Close() error {
+	if p.backWrite == nil {
+		return nil
+	}
 	return p.backWrite.Close()
 }

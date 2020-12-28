@@ -7,6 +7,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/huzhongqing/qelog/pb"
+
 	"github.com/huzhongqing/qelog/qezap/push"
 )
 
@@ -94,7 +96,7 @@ func (wr *WriteRemote) pullPacket() {
 	}
 }
 
-func (wr *WriteRemote) push(in *push.Packet) {
+func (wr *WriteRemote) push(in *pb.Packet) {
 	if len(in.Data) <= 0 {
 		// 没有类容的包，直接丢掉
 		return
@@ -160,7 +162,7 @@ func (wr *WriteRemote) backgroundRetry() {
 	for {
 		select {
 		case <-tick.C:
-			v := &push.Packet{}
+			v := &pb.Packet{}
 			ok, err := wr.packets.ReadBakPacket(v)
 			if err != nil {
 				fmt.Println("packets retry", err.Error())
@@ -178,12 +180,11 @@ func (wr *WriteRemote) Sync() error {
 		wr.push(push.NewPacket(wr.cfg.ModuleName, data.Val()))
 		wr.packets.Free(data)
 	}
-
-	exit := make(chan struct{}, 1)
+	sendEmpty := make(chan struct{}, 1)
 	go func() {
 		for {
 			if wr.pusher != nil && wr.pusher.Concurrent() == 0 {
-				exit <- struct{}{}
+				sendEmpty <- struct{}{}
 				return
 			}
 			time.Sleep(50 * time.Millisecond)
@@ -194,7 +195,7 @@ func (wr *WriteRemote) Sync() error {
 	select {
 	case <-ctx.Done():
 		log.Println("sync ", ctx.Err())
-	case <-exit:
+	case <-sendEmpty:
 	}
 
 	return wr.packets.Close()

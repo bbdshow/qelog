@@ -21,14 +21,14 @@ const (
 
 type AlarmRule struct {
 	ID         primitive.ObjectID `bson:"_id,omitempty"`
-	Enable     bool               `bson:"enable"`                         // 是否开启
-	ModuleName string             `bson:"module_name" json:"module_name"` // 哪个模块
-	Short      string             `bson:"short" json:"short"`             // 命中的短消息
-	Level      int32              `bson:"level" json:"level"`             // 命中日志等级
-	Tag        string             `bson:"tag"`                            // 报警Tag
-	RateUnix   int64              `bson:"rate_unix"`                      // 多少s之内，只发送一次
-	Method     int32              `bson:"method"`                         // 支持方式  1-钉钉
-	HookURL    string             `bson:"hook_url"`                       // 发送链接
+	Enable     bool               `bson:"enable"`       // 是否开启
+	ModuleName string             `bson:"module_name" ` // 哪个模块
+	Short      string             `bson:"short"`        // 命中的短消息
+	Level      Level              `bson:"level"`        // 命中日志等级
+	Tag        string             `bson:"tag"`          // 报警Tag
+	RateSec    int64              `bson:"rate_sec"`     // 多少s之内，只发送一次
+	Method     int32              `bson:"method"`       // 支持方式  1-钉钉
+	HookURL    string             `bson:"hook_url"`     // 发送链接
 	UpdatedAt  time.Time          `bson:"updated_at"`
 }
 

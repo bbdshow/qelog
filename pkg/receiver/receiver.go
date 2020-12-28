@@ -9,11 +9,11 @@ import (
 	"github.com/huzhongqing/qelog/libs/logs"
 	"go.uber.org/zap"
 
+	"github.com/huzhongqing/qelog/pb"
+
 	"github.com/huzhongqing/qelog/pkg/alarm"
 
 	"github.com/huzhongqing/qelog/pkg/httputil"
-
-	"github.com/huzhongqing/qelog/pkg/common/proto/push"
 
 	"github.com/huzhongqing/qelog/pkg/common/model"
 	"github.com/huzhongqing/qelog/pkg/storage"
@@ -37,6 +37,7 @@ func NewService(store *storage.Store) *Service {
 		collections: make(map[string]struct{}, 0),
 		alarm:       alarm.NewAlarm(),
 	}
+	alarm.SetLogger(logs.Qezap.Clone().SetWritePrefix("Alarm").SetWriteLevel(zap.ErrorLevel))
 
 	if err := srv.syncModule(); err != nil {
 		panic(err)
@@ -52,7 +53,7 @@ func NewService(store *storage.Store) *Service {
 	return srv
 }
 
-func (srv *Service) InsertPacket(ctx context.Context, ip string, in *push.Packet) error {
+func (srv *Service) InsertPacket(ctx context.Context, ip string, in *pb.Packet) error {
 	if len(in.Data) <= 0 {
 		return nil
 	}
@@ -79,24 +80,24 @@ func (srv *Service) InsertPacket(ctx context.Context, ip string, in *push.Packet
 	for collectionName, docs := range sMap {
 		ok, err := srv.collectionExists(collectionName)
 		if err != nil {
-			return err
+			return httputil.ErrSystemException.MergeError(err)
 		}
 		if !ok {
 			// 如果不存在创建索引
 			if err := srv.store.UpsertCollectionIndexMany(model.LoggingIndexMany(collectionName)); err != nil {
-				return err
+				return httputil.ErrSystemException.MergeError(err)
 			}
 		}
 
 		if err := srv.store.InsertManyLogging(ctx, collectionName, docs); err != nil {
-			return err
+			return httputil.ErrSystemException.MergeError(err)
 		}
 	}
 
 	return nil
 }
 
-func (srv *Service) decodePacket(ip string, in *push.Packet) []*model.Logging {
+func (srv *Service) decodePacket(ip string, in *pb.Packet) []*model.Logging {
 	records := make([]*model.Logging, 0, len(in.Data))
 	for i, v := range in.Data {
 		r := &model.Logging{

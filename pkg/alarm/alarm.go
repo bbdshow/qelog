@@ -3,6 +3,7 @@ package alarm
 import (
 	"context"
 	"fmt"
+	"io"
 	"log"
 	"sync"
 	"sync/atomic"
@@ -10,6 +11,14 @@ import (
 
 	"github.com/huzhongqing/qelog/pkg/common/model"
 )
+
+var defaultLog = &log.Logger{}
+
+func SetLogger(w io.Writer) {
+	if w != nil {
+		defaultLog = log.New(w, "", log.LstdFlags)
+	}
+}
 
 type Alarm struct {
 	mutex     sync.RWMutex
@@ -59,7 +68,7 @@ func (a *Alarm) InitRuleState(rules []*model.AlarmRule) {
 			ruleState[state.Key()] = state.UpsertRule(v.rule)
 		}
 	}
-	a.mutex.Unlock()
+	a.mutex.RUnlock()
 	// 替换状态机
 	a.mutex.Lock()
 	a.ruleState = ruleState
@@ -83,7 +92,7 @@ func (rs *RuleState) Send(v *model.Logging) {
 	if atomic.LoadInt64(&rs.latestSendTime) == 0 {
 		//直接发送
 		isSend = true
-	} else if time.Now().Unix()-atomic.LoadInt64(&rs.latestSendTime) > rs.rule.RateUnix {
+	} else if time.Now().Unix()-atomic.LoadInt64(&rs.latestSendTime) > rs.rule.RateSec {
 		// 超出了间隔
 		isSend = true
 	}
@@ -91,7 +100,7 @@ func (rs *RuleState) Send(v *model.Logging) {
 		ctx, _ := context.WithTimeout(context.Background(), 30*time.Second)
 		err := rs.method.Send(ctx, rs.content(v))
 		if err != nil {
-			log.Printf("alarm %s method send error %s \n", rs.method.Method(), err.Error())
+			defaultLog.Printf("alarm %s method send error %s \n", rs.method.Method(), err.Error())
 		} else {
 			atomic.StoreInt32(&rs.count, 0)
 			atomic.StoreInt64(&rs.latestSendTime, time.Now().Unix())
@@ -110,7 +119,7 @@ IP: %s
 等级: %s
 短消息: %s
 详情: %s
-频次: %d/%ds`, rs.rule.Tag, v.IP, time.Unix(v.Timestamp, 0), v.Level.String(), v.Short, v.Full, rs.count, rs.rule.RateUnix)
+频次: %d/%ds`, rs.rule.Tag, v.IP, time.Unix(v.Timestamp, 0), v.Level.String(), v.Short, v.Full, rs.count, rs.rule.RateSec)
 }
 
 func (rs *RuleState) Key() string {

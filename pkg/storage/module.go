@@ -3,15 +3,10 @@ package storage
 import (
 	"context"
 
-	"go.mongodb.org/mongo-driver/mongo/options"
-
-	"github.com/huzhongqing/qelog/pkg/common/entity"
-
-	"go.mongodb.org/mongo-driver/bson/primitive"
-
-	"go.mongodb.org/mongo-driver/bson"
-
 	"github.com/huzhongqing/qelog/pkg/common/model"
+	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 // module 注册不会太多，超过 500 个，就不太适合此系统了
@@ -22,20 +17,9 @@ func (store *Store) FindAllModule(ctx context.Context) ([]*model.Module, error) 
 	return docs, err
 }
 
-func (store *Store) FindModuleList(ctx context.Context, in *entity.FindModuleListReq) (int64, []*model.Module, error) {
-	filter := bson.M{}
-	if in.Name != "" {
-		filter["name"] = primitive.Regex{
-			Pattern: in.Name,
-			Options: "i",
-		}
-	}
-	opt := options.Find()
-	in.SetPage(opt)
-	opt.SetSort(bson.M{"_id": -1})
-	docs := make([]*model.Module, 0, in.PageSize)
-	c, err := store.database.FindAndCount(ctx, store.database.Collection(model.CollectionNameModule), filter, &docs, opt)
-	return c, docs, err
+func (store *Store) FindModuleList(ctx context.Context, filter bson.M, result interface{}, opt *options.FindOptions) (int64, error) {
+	c, err := store.database.FindAndCount(ctx, store.database.Collection(model.CollectionNameModule), filter, result, opt)
+	return c, err
 }
 
 func (store *Store) InsertModule(ctx context.Context, doc *model.Module) error {
