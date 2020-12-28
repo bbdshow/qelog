@@ -18,9 +18,14 @@ type Config struct {
 	ReceiverAddr     string
 	ReceiverGRPCAddr string
 	ManagerAddr      string
-	MongoDB          MongoDB
+
+	AlarmEnable   bool
+	MetricsEnable bool
+
 	// 不同的模块存储不同的集合前缀里 (类似 redis db0-15 ...)
 	DBSize int32
+
+	MongoDB MongoDB
 }
 
 func InitConfig(filename string) *Config {
@@ -44,4 +49,23 @@ type MongoDB struct {
 type AdminUser struct {
 	Username string
 	Password string
+}
+
+func MockDevConfig() *Config {
+	return &Config{
+		Env:              "dev",
+		ReceiverAddr:     "0.0.0.0:31081",
+		ReceiverGRPCAddr: ":31082",
+		ManagerAddr:      "0.0.0.0:31080",
+
+		AlarmEnable:   true,
+		MetricsEnable: true,
+
+		DBSize: 16,
+
+		MongoDB: MongoDB{
+			DataBase: "qelog",
+			URI:      "mongodb://127.0.0.1:27017/admin",
+		},
+	}
 }

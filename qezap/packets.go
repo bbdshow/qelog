@@ -149,8 +149,9 @@ func (p *Packets) ReadBakPacket(v interface{}) (ok bool, err error) {
 			// 文件读取完了，就删除了
 			// 关闭 file io
 			_ = f.Close()
-			_ = p.backWrite.Close()
-
+			if p.backWrite != nil {
+				_ = p.backWrite.Close()
+			}
 			p.backWrite = nil
 			if err := os.Remove(p.bakFilename); err == nil {
 				p.offset = 0

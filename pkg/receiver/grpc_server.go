@@ -4,7 +4,10 @@ import (
 	"context"
 	"fmt"
 	"net"
+	"os"
 	"strings"
+
+	"github.com/huzhongqing/qelog/pkg/common/model"
 
 	"google.golang.org/grpc/peer"
 
@@ -37,6 +40,16 @@ func (srv *GRPCService) Run(addr string) error {
 	if err != nil {
 		return err
 	}
+
+	if os.Getenv("ENV") == "release" {
+
+	} else {
+		if err := srv.database.UpsertCollectionIndexMany(
+			model.ModuleMetricsIndexMany()); err != nil {
+			return err
+		}
+	}
+
 	server := grpc.NewServer()
 	srv.server = server
 
@@ -50,10 +63,10 @@ func (srv *GRPCService) Run(addr string) error {
 }
 
 func (srv *GRPCService) Close() error {
+	srv.receiver.Sync()
 	if srv.server != nil {
 		srv.server.Stop()
 	}
-
 	return nil
 }
 

@@ -48,6 +48,7 @@ func (srv *HTTPService) Run(addr string) error {
 }
 
 func (srv *HTTPService) Close() error {
+	srv.receiver.Sync()
 	if srv.server != nil {
 		_ = srv.server.Close()
 	}

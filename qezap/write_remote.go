@@ -146,7 +146,9 @@ func (wr *WriteRemote) initPusher() {
 					goto next
 				}
 				wr.pusher = pusher
+
 			}
+			log.Printf("init %s push success \n", wr.cfg.Transport)
 			tick.Stop()
 			return
 		}

@@ -3,22 +3,15 @@ package alarm
 import (
 	"context"
 	"fmt"
-	"io"
-	"log"
 	"sync"
 	"sync/atomic"
 	"time"
 
+	"github.com/huzhongqing/qelog/libs/logs"
+	"go.uber.org/zap"
+
 	"github.com/huzhongqing/qelog/pkg/common/model"
 )
-
-var defaultLog = &log.Logger{}
-
-func SetLogger(w io.Writer) {
-	if w != nil {
-		defaultLog = log.New(w, "", log.LstdFlags)
-	}
-}
 
 type Alarm struct {
 	mutex     sync.RWMutex
@@ -100,7 +93,7 @@ func (rs *RuleState) Send(v *model.Logging) {
 		ctx, _ := context.WithTimeout(context.Background(), 30*time.Second)
 		err := rs.method.Send(ctx, rs.content(v))
 		if err != nil {
-			defaultLog.Printf("alarm %s method send error %s \n", rs.method.Method(), err.Error())
+			logs.Qezap.Error("AlarmSend", zap.String(rs.method.Method(), err.Error()))
 		} else {
 			atomic.StoreInt32(&rs.count, 0)
 			atomic.StoreInt64(&rs.latestSendTime, time.Now().Unix())

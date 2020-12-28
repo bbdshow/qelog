@@ -6,12 +6,16 @@ import (
 	"sync"
 	"time"
 
+	"github.com/huzhongqing/qelog/pkg/config"
+
+	"github.com/huzhongqing/qelog/pkg/receiver/metrics"
+
 	"github.com/huzhongqing/qelog/libs/logs"
 	"go.uber.org/zap"
 
 	"github.com/huzhongqing/qelog/pb"
 
-	"github.com/huzhongqing/qelog/pkg/alarm"
+	"github.com/huzhongqing/qelog/pkg/receiver/alarm"
 
 	"github.com/huzhongqing/qelog/pkg/httputil"
 
@@ -27,7 +31,8 @@ type Service struct {
 	modules     map[string]*model.Module
 	collections map[string]struct{}
 
-	alarm *alarm.Alarm
+	alarm   *alarm.Alarm
+	metrics *metrics.Metrics
 }
 
 func NewService(store *storage.Store) *Service {
@@ -35,20 +40,27 @@ func NewService(store *storage.Store) *Service {
 		store:       store,
 		modules:     make(map[string]*model.Module, 0),
 		collections: make(map[string]struct{}, 0),
-		alarm:       alarm.NewAlarm(),
 	}
-	alarm.SetLogger(logs.Qezap.Clone().SetWritePrefix("Alarm").SetWriteLevel(zap.ErrorLevel))
 
 	if err := srv.syncModule(); err != nil {
 		panic(err)
 	}
 
-	if err := srv.syncAlarmRule(); err != nil {
-		panic(err)
+	go srv.intervalSyncModule()
+
+	if config.GlobalConfig.AlarmEnable {
+		srv.alarm = alarm.NewAlarm()
+
+		if err := srv.syncAlarmRule(); err != nil {
+			panic(err)
+		}
+		go srv.intervalSyncAlarmRule()
 	}
 
-	go srv.intervalSyncModule()
-	go srv.intervalSyncAlarmRule()
+	if config.GlobalConfig.MetricsEnable {
+		srv.metrics = metrics.NewMetrics(srv.store)
+		metrics.SetIncIntervalSec(10)
+	}
 
 	return srv
 }
@@ -67,9 +79,13 @@ func (srv *Service) InsertPacket(ctx context.Context, ip string, in *pb.Packet) 
 
 	docs := srv.decodePacket(ip, in)
 
-	if srv.alarm.ModuleIsEnable(in.Module) {
+	if config.GlobalConfig.AlarmEnable && srv.alarm.ModuleIsEnable(in.Module) {
 		// 异步执行报警逻辑
 		go srv.alarm.AlarmIfHitRule(docs)
+	}
+
+	if config.GlobalConfig.MetricsEnable {
+		go srv.metrics.Statistics(in.Module, ip, docs)
 	}
 
 	sMap := srv.loggingShardingByTimestamp(mReg.DBIndex, docs)
@@ -200,5 +216,11 @@ func (srv *Service) intervalSyncAlarmRule() {
 		if err != nil {
 			logs.Qezap.Error("receiver.service", zap.String("syncAlarmRule", err.Error()))
 		}
+	}
+}
+
+func (srv *Service) Sync() {
+	if srv.metrics != nil {
+		srv.metrics.Sync()
 	}
 }

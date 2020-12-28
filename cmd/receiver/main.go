@@ -26,6 +26,8 @@ func main() {
 		log.Fatalln("mongo connect failed ", err.Error())
 	}
 
+	config.SetGlobalConfig(cfg)
+
 	logs.InitQezap(nil, "")
 
 	httpSrv := receiver.NewHTTPService(database)

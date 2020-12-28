@@ -43,7 +43,8 @@ func (srv *HTTPService) Run(addr string) error {
 		gin.DefaultWriter = logs.Qezap.Clone().SetWritePrefix("ginDebug").SetWriteLevel(zap.DebugLevel)
 	} else {
 		if err := srv.database.UpsertCollectionIndexMany(
-			model.ModuleIndexMany()); err != nil {
+			model.ModuleIndexMany(),
+			model.AlarmRuleIndexMany()); err != nil {
 			return err
 		}
 	}
@@ -93,6 +94,7 @@ func (srv *HTTPService) route(handler *gin.Engine, middleware ...gin.HandlerFunc
 
 	// 报表
 }
+
 func (srv *HTTPService) FindModuleList(c *gin.Context) {
 	in := &entity.FindModuleListReq{}
 	if err := c.ShouldBind(in); err != nil {

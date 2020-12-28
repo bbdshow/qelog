@@ -57,13 +57,13 @@ func TestFindLoggingList(t *testing.T) {
 	in := entity.FindLoggingListReq{
 		DBIndex:        1,
 		ModuleName:     "example",
-		ShortMsg:       "",
+		Short:          "",
 		Level:          -1,
 		IP:             "",
 		ConditionOne:   "",
 		ConditionTwo:   "",
 		ConditionThree: "",
-		TimeReq:        entity.TimeReq{BeginUnix: time.Now().Add(-48 * time.Hour).Unix()},
+		TimeReq:        entity.TimeReq{BeginTsSec: time.Now().Add(-48 * time.Hour).Unix()},
 		PageReq:        entity.PageReq{},
 	}
 	resp, err := http.Post(fmt.Sprintf("%s/v1/logging/list", host), ContentTypeJSON, JSONReader(in))
