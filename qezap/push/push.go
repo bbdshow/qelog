@@ -13,11 +13,10 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/huzhongqing/qelog/pb"
 	"google.golang.org/grpc/balancer/roundrobin"
-
 	"google.golang.org/grpc/resolver"
 
+	"github.com/huzhongqing/qelog/pb"
 	"google.golang.org/grpc"
 )
 
@@ -56,12 +55,12 @@ func NewGRPCPush(addrs []string, concurrent int) (*GRRCPush, error) {
 	resolver.Register(NewLocalResolverBuilder(addrs))
 
 	ctx, _ := context.WithTimeout(context.Background(), 5*time.Second)
-	conn, err := grpc.DialContext(ctx, DialLocalServiceName, grpc.WithInsecure(), grpc.WithBlock(),
+	conn, err := grpc.DialContext(ctx, DialLocalServiceName, grpc.WithInsecure(),
 		grpc.WithDefaultServiceConfig(fmt.Sprintf(`{"LoadBalancingPolicy": "%s"}`, roundrobin.Name)))
 	if err != nil {
 		return nil, err
 	}
-
+	//conn, _ := grpc.Dial(addrs[0], grpc.WithInsecure())
 	gp := &GRRCPush{
 		cli:   pb.NewPushClient(conn),
 		conn:  conn,

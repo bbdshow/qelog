@@ -186,6 +186,7 @@ func (wr *WriteRemote) Sync() error {
 	go func() {
 		for {
 			if wr.pusher != nil && wr.pusher.Concurrent() == 0 {
+				time.Sleep(10 * time.Millisecond)
 				sendEmpty <- struct{}{}
 				return
 			}

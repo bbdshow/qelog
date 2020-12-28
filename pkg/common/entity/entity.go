@@ -67,7 +67,7 @@ type ListResp struct {
 }
 
 type CreateModuleReq struct {
-	Name    string `json:"name" binding:"required,gte=2,lte=24,hexadecimal,lowercase"`
+	Name    string `json:"name" binding:"required,gte=2,lte=24,lowercase"`
 	DBIndex int32  `json:"db_index" binding:"required,min=1,max=16"`
 	Desc    string `json:"desc" binding:"required,gte=1,lte=128"`
 }

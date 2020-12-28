@@ -55,6 +55,8 @@ func (srv *GRPCService) Run(addr string) error {
 
 	pb.RegisterPushServer(srv.server, srv)
 
+	//reflection.Register(srv.server)
+
 	if err := server.Serve(listen); err != nil {
 		return err
 	}
@@ -71,7 +73,7 @@ func (srv *GRPCService) Close() error {
 }
 
 func (srv *GRPCService) PushPacket(ctx context.Context, in *pb.Packet) (*pb.BaseResp, error) {
-	fmt.Println(in)
+	fmt.Println(len(in.Data), "========", in.Data)
 	// 获取 clientIP
 	if err := srv.receiver.InsertPacket(ctx, srv.clientIP(ctx), in); err != nil {
 		e, ok := err.(httputil.Error)

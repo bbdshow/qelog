@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"strconv"
 	"testing"
 	"time"
@@ -24,6 +25,7 @@ func BenchmarkQezapRpc(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		qeLog.Info(strconv.Itoa(i), zap.Int("index", i))
 	}
+	fmt.Println(b.N)
 	qeLog.Sync()
 	// BenchmarkQezapRpc-8   	  101323	     11634 ns/op
 	// 关闭远程传输 性能相差接近2倍， 是因为 zap.core 要生成两份数据。
