@@ -52,3 +52,10 @@ func BenchmarkQezapHTTP(b *testing.B) {
 	qeLog.Sync()
 	// BenchmarkQezapHTTP-8   	   89986	     12213 ns/op
 }
+
+func BenchmarkTraceID(b *testing.B) {
+	var tid qezap.TraceID
+	for i := 0; i < b.N; i++ {
+		tid.New()
+	}
+}

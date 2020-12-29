@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"time"
 
@@ -25,9 +26,13 @@ func main() {
 	qeLog.Info("Info", zap.String("k", "v"), zap.String("k1", "v1"))
 
 	qeLog.Warn("Warn", zap.String("k", "v"),
-		qezap.NewCondition().StringFiled("默认条件查询1"),
-		qezap.NewCondition().Two().StringFiled("默认条件查询2, 当有条件1，在配合条件2，查询更快"),
-		qezap.NewCondition().Three().StringFiled("与2同理，我是条件3"))
+		qeLog.ConditionOne("默认条件查询1"),
+		qeLog.ConditionTwo("默认条件查询2, 当有条件1，在配合条件2，查询更快"),
+		qeLog.ConditionThree("与2同理，我是条件3"))
+
+	ctx := context.Background()
+	ctx = qeLog.WithTraceID(ctx)
+	qeLog.Info("teceid", qeLog.TraceIDField(ctx))
 
 	qeLog.Error("Error", zap.String("k", "v"))
 	qeLog.DPanic("DPanic", zap.String("k", "v"))

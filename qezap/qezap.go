@@ -1,6 +1,14 @@
 package qezap
 
 import (
+	"bytes"
+	"context"
+	"fmt"
+	"os"
+	"strconv"
+	"sync/atomic"
+	"time"
+
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 )
@@ -139,4 +147,63 @@ func (log *Logger) Clone() *Logger {
 		WritePrefix: "",
 		WriteLevel:  0,
 	}
+}
+
+func (log *Logger) ConditionOne(v string) zap.Field {
+	return zap.String("_condition1", v)
+}
+
+func (log *Logger) ConditionTwo(v string) zap.Field {
+	return zap.String("_condition2", v)
+}
+
+func (log *Logger) ConditionThree(v string) zap.Field {
+	return zap.String("_condition3", v)
+}
+
+func (log *Logger) WithTraceID(ctx context.Context) context.Context {
+	return context.WithValue(ctx, "_traceid", new(TraceID).New())
+}
+
+func (log *Logger) TraceIDField(ctx context.Context) zap.Field {
+	id := ""
+	val := ctx.Value("_traceid")
+	fmt.Println(val)
+	tid, ok := val.(TraceID)
+	if ok {
+		id = tid.String()
+	}
+	return zap.String("_traceid", id)
+}
+
+var pidStr = func() string {
+	pid := os.Getpid()
+	return fmt.Sprintf("%05d", pid)
+}()
+var incInt64 int64 = 0
+
+type TraceID string
+
+// [nsec:19]
+func (tid TraceID) New() TraceID {
+	buff := bytes.Buffer{}
+	nsec := time.Now().UnixNano()
+	nsecStr := strconv.FormatInt(nsec, 10)
+
+	buff.WriteString(nsecStr)
+	buff.WriteString(pidStr)
+	buff.WriteString(strconv.FormatInt(atomic.AddInt64(&incInt64, 1), 10))
+	return TraceID(buff.String())
+}
+
+func (tid TraceID) Time() time.Time {
+	if tid != "" {
+		nsec, _ := strconv.ParseInt(string(tid[:19]), 10, 64)
+		return time.Unix(0, nsec)
+	}
+	return time.Unix(0, 0)
+}
+
+func (tid TraceID) String() string {
+	return string(tid)
 }
