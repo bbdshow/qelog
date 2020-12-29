@@ -20,6 +20,7 @@ const (
 
 func JSONReader(v interface{}) io.Reader {
 	byt, _ := json.Marshal(v)
+	fmt.Println(string(byt))
 	return bytes.NewReader(byt)
 }
 
@@ -76,6 +77,51 @@ func TestFindLoggingList(t *testing.T) {
 
 func TestGetDBIndex(t *testing.T) {
 	resp, err := http.Get(fmt.Sprintf("%s/v1/db-index", host))
+	if err != nil {
+		t.Fatal(err)
+	}
+	JSONOutput(resp, t)
+}
+
+func TestCreateAlarmRule(t *testing.T) {
+	in := &entity.CreateAlarmRuleReq{
+		ModuleName: "example",
+		Short:      "Alarm",
+		Level:      3,
+		Tag:        "[test]",
+		RateSec:    30,
+		Method:     1,
+		HookURL:    "http://",
+	}
+
+	resp, err := http.Post(fmt.Sprintf("%s/v1/alarm-rule", host), ContentTypeJSON, JSONReader(in))
+	if err != nil {
+		t.Fatal(err)
+	}
+	JSONOutput(resp, t)
+}
+
+func TestUpdateAlarmRule(t *testing.T) {
+	in := &entity.UpdateAlarmRuleReq{
+		ObjectIDReq: entity.ObjectIDReq{ID: "5feac25b147eb46108e919a0"},
+		Enable:      1,
+		CreateAlarmRuleReq: entity.CreateAlarmRuleReq{
+			ModuleName: "example",
+			Short:      "Alarm",
+			Level:      3,
+			Tag:        "[test_ding]",
+			RateSec:    30,
+			Method:     1,
+			HookURL:    "https://oapi.dingtalk.com/robot/send?access_token=00eca7373a1472267cc2a2a75ebab1ac476d3be37f3b7397d1f605b8d8e277b4",
+		},
+	}
+	cli := &http.Client{}
+	req, err := http.NewRequest("PUT", fmt.Sprintf("%s/v1/alarm-rule", host), JSONReader(in))
+	if err != nil {
+		t.Fatal(err)
+	}
+	req.Header.Set("Content-Type", "application/json")
+	resp, err := cli.Do(req)
 	if err != nil {
 		t.Fatal(err)
 	}

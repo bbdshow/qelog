@@ -156,7 +156,7 @@ func (p *Packets) ReadBakPacket(v interface{}) (ok bool, err error) {
 			if err := os.Remove(p.bakFilename); err == nil {
 				p.offset = 0
 			} else {
-				log.Printf("os remove %s error %s\n", p.bakFilename, err.Error())
+				log.Printf("os.Remove %s %s\n", p.bakFilename, err.Error())
 			}
 			return false, nil
 		}

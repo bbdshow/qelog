@@ -18,7 +18,7 @@ func (v PageReq) SetPage(opt *options.FindOptions) {
 }
 
 type ObjectIDReq struct {
-	ID string `json:"id" form:"id" binding:"required,eq=24"`
+	ID string `json:"id" form:"id" binding:"required,len=24"`
 }
 
 func (v ObjectIDReq) ObjectID() (primitive.ObjectID, error) {

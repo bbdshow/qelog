@@ -13,6 +13,10 @@ import (
 	"github.com/huzhongqing/qelog/pkg/common/model"
 )
 
+var (
+	ContentPrefix = "[QELOG]"
+)
+
 type Alarm struct {
 	mutex     sync.RWMutex
 	ruleState map[string]*RuleState
@@ -81,6 +85,7 @@ func (rs *RuleState) Send(v *model.Logging) {
 	if v == nil {
 		return
 	}
+	atomic.AddInt32(&rs.count, 1)
 	isSend := false
 	if atomic.LoadInt64(&rs.latestSendTime) == 0 {
 		//直接发送
@@ -105,14 +110,15 @@ func (rs *RuleState) Send(v *model.Logging) {
 }
 
 func (rs *RuleState) content(v *model.Logging) string {
-	return fmt.Sprintf(`[qelog]
+	return fmt.Sprintf(`%s
 标签: %s
 IP: %s
 时间: %s
 等级: %s
 短消息: %s
 详情: %s
-频次: %d/%ds`, rs.rule.Tag, v.IP, time.Unix(v.Timestamp, 0), v.Level.String(), v.Short, v.Full, rs.count, rs.rule.RateSec)
+频次: %d/%ds`, ContentPrefix, rs.rule.Tag, v.IP, time.Unix(v.Timestamp, 0), v.Level.String(),
+		v.Short, v.Full, atomic.LoadInt32(&rs.count), rs.rule.RateSec)
 }
 
 func (rs *RuleState) Key() string {
@@ -123,7 +129,7 @@ func (rs *RuleState) Rule() *model.AlarmRule {
 }
 
 func (rs *RuleState) UpsertRule(new *model.AlarmRule) *RuleState {
-	if rs.rule.UpdatedAt != new.UpdatedAt {
+	if rs.rule == nil || rs.rule.UpdatedAt != new.UpdatedAt {
 		rs.rule = new
 		rs.key = new.Key()
 		rs.latestSendTime = 0

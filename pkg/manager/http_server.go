@@ -93,6 +93,7 @@ func (srv *HTTPService) route(handler *gin.Engine, middleware ...gin.HandlerFunc
 	v1.POST("/logging/list", srv.FindLoggingList)
 
 	// 报表
+	v1.GET("/metrics/index")
 }
 
 func (srv *HTTPService) FindModuleList(c *gin.Context) {
