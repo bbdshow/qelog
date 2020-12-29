@@ -27,6 +27,7 @@ type Logging struct {
 	Time       int64              `bson:"t"`  // 日志打印时间
 	Timestamp  int64              `bson:"ts"` // 秒, 用于建立秒级别索引
 	MessageID  string             `bson:"mi"` // 如果重复写入，可以通过此ID区分
+	Size       int                `bson:"-"`
 }
 
 func (l Logging) Key() string {

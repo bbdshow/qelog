@@ -16,6 +16,7 @@ type ModuleMetrics struct {
 	ID          primitive.ObjectID `bson:"_id,omitempty"`
 	ModuleName  string             `bson:"module_name"`
 	Number      int64              `bson:"number"`
+	Size        int64              `bson:"size"`
 	Sections    map[int64]Numbers  `bson:"sections"` // key 小时精度的时间戳
 	CreatedDate time.Time          `bson:"ts_date"`  // 创建日期
 }

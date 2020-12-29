@@ -51,6 +51,7 @@ type state struct {
 	section    int64
 	ModuleName string
 	Number     int32
+	Size       int32
 	Levels     map[model.Level]int32
 	IPs        map[string]int32
 }
@@ -66,6 +67,7 @@ func initState(moduleName string) *state {
 		section:    section,
 		ModuleName: moduleName,
 		Number:     0,
+		Size:       0,
 		Levels:     make(map[model.Level]int32),
 		IPs:        make(map[string]int32),
 	}
@@ -73,6 +75,9 @@ func initState(moduleName string) *state {
 
 func (s *state) IncNumber(n int32) {
 	atomic.AddInt32(&s.Number, n)
+}
+func (s *state) IncSize(n int32) {
+	atomic.AddInt32(&s.Size, n)
 }
 
 func (s *state) IncLevel(lvl model.Level, n int32) {
@@ -131,6 +136,7 @@ func (m *Metrics) Statistics(moduleName, ip string, docs []*model.Logging) {
 	state.IncNumber(num)
 	state.IncIP(ip, num)
 	for _, v := range docs {
+		state.IncSize(int32(v.Size))
 		state.IncLevel(v.Level, 1)
 	}
 }
@@ -147,6 +153,7 @@ func (m *Metrics) inc(s *state) {
 
 	fields := bson.M{
 		"number": s.Number,
+		"size":   s.Size,
 		fmt.Sprintf("sections.%d.sum", s.section): s.Number,
 	}
 	for k, v := range s.Levels {

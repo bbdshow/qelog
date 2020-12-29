@@ -122,6 +122,7 @@ func (srv *Service) decodePacket(ip string, in *pb.Packet) []*model.Logging {
 			Full:      v,
 			MessageID: in.Id + "_" + strconv.Itoa(i),
 			Timestamp: time.Now().Unix(),
+			Size:      len(v),
 		}
 		val := make(map[string]interface{})
 		if err := types.Unmarshal([]byte(v), &val); err == nil {
