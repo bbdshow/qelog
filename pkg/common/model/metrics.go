@@ -47,6 +47,13 @@ func ModuleMetricsIndexMany() []mongo.Index {
 			},
 			Background: true,
 		},
+		{
+			Collection: CollectionNameModuleMetrics,
+			Keys: bson.M{
+				"size": -1,
+			},
+			Background: true,
+		},
 		// ttl 30天
 		{
 			Collection: CollectionNameModuleMetrics,

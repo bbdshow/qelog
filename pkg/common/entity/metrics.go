@@ -19,12 +19,38 @@ type MetricsModuleListReq struct {
 	PageReq
 }
 
+type MetricsModuleList struct {
+	ModuleName   string       `json:"module_name"`
+	Number       int64        `json:"number"`
+	Size         string       `json:"size"`
+	LevelsTop    []NumberData `json:"levels_top"`
+	IPsTop       []NumberData `json:"i_ps_top"`
+	CreatedTsSec int64        `json:"created_ts_sec"`
+}
+
+type NumberData struct {
+	Name   string `json:"name"`
+	Number int64  `json:"number"`
+}
+
 type MetricsModuleReq struct {
-	ModuleName string `json:"module_name"`
-	LastDay    int    `json:"last_day"`
+	ModuleName string `json:"module_name" binding:"required"`
+	LastDay    int    `json:"last_day" binding:"required,min=1,max=7"`
 }
 
 type MetricsModule struct {
+	ModuleName string
+	Numbers    int64
+	Size       string
+	Levels     []string
+	LevelData  []LineNumData
+	IPs        []string
+	IPData     []LineNumData
+}
+
+type LineNumData struct {
+	Name string
+	Data []int64
 }
 
 type MetricsIPUpTop struct {
