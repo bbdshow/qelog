@@ -108,7 +108,7 @@ type DBIndexState struct {
 }
 
 type FindLoggingListReq struct {
-	DBIndex        int32  `json:"db_index" binding:"required"`
+	DBIndex        int32  `json:"db_index" binding:"required,min=0"`
 	ModuleName     string `json:"module_name" binding:"required"`
 	Short          string `json:"short"`
 	Level          int32  `json:"level" binding:"omitempty,min=-1,max=8"`
@@ -116,8 +116,15 @@ type FindLoggingListReq struct {
 	ConditionOne   string `json:"condition_one"`
 	ConditionTwo   string `json:"condition_two"`
 	ConditionThree string `json:"condition_three"`
+	TraceID        string `json:"trace_id"`
 	TimeReq
 	PageReq
+}
+
+type FindLoggingByTraceIDReq struct {
+	DBIndex    int32  `json:"db_index" binding:"required,min=0"`
+	ModuleName string `json:"module_name" binding:"required"`
+	TraceID    string `json:"trace_id" binding:"required,gte=19"`
 }
 
 type FindLoggingList struct {
@@ -129,6 +136,7 @@ type FindLoggingList struct {
 	ConditionOne   string `json:"condition_one"`
 	ConditionTwo   string `json:"condition_two"`
 	ConditionThree string `json:"condition_three"`
+	TraceID        string `json:"trace_id"`
 	IP             string `json:"ip"`
 }
 

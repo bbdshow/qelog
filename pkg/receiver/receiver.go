@@ -132,6 +132,7 @@ func (srv *Service) decodePacket(ip string, in *pb.Packet) []*model.Logging {
 			r.Condition1 = dec.Condition(1)
 			r.Condition2 = dec.Condition(2)
 			r.Condition3 = dec.Condition(3)
+			r.TraceID = dec.TraceID()
 			r.Full = dec.Full()
 			r.Time = dec.Time()
 		}

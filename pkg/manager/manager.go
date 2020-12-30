@@ -6,6 +6,8 @@ import (
 	"sort"
 	"time"
 
+	"github.com/huzhongqing/qelog/pkg/types"
+
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo/options"
 
@@ -128,6 +130,68 @@ func (srv *Service) DeleteModule(ctx context.Context, in *entity.DeleteModuleReq
 	return srv.store.DeleteModule(ctx, id)
 }
 
+func (srv *Service) FindLoggingByTraceID(ctx context.Context, in *entity.FindLoggingByTraceIDReq, out *entity.ListResp) error {
+	tid := types.TraceID(in.TraceID)
+	// 如果查询条件存在TraceID, 则时间范围从 traceID 里面去解析
+	// 在TraceTime前后2小时
+	tidTime := tid.Time()
+	b := tidTime.Add(-2 * time.Hour)
+	e := tidTime.Add(2 * time.Hour)
+	collections := make([]string, 0, 2)
+	beginColl := model.LoggingCollectionName(in.DBIndex, b.Unix())
+	collections = append(collections, beginColl)
+	endColl := model.LoggingCollectionName(in.DBIndex, e.Unix())
+	if endColl != beginColl {
+		collections = append(collections, endColl)
+	}
+	count := int64(0)
+	list := make([]*entity.FindLoggingList, 0)
+	for _, coll := range collections {
+		filter := bson.M{
+			"m":  in.ModuleName,
+			"ti": in.TraceID,
+		}
+		findOpt := options.Find()
+		// 正序，调用流
+		findOpt.SetSort(bson.M{"ts": 1})
+		docs := make([]*model.Logging, 0)
+		c, err := srv.store.FindLoggingList(ctx, coll, filter, &docs, findOpt)
+		if err != nil {
+			return httputil.ErrSystemException.MergeError(err)
+		}
+		count += c
+
+		hitMap := map[string]struct{}{}
+
+		for _, v := range docs {
+			if _, ok := hitMap[v.MessageID]; ok {
+				continue
+			} else {
+				hitMap[v.MessageID] = struct{}{}
+			}
+
+			d := &entity.FindLoggingList{
+				ID:             v.ID.Hex(),
+				TsMill:         v.Time,
+				Level:          int32(v.Level),
+				ShortMsg:       v.Short,
+				Full:           v.Full,
+				ConditionOne:   v.Condition1,
+				ConditionTwo:   v.Condition2,
+				ConditionThree: v.Condition3,
+				IP:             v.IP,
+				TraceID:        v.TraceID,
+			}
+			list = append(list, d)
+		}
+	}
+
+	out.Count = count
+	out.List = list
+
+	return nil
+}
+
 func (srv *Service) FindLoggingList(ctx context.Context, in *entity.FindLoggingListReq, out *entity.ListResp) error {
 
 	// 如果没有传入时间，则默认设置一个间隔时间
@@ -198,6 +262,7 @@ func (srv *Service) FindLoggingList(ctx context.Context, in *entity.FindLoggingL
 			ConditionTwo:   v.Condition2,
 			ConditionThree: v.Condition3,
 			IP:             v.IP,
+			TraceID:        v.TraceID,
 		}
 		list = append(list, d)
 	}

@@ -91,6 +91,7 @@ func (srv *HTTPService) route(handler *gin.Engine, middleware ...gin.HandlerFunc
 
 	// 搜索日志
 	v1.POST("/logging/list", srv.FindLoggingList)
+	v1.POST("/logging/traceid", srv.FindLoggingByTraceID)
 
 	// 报表
 	v1.GET("/metrics/index")
@@ -158,6 +159,21 @@ func (srv *HTTPService) FindLoggingList(c *gin.Context) {
 	}
 	out := &entity.ListResp{}
 	if err := srv.manager.FindLoggingList(c.Request.Context(), in, out); err != nil {
+		httputil.RespError(c, err)
+		return
+	}
+
+	httputil.RespData(c, http.StatusOK, out)
+}
+
+func (srv *HTTPService) FindLoggingByTraceID(c *gin.Context) {
+	in := &entity.FindLoggingByTraceIDReq{}
+	if err := c.ShouldBind(in); err != nil {
+		httputil.RespError(c, httputil.ErrArgsInvalid.MergeError(err))
+		return
+	}
+	out := &entity.ListResp{}
+	if err := srv.manager.FindLoggingByTraceID(c.Request.Context(), in, out); err != nil {
 		httputil.RespError(c, err)
 		return
 	}

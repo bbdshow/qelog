@@ -24,6 +24,7 @@ type Logging struct {
 	Condition1 string             `bson:"c1"`
 	Condition2 string             `bson:"c2"`
 	Condition3 string             `bson:"c3"`
+	TraceID    string             `bson:"ti"`
 	Time       int64              `bson:"t"`  // 日志打印时间
 	Timestamp  int64              `bson:"ts"` // 秒, 用于建立秒级别索引
 	MessageID  string             `bson:"mi"` // 如果重复写入，可以通过此ID区分
@@ -82,6 +83,14 @@ func LoggingIndexMany(collectionName string) []mongo.Index {
 				"c2": 1,
 				"c3": 1,
 				// 条件索引，一般前面筛选后，还有大量日志，才会用到条件筛选，
+			},
+			Background: true,
+		},
+		{
+			Collection: collectionName,
+			Keys: bson.M{
+				// trace_id 作为单独索引，当排查问题作为查询条件更快
+				"ti": -1,
 			},
 			Background: true,
 		},

@@ -56,9 +56,21 @@ func (dec Decoder) Condition(num int) string {
 	return ""
 }
 
+func (dec Decoder) TraceID() string {
+	interfaceV, ok := dec.Val["_traceid"]
+	if ok {
+		val, ok1 := interfaceV.(string)
+		if ok1 {
+			return val
+		}
+	}
+	return ""
+}
+
 // 删除一些不必要的字段，节约存储
 func (dec Decoder) Full() string {
-	delFields := []string{"_level", "_time", "_short", "_condition1", "_condition2", "_condition3"}
+	delFields := []string{"_level", "_time", "_short",
+		"_condition1", "_condition2", "_condition3", "_traceid"}
 	for _, v := range delFields {
 		delete(dec.Val, v)
 	}

@@ -45,35 +45,6 @@ func (cfg *Config) SetHTTPTransport() *Config {
 	return cfg
 }
 
-type Condition struct {
-	key string
-}
-
-// 生成一个可以条件查询的字段
-func NewCondition() *Condition {
-	return &Condition{}
-}
-
-func (c *Condition) setKey(k string) *Condition {
-	c.key = k
-	return c
-}
-func (c *Condition) One() *Condition {
-	return c.setKey("_condition1")
-}
-func (c *Condition) Two() *Condition {
-	return c.setKey("_condition2")
-}
-func (c *Condition) Three() *Condition {
-	return c.setKey("_condition3")
-}
-func (c *Condition) StringFiled(val string) zap.Field {
-	if c.key == "" {
-		c.One()
-	}
-	return zap.String(c.key, val)
-}
-
 type Logger struct {
 	*zap.Logger
 	WritePrefix string
@@ -168,7 +139,6 @@ func (log *Logger) WithTraceID(ctx context.Context) context.Context {
 func (log *Logger) TraceIDField(ctx context.Context) zap.Field {
 	id := ""
 	val := ctx.Value("_traceid")
-	fmt.Println(val)
 	tid, ok := val.(TraceID)
 	if ok {
 		id = tid.String()
@@ -176,11 +146,12 @@ func (log *Logger) TraceIDField(ctx context.Context) zap.Field {
 	return zap.String("_traceid", id)
 }
 
-var pidStr = func() string {
+var _pidString = func() string {
 	pid := os.Getpid()
 	return fmt.Sprintf("%05d", pid)
 }()
-var incInt64 int64 = 0
+
+var _incInt64 int64 = 0
 
 type TraceID string
 
@@ -191,8 +162,8 @@ func (tid TraceID) New() TraceID {
 	nsecStr := strconv.FormatInt(nsec, 10)
 
 	buff.WriteString(nsecStr)
-	buff.WriteString(pidStr)
-	buff.WriteString(strconv.FormatInt(atomic.AddInt64(&incInt64, 1), 10))
+	buff.WriteString(_pidString)
+	buff.WriteString(strconv.FormatInt(atomic.AddInt64(&_incInt64, 1), 10))
 	return TraceID(buff.String())
 }
 
