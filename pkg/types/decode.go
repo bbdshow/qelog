@@ -81,19 +81,21 @@ func (dec Decoder) Full() string {
 func LevelStr2Int(lvl string) model.Level {
 	switch strings.ToUpper(lvl) {
 	case "DEBUG":
-		return 0
+		return -1
 	case "INFO":
-		return 1
+		return 0
 	case "WARN":
-		return 2
+		return 1
 	case "ERROR":
+		return 2
+	case "DPANIC":
 		return 3
-	case "PANIC", "DPANIC":
+	case "PANIC":
 		return 4
 	case "FATAL":
 		return 5
 	}
-	return -1
+	return -2
 }
 
 func Unmarshal(data []byte, v interface{}) error {

@@ -5,6 +5,8 @@ import (
 	"os"
 	"time"
 
+	"github.com/huzhongqing/qelog/pkg/config"
+
 	"github.com/huzhongqing/qelog/libs/logs"
 	"go.uber.org/zap"
 
@@ -70,7 +72,7 @@ func (srv *HTTPService) Close() error {
 func (srv *HTTPService) route(handler *gin.Engine, middleware ...gin.HandlerFunc) {
 	handler.HEAD("/", func(c *gin.Context) { c.Status(200) })
 
-	handler.POST("/login")
+	handler.POST("/v1/login", srv.Login)
 
 	v1 := handler.Group("/v1", middleware...)
 
@@ -95,6 +97,24 @@ func (srv *HTTPService) route(handler *gin.Engine, middleware ...gin.HandlerFunc
 
 	// 报表
 	v1.GET("/metrics/index")
+}
+
+func (srv *HTTPService) Login(c *gin.Context) {
+	in := &entity.LoginReq{}
+	if err := c.ShouldBind(in); err != nil {
+		httputil.RespError(c, httputil.ErrArgsInvalid.MergeError(err))
+		return
+	}
+	if in.Username != config.GlobalConfig.AdminUser.Username ||
+		in.Password != config.GlobalConfig.AdminUser.Password {
+		httputil.RespStatusCodeWithError(c, http.StatusUnauthorized, httputil.NewError(httputil.ErrCodeUnauthorized, "账户或密码错误"))
+		return
+	}
+	out := &entity.LoginResp{
+		Token: "mock-token",
+	}
+	// mock
+	httputil.RespData(c, http.StatusOK, out)
 }
 
 func (srv *HTTPService) FindModuleList(c *gin.Context) {

@@ -2,30 +2,30 @@ package entity
 
 type MetricsIndexResp struct {
 	// 数据库最新统计周期
-	DBName      string `json:"db_name"`
+	DBName      string `json:"dbName"`
 	Collections int32  `json:"collections"`
-	DataSize    string `json:"data_size"`
-	StorageSize string `json:"storage_size"`
-	IndexSize   string `json:"index_size"`
+	DataSize    string `json:"dataSize"`
+	StorageSize string `json:"storageSize"`
+	IndexSize   string `json:"indexSize"`
 	Objects     int64  `json:"objects"`
 	// 项目最新统计周期
 	Modules     int64 `json:"modules"`
 	Numbers     int64 `json:"numbers"`
-	LoggingSize int64 `json:"logging_size"`
+	LoggingSize int64 `json:"loggingSize"`
 }
 
 type MetricsModuleListReq struct {
-	ModuleName string `json:"module_name"`
+	ModuleName string
 	PageReq
 }
 
 type MetricsModuleList struct {
-	ModuleName   string       `json:"module_name"`
-	Number       int64        `json:"number"`
-	Size         string       `json:"size"`
-	LevelsTop    []NumberData `json:"levels_top"`
-	IPsTop       []NumberData `json:"i_ps_top"`
-	CreatedTsSec int64        `json:"created_ts_sec"`
+	ModuleName   string `json:"moduleName"`
+	Number       int64  `json:"number"`
+	Size         string `json:"size"`
+	LevelsTop    []NumberData
+	IPsTop       []NumberData
+	CreatedTsSec int64
 }
 
 type NumberData struct {
@@ -34,8 +34,8 @@ type NumberData struct {
 }
 
 type MetricsModuleReq struct {
-	ModuleName string `json:"module_name" binding:"required"`
-	LastDay    int    `json:"last_day" binding:"required,min=1,max=7"`
+	ModuleName string ` binding:"required"`
+	LastDay    int    ` binding:"required,min=1,max=7"`
 }
 
 type MetricsModule struct {

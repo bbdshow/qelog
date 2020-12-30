@@ -43,14 +43,16 @@ func (lvl Level) Int32() int32 {
 func (lvl Level) String() string {
 	v := "UNKNOWN"
 	switch lvl {
-	case 0:
+	case -1:
 		v = "DEBUG"
-	case 1:
+	case 0:
 		v = "INFO"
-	case 2:
+	case 1:
 		v = "WARN"
-	case 3:
+	case 2:
 		v = "ERROR"
+	case 3:
+		v = "DPANIC"
 	case 4:
 		v = "PANIC"
 	case 5:

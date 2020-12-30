@@ -27,7 +27,7 @@ type AlarmRule struct {
 	Level      Level              `bson:"level"`        // 命中日志等级
 	Tag        string             `bson:"tag"`          // 报警Tag
 	RateSec    int64              `bson:"rate_sec"`     // 多少s之内，只发送一次
-	Method     int32              `bson:"method"`       // 支持方式  1-钉钉
+	Method     Method             `bson:"method"`       // 支持方式  1-钉钉
 	HookURL    string             `bson:"hook_url"`     // 发送链接
 	UpdatedAt  time.Time          `bson:"updated_at"`
 }
@@ -38,6 +38,20 @@ func (AlarmRule) CollectionName() string {
 
 func (am AlarmRule) Key() string {
 	return fmt.Sprintf("%s_%s_%d", am.ModuleName, am.Short, am.Level)
+}
+
+type Method int32
+
+func (m Method) Int32() int32 {
+	return int32(m)
+}
+func (m Method) String() string {
+	v := "UNKNOWN"
+	switch m {
+	case MethodDingDing:
+		v = "DingDing"
+	}
+	return v
 }
 
 func AlarmRuleIndexMany() []mongo.Index {

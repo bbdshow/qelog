@@ -40,7 +40,7 @@ func (srv *Service) FindModuleList(ctx context.Context, in *entity.FindModuleLis
 	opt := options.Find()
 	in.SetPage(opt)
 	opt.SetSort(bson.M{"_id": -1})
-	docs := make([]*model.Module, 0, in.PageSize)
+	docs := make([]*model.Module, 0, in.Limit)
 	c, err := srv.store.FindModuleList(ctx, filter, &docs, opt)
 	if err != nil {
 		return httputil.ErrSystemException.MergeError(err)
@@ -94,7 +94,7 @@ func (srv *Service) UpdateModule(ctx context.Context, in *entity.UpdateModuleReq
 	fields := bson.M{}
 	if doc.DBIndex != in.DBIndex {
 		fields["db_index"] = in.DBIndex
-		update["$addToSet"] = bson.M{"history_db_index": in.DBIndex}
+		update["$addToSet"] = bson.M{"history_db_index": doc.DBIndex}
 	}
 	if doc.Desc != in.Desc {
 		fields["desc"] = in.Desc
@@ -174,7 +174,7 @@ func (srv *Service) FindLoggingByTraceID(ctx context.Context, in *entity.FindLog
 				ID:             v.ID.Hex(),
 				TsMill:         v.Time,
 				Level:          int32(v.Level),
-				ShortMsg:       v.Short,
+				Short:          v.Short,
 				Full:           v.Full,
 				ConditionOne:   v.Condition1,
 				ConditionTwo:   v.Condition2,
@@ -234,7 +234,7 @@ func (srv *Service) FindLoggingList(ctx context.Context, in *entity.FindLoggingL
 	in.SetPage(findOpt)
 	findOpt.SetSort(bson.M{"ts": -1})
 
-	docs := make([]*model.Logging, 0, in.PageSize)
+	docs := make([]*model.Logging, 0, in.Limit)
 	c, err := srv.store.FindLoggingList(ctx, collectionName, filter, &docs, findOpt)
 	if err != nil {
 		return httputil.ErrSystemException.MergeError(err)
@@ -256,7 +256,7 @@ func (srv *Service) FindLoggingList(ctx context.Context, in *entity.FindLoggingL
 			ID:             v.ID.Hex(),
 			TsMill:         v.Time,
 			Level:          int32(v.Level),
-			ShortMsg:       v.Short,
+			Short:          v.Short,
 			Full:           v.Full,
 			ConditionOne:   v.Condition1,
 			ConditionTwo:   v.Condition2,
@@ -333,7 +333,7 @@ func (srv *Service) FindAlarmRuleList(ctx context.Context, in *entity.FindAlarmR
 	opt := options.Find()
 	in.SetPage(opt)
 	opt.SetSort(bson.M{"_id": -1})
-	docs := make([]*model.AlarmRule, 0, in.PageSize)
+	docs := make([]*model.AlarmRule, 0, in.Limit)
 	c, err := srv.store.FindAlarmRuleList(ctx, filter, &docs, opt)
 	if err != nil {
 		return httputil.ErrSystemException.MergeError(err)
@@ -350,7 +350,7 @@ func (srv *Service) FindAlarmRuleList(ctx context.Context, in *entity.FindAlarmR
 			Level:        v.Level.Int32(),
 			Tag:          v.Tag,
 			RateSec:      v.RateSec,
-			Method:       v.Method,
+			Method:       v.Method.Int32(),
 			HookURL:      v.HookURL,
 			UpdatedTsSec: v.UpdatedAt.Unix(),
 		}
@@ -370,7 +370,7 @@ func (srv *Service) CreateAlarmRule(ctx context.Context, in *entity.CreateAlarmR
 		Level:      model.Level(in.Level),
 		Tag:        in.Tag,
 		RateSec:    in.RateSec,
-		Method:     in.Method,
+		Method:     model.Method(in.Method),
 		HookURL:    in.HookURL,
 		UpdatedAt:  time.Now().Local(),
 	}
@@ -396,8 +396,8 @@ func (srv *Service) UpdateAlarmRule(ctx context.Context, in *entity.UpdateAlarmR
 	}
 	update := bson.M{}
 	fields := bson.M{}
-	if (in.Enable == 1) != doc.Enable {
-		fields["enable"] = in.Enable == 1
+	if in.Enable != doc.Enable {
+		fields["enable"] = in.Enable
 	}
 	if in.Short != doc.Short {
 		fields["short"] = in.Short
@@ -411,7 +411,7 @@ func (srv *Service) UpdateAlarmRule(ctx context.Context, in *entity.UpdateAlarmR
 	if in.Tag != doc.Tag {
 		fields["tag"] = in.Tag
 	}
-	if in.Method != doc.Method {
+	if in.Method != doc.Method.Int32() {
 		fields["method"] = in.Method
 	}
 	if in.HookURL != doc.HookURL {

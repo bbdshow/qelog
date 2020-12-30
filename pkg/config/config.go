@@ -25,7 +25,8 @@ type Config struct {
 	// 不同的模块存储不同的集合前缀里 (类似 redis db0-15 ...)
 	DBSize int32
 
-	MongoDB MongoDB
+	MongoDB   MongoDB
+	AdminUser AdminUser
 }
 
 func InitConfig(filename string) *Config {
@@ -66,6 +67,10 @@ func MockDevConfig() *Config {
 		MongoDB: MongoDB{
 			DataBase: "qelog",
 			URI:      "mongodb://127.0.0.1:27017/admin",
+		},
+		AdminUser: AdminUser{
+			Username: "admin",
+			Password: "111111",
 		},
 	}
 }

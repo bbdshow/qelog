@@ -8,13 +8,13 @@ import (
 )
 
 type PageReq struct {
-	Page     int64 `json:"page" form:"page" default:"1" `
-	PageSize int64 `json:"page_size" from:"page_size" default:"20"`
+	Page  int64 `json:"page" form:"page" default:"1" `
+	Limit int64 `json:"limit" from:"limit" default:"20"`
 }
 
 func (v PageReq) SetPage(opt *options.FindOptions) {
-	opt.SetSkip((v.Page - 1) * v.PageSize)
-	opt.SetLimit(v.PageSize)
+	opt.SetSkip((v.Page - 1) * v.Limit)
+	opt.SetLimit(v.Limit)
 }
 
 type ObjectIDReq struct {
@@ -26,8 +26,8 @@ func (v ObjectIDReq) ObjectID() (primitive.ObjectID, error) {
 }
 
 type TimeReq struct {
-	BeginTsSec int64 `json:"begin_ts_sec" form:"begin_ts_sec"`
-	EndTsSec   int64 `json:"end_ts_sec" form:"end_ts_sec"`
+	BeginTsSec int64 `json:"beginTsSec" form:"beginTsSec"`
+	EndTsSec   int64 `json:"endTsSec" form:"endTsSec"`
 }
 
 func (v TimeReq) BeginTime() time.Time {
@@ -68,12 +68,12 @@ type ListResp struct {
 
 type CreateModuleReq struct {
 	Name    string `json:"name" binding:"required,gte=2,lte=24,lowercase"`
-	DBIndex int32  `json:"db_index" binding:"required,min=1,max=16"`
-	Desc    string `json:"desc" binding:"required,gte=1,lte=128"`
+	DBIndex int32  `json:"dbIndex" binding:"required,min=1,max=16"`
+	Desc    string `json:"desc" binding:"omitempty,gte=1,lte=128"`
 }
 
 type FindModuleListReq struct {
-	Name string `json:"name"`
+	Name string `json:"name" form:"name"`
 	PageReq
 }
 
@@ -81,14 +81,14 @@ type FindModuleList struct {
 	ID             string  `json:"id"`
 	Name           string  `json:"name"`
 	Desc           string  `json:"desc"`
-	DBIndex        int32   `json:"db_index"`
-	HistoryDBIndex []int32 `json:"history_db_index"`
-	UpdatedTsSec   int64   `json:"updated_ts_sec"`
+	DBIndex        int32   `json:"dbIndex"`
+	HistoryDBIndex []int32 `json:"historyDbIndex"`
+	UpdatedTsSec   int64   `json:"updatedTsSec"`
 }
 
 type UpdateModuleReq struct {
 	ObjectIDReq
-	DBIndex int32  `json:"db_index" binding:"required,min=1,max=16"`
+	DBIndex int32  `json:"dbIndex" binding:"required,min=1,max=16"`
 	Desc    string `json:"desc" binding:"required,gte=1,lte=128"`
 }
 
@@ -98,9 +98,9 @@ type DeleteModuleReq struct {
 }
 
 type GetDBIndexResp struct {
-	SuggestDBIndex int32          `json:"suggest_db_index"`
-	MaxDBIndex     int32          `json:"max_db_index"`
-	UseState       []DBIndexState `json:"use_state"`
+	SuggestDBIndex int32          `json:"suggestDbIndex"`
+	MaxDBIndex     int32          `json:"maxDbIndex"`
+	UseState       []DBIndexState `json:"useState"`
 }
 type DBIndexState struct {
 	Index int32 `json:"index"`
@@ -108,41 +108,41 @@ type DBIndexState struct {
 }
 
 type FindLoggingListReq struct {
-	DBIndex        int32  `json:"db_index" binding:"required,min=0"`
-	ModuleName     string `json:"module_name" binding:"required"`
+	DBIndex        int32  `json:"dbIndex" binding:"required,min=0"`
+	ModuleName     string `json:"moduleName" binding:"required"`
 	Short          string `json:"short"`
 	Level          int32  `json:"level" binding:"omitempty,min=-1,max=8"`
 	IP             string `json:"ip"`
-	ConditionOne   string `json:"condition_one"`
-	ConditionTwo   string `json:"condition_two"`
-	ConditionThree string `json:"condition_three"`
-	TraceID        string `json:"trace_id"`
+	ConditionOne   string `json:"conditionOne"`
+	ConditionTwo   string `json:"conditionTwo"`
+	ConditionThree string `json:"conditionThree"`
+	TraceID        string `json:"traceId"`
 	TimeReq
 	PageReq
 }
 
 type FindLoggingByTraceIDReq struct {
-	DBIndex    int32  `json:"db_index" binding:"required,min=0"`
-	ModuleName string `json:"module_name" binding:"required"`
-	TraceID    string `json:"trace_id" binding:"required,gte=19"`
+	DBIndex    int32  `json:"dbIndex" binding:"required,min=0"`
+	ModuleName string `json:"moduleName" binding:"required"`
+	TraceID    string `json:"traceId" binding:"required,gte=19"`
 }
 
 type FindLoggingList struct {
 	ID             string `json:"id"`
-	TsMill         int64  `json:"ts_mill"`
+	TsMill         int64  `json:"tsMill"`
 	Level          int32  `json:"level"`
-	ShortMsg       string `json:"short_msg"`
+	Short          string `json:"short"`
 	Full           string `json:"full"`
-	ConditionOne   string `json:"condition_one"`
-	ConditionTwo   string `json:"condition_two"`
-	ConditionThree string `json:"condition_three"`
-	TraceID        string `json:"trace_id"`
+	ConditionOne   string `json:"conditionOne"`
+	ConditionTwo   string `json:"conditionTwo"`
+	ConditionThree string `json:"conditionThree"`
+	TraceID        string `json:"traceId"`
 	IP             string `json:"ip"`
 }
 
 type FindAlarmRuleListReq struct {
 	Enable     int    `json:"enable" binding:"omitempty,min=-1,max=1"`
-	ModuleName string `json:"module_name"`
+	ModuleName string `json:"moduleName"`
 	Short      string `json:"short"`
 	PageReq
 }
@@ -150,29 +150,29 @@ type FindAlarmRuleListReq struct {
 type FindAlarmRuleList struct {
 	ID           string `json:"id"`
 	Enable       bool   `json:"enable"`
-	ModuleName   string `json:"module_name"`
+	ModuleName   string `json:"moduleName"`
 	Short        string `json:"short"`
 	Level        int32  `json:"level"`
 	Tag          string `json:"tag"`
-	RateSec      int64  `json:"rate_sec"`
+	RateSec      int64  `json:"rateSec"`
 	Method       int32  `json:"method"`
-	HookURL      string `json:"hook_url"`
-	UpdatedTsSec int64  `json:"updated_ts_sec"`
+	HookURL      string `json:"hookUrl"`
+	UpdatedTsSec int64  `json:"updatedTsSec"`
 }
 
 type CreateAlarmRuleReq struct {
-	ModuleName string `json:"module_name" binding:"required"`
+	ModuleName string `json:"moduleName" binding:"required"`
 	Short      string `json:"short" binding:"required"`
-	Level      int32  `json:"level" binding:"required,min=0,max=8"`
+	Level      int32  `json:"level" binding:"min=0,max=8"`
 	Tag        string `json:"tag" binding:"omitempty,gte=1,lte=128"`
-	RateSec    int64  `json:"rate_sec" binding:"required,min=1"`
+	RateSec    int64  `json:"rateSec" binding:"required,min=1"`
 	Method     int32  `json:"method" binding:"required,min=1"`
-	HookURL    string `json:"hook_url" binding:"required"`
+	HookURL    string `json:"hookUrl" binding:"required"`
 }
 
 type UpdateAlarmRuleReq struct {
 	ObjectIDReq
-	Enable int `json:"enable" binding:"required,min=0,max=1"`
+	Enable bool `json:"enable"`
 	// module_name 不支持修改
 	CreateAlarmRuleReq
 }

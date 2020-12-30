@@ -8,3 +8,7 @@ metricsEnable = true
 [mongodb]
 database = "qelog"
 uri = "mongodb://127.0.0.1:27017/admin"
+
+[adminUser]
+username = "admin"
+password = "111111"
