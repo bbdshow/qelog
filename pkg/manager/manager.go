@@ -172,7 +172,7 @@ func (srv *Service) FindLoggingByTraceID(ctx context.Context, in *entity.FindLog
 
 			d := &entity.FindLoggingList{
 				ID:             v.ID.Hex(),
-				TsMill:         v.Time,
+				TsMill:         v.TimeMill,
 				Level:          int32(v.Level),
 				Short:          v.Short,
 				Full:           v.Full,
@@ -254,7 +254,7 @@ func (srv *Service) FindLoggingList(ctx context.Context, in *entity.FindLoggingL
 
 		d := &entity.FindLoggingList{
 			ID:             v.ID.Hex(),
-			TsMill:         v.Time,
+			TsMill:         v.TimeMill,
 			Level:          int32(v.Level),
 			Short:          v.Short,
 			Full:           v.Full,

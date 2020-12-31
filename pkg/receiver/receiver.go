@@ -121,7 +121,7 @@ func (srv *Service) decodePacket(ip string, in *pb.Packet) []*model.Logging {
 			IP:        ip,
 			Full:      v,
 			MessageID: in.Id + "_" + strconv.Itoa(i),
-			Timestamp: time.Now().Unix(),
+			TimeSec:   time.Now().Unix(),
 			Size:      len(v),
 		}
 		val := make(map[string]interface{})
@@ -134,7 +134,7 @@ func (srv *Service) decodePacket(ip string, in *pb.Packet) []*model.Logging {
 			r.Condition3 = dec.Condition(3)
 			r.TraceID = dec.TraceID()
 			r.Full = dec.Full()
-			r.Time = dec.Time()
+			r.TimeMill = dec.Time()
 		}
 		records = append(records, r)
 	}
@@ -167,7 +167,7 @@ func (srv *Service) collectionExists(collectionName string) (bool, error) {
 func (srv *Service) loggingShardingByTimestamp(dbIndex int32, docs []*model.Logging) map[string][]interface{} {
 	out := make(map[string][]interface{})
 	for _, v := range docs {
-		name := model.LoggingCollectionName(dbIndex, v.Timestamp)
+		name := model.LoggingCollectionName(dbIndex, v.TimeSec)
 		val, ok := out[name]
 		if ok {
 			out[name] = append(val, v)

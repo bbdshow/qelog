@@ -31,7 +31,9 @@ func ModuleIndexMany() []mongo.Index {
 	return []mongo.Index{
 		{
 			Collection: CollectionNameModule,
-			Keys:       bson.M{"name": 1},
+			Keys: bson.D{{
+				Key: "name", Value: 1,
+			}},
 			Unique:     true,
 			Background: true,
 		},

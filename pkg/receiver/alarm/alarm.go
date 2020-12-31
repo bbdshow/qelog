@@ -117,7 +117,7 @@ IP: %s
 等级: %s
 短消息: %s
 详情: %s
-频次: %d/%ds`, ContentPrefix, rs.rule.Tag, v.IP, time.Unix(v.Timestamp, 0), v.Level.String(),
+频次: %d/%ds`, ContentPrefix, rs.rule.Tag, v.IP, time.Unix(v.TimeSec, 0), v.Level.String(),
 		v.Short, v.Full, atomic.LoadInt32(&rs.count), rs.rule.RateSec)
 }
 

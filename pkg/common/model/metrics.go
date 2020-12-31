@@ -35,30 +35,38 @@ func ModuleMetricsIndexMany() []mongo.Index {
 	return []mongo.Index{
 		{
 			Collection: CollectionNameModuleMetrics,
-			Keys: bson.M{
-				"module_name": 1,
+			Keys: bson.D{
+				{
+					Key: "module_name", Value: 1,
+				},
 			},
 			Background: true,
 		},
 		{
 			Collection: CollectionNameModuleMetrics,
-			Keys: bson.M{
-				"number": -1,
+			Keys: bson.D{
+				{
+					Key: "number", Value: 1,
+				},
 			},
 			Background: true,
 		},
 		{
 			Collection: CollectionNameModuleMetrics,
-			Keys: bson.M{
-				"size": -1,
+			Keys: bson.D{
+				{
+					Key: "size", Value: 1,
+				},
 			},
 			Background: true,
 		},
 		// ttl 30天
 		{
 			Collection: CollectionNameModuleMetrics,
-			Keys: bson.M{
-				"created_date": -1,
+			Keys: bson.D{
+				{
+					Key: "created_date", Value: 1,
+				},
 			},
 			Background:         true,
 			ExpireAfterSeconds: 86400 * 30,

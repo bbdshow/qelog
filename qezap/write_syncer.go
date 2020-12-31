@@ -94,6 +94,7 @@ func (ws *WriteSync) Write(b []byte) (n int, err error) {
 	if err != nil {
 		return n, err
 	}
+
 	if err := ws.isRotate(n); err != nil {
 		return n, errors.New("rotate " + err.Error())
 	}
@@ -153,7 +154,7 @@ func (ws *WriteSync) openFile() error {
 
 // 压缩文件
 func (ws *WriteSync) gzipCompress(filename string) error {
-	if filename == "" {
+	if filename == "" || ws.exit {
 		return nil
 	}
 	ws.compressing <- struct{}{}
@@ -193,8 +194,10 @@ func (ws *WriteSync) isRotate(n int) error {
 	if ws.maxSize <= 0 || atomic.AddInt64(&ws.size, int64(n)) < ws.maxSize {
 		return nil
 	}
-
-	_ = ws.file.Close()
+	// 滚动先关闭原文件
+	if err := ws.file.Close(); err != nil {
+		fmt.Println("ws.file.Close()", err.Error())
+	}
 	ws.file = nil
 	// 滚动, 有任何操作失败的地方，都不滚动
 	rotateFilename := ws.rotateFilename()
@@ -236,6 +239,7 @@ func (ws *WriteSync) backgroundDelExpiredFile() {
 				if ws.exit {
 					return
 				}
+
 				expired := time.Now().Add(-ws.ttl)
 				fs, err := ioutil.ReadDir(ws.dir)
 				if err == nil {
@@ -245,7 +249,9 @@ func (ws *WriteSync) backgroundDelExpiredFile() {
 							if strings.HasSuffix(f.Name(), ".bak.log") ||
 								strings.HasSuffix(f.Name(), ".bak.log.gz") {
 								if f.ModTime().Before(expired) {
+									ws.mutex.Lock()
 									_ = os.Remove(path.Join(ws.dir, f.Name()))
+									ws.mutex.Unlock()
 								}
 							}
 						}

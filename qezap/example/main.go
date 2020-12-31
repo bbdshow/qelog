@@ -3,6 +3,8 @@ package main
 import (
 	"context"
 	"fmt"
+	"math/rand"
+	"strconv"
 	"time"
 
 	"github.com/huzhongqing/qelog/qezap"
@@ -11,6 +13,45 @@ import (
 )
 
 func main() {
+	loopWriteLogging()
+	//writeLogging()
+}
+
+func loopWriteLogging() {
+	addrs := []string{"127.0.0.1:31082"}
+	cfg := qezap.NewConfig(addrs, "example")
+	cfg.SetFilename("./data/log/example.log")
+	qeLog := qezap.New(cfg, zap.DebugLevel)
+	s := time.Now()
+	count := 0
+	for {
+		//time.Sleep(time.Millisecond)
+		count++
+		if count > 2000000 {
+			break
+		}
+		ctx := context.Background()
+		ctx = qeLog.WithTraceID(ctx)
+		val := rand.Int63n(10000000)
+		shrot := strconv.Itoa(rand.Intn(100000))
+		switch val % 4 {
+		case 1:
+			qeLog.Info(shrot, qeLog.TraceIDField(ctx), zap.Int64("val", val))
+			qeLog.Warn(shrot, qeLog.TraceIDField(ctx), zap.Int64("val", val), qeLog.ConditionOne(shrot))
+			qeLog.Error(shrot, qeLog.TraceIDField(ctx), zap.Int64("val", val), qeLog.ConditionOne(shrot), qeLog.ConditionTwo(shrot))
+		case 2:
+			qeLog.Warn(shrot, qeLog.TraceIDField(ctx), zap.Int64("val", val))
+			qeLog.Error(shrot, qeLog.TraceIDField(ctx), zap.Int64("val", val), qeLog.ConditionOne(shrot), qeLog.ConditionTwo(shrot))
+		case 3:
+			qeLog.Error(shrot, qeLog.TraceIDField(ctx), zap.Int64("val", val))
+		default:
+			qeLog.Debug(shrot, qeLog.TraceIDField(ctx), zap.Int64("val", val))
+		}
+	}
+	fmt.Println(time.Now().Sub(s))
+}
+
+func writeLogging() {
 	addrs := []string{"127.0.0.1:31082"}
 	cfg := qezap.NewConfig(addrs, "example")
 
@@ -44,6 +85,7 @@ func main() {
 	qeLog.Error("Sync", zap.String("结束最后写入", "final"))
 	// sync 执行后，缓存在本地的日志，将全部发送
 	qeLog.Sync()
+	time.Sleep(time.Minute)
 	qeLog.Fatal("Fatal", zap.String("这个Fatal, 也是能写进去的哟", "Fatal"))
 	fmt.Println("never print")
 }

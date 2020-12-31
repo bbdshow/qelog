@@ -57,10 +57,16 @@ func (m Method) String() string {
 func AlarmRuleIndexMany() []mongo.Index {
 	return []mongo.Index{{
 		Collection: CollectionNameAlarmRule,
-		Keys: bson.M{
-			"module_name": 1,
-			"short":       1,
-			"level":       1,
+		Keys: bson.D{
+			{
+				Key: "module_name", Value: 1,
+			},
+			{
+				Key: "short", Value: 1,
+			},
+			{
+				Key: "level", Value: 1,
+			},
 		},
 		Unique:     true,
 		Background: true,

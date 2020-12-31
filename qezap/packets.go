@@ -146,18 +146,17 @@ func (p *Packets) ReadBakPacket(v interface{}) (ok bool, err error) {
 	b, err := buf.ReadBytes('\n')
 	if err != nil {
 		if err == io.EOF {
-			// 文件读取完了，就删除了
-			// 关闭 file io
+			//  清空文件夹
+			if _, err := f.Seek(0, io.SeekStart); err != nil {
+				log.Printf("f.Seek offset zero %s\n", err.Error())
+				return false, nil
+			}
+			if err := os.Truncate(p.bakFilename, 0); err != nil {
+				log.Printf(" os.Truncate  %s\n", err.Error())
+				return false, nil
+			}
 			_ = f.Close()
-			if p.backWrite != nil {
-				_ = p.backWrite.Close()
-			}
-			p.backWrite = nil
-			if err := os.Remove(p.bakFilename); err == nil {
-				p.offset = 0
-			} else {
-				log.Printf("os.Remove %s %s\n", p.bakFilename, err.Error())
-			}
+			p.offset = 0
 			return false, nil
 		}
 		return false, err

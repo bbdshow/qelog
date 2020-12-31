@@ -101,7 +101,7 @@ func (db *Database) ListAllCollectionNames(ctx context.Context) ([]string, error
 type Index struct {
 	Collection         string
 	Name               string // 指定索引名称
-	Keys               bson.M
+	Keys               bson.D
 	Unique             bool  // 唯一索引
 	Background         bool  // 非阻塞创建索引
 	ExpireAfterSeconds int32 // 多少秒后过期
