@@ -71,14 +71,14 @@ var dataFree = sync.Pool{
 	New: func() interface{} { return NewBuffSliceString() },
 }
 
-func NewPackets(maxSize int) *Packets {
+func NewPackets(maxSize int, backup string) *Packets {
 	if maxSize > 1 {
 		_maxPacketSize = maxSize
 	}
 	data := dataFree.Get().(*BuffSliceString)
 	p := &Packets{
 		data:        data,
-		bakFilename: "./failed.bak/packets.bak",
+		bakFilename: backup,
 		offset:      0,
 	}
 	p.initBackWrite()

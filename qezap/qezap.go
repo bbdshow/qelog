@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"path"
 	"strconv"
 	"sync/atomic"
 	"time"
@@ -12,6 +13,8 @@ import (
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 )
+
+var _logFilename = "./log/logger.log"
 
 type Config struct {
 	WriteSync WriteSyncConfig
@@ -21,9 +24,8 @@ type Config struct {
 }
 
 func NewConfig(addrs []string, moduleName string) *Config {
-	defaultFilename := "./log/qelogger.log"
 	cfg := &Config{
-		WriteSync:    NewWriteSyncConfig(defaultFilename),
+		WriteSync:    NewWriteSyncConfig(_logFilename),
 		EnableRemote: true,
 		WriteRemote:  NewWriteRemoteConfig(addrs, moduleName),
 	}
@@ -31,7 +33,9 @@ func NewConfig(addrs []string, moduleName string) *Config {
 }
 
 func (cfg *Config) SetFilename(filename string) *Config {
+	dir := path.Dir(filename)
 	cfg.WriteSync.Filename = filename
+	cfg.WriteRemote.RemoteFailedBackup = path.Join(dir, "backup", "backup.log")
 	return cfg
 }
 

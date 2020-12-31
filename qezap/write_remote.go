@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"path"
 	"sync"
 	"time"
 
@@ -12,14 +13,17 @@ import (
 	"github.com/huzhongqing/qelog/qezap/push"
 )
 
+var _backupFilename = path.Join(path.Dir(_logFilename), "backup", "backup.log")
+
 type WriteRemoteConfig struct {
 	Transport  string // 支持 http || grpc 默认grpc
 	Addrs      []string
 	ModuleName string
 
-	MaxConcurrent int           // 默认 1 个并发
-	MaxPacket     int           // 默认不缓冲
-	WriteTimeout  time.Duration // 默认不超时
+	MaxConcurrent      int           // 默认 1 个并发
+	MaxPacket          int           // 默认不缓冲
+	WriteTimeout       time.Duration // 默认不超时
+	RemoteFailedBackup string        // 远程发送失败，备份文件
 }
 
 func (cfg WriteRemoteConfig) Validate() error {
@@ -41,8 +45,9 @@ func NewWriteRemoteConfig(addrs []string, moduleName string) WriteRemoteConfig {
 		// 包的大小对写入效率有着比较重要的影响。 当设置 1MB时，会快于 64KB
 		// 但是小对象对于GC相对更加友好
 		// 63KB 未选择 64KB，留1kb给GRPC本身携带信息。 (grpc 默认最大4MB一个包)
-		MaxPacket:    63 << 10,
-		WriteTimeout: 5 * time.Second,
+		MaxPacket:          63 << 10,
+		WriteTimeout:       5 * time.Second,
+		RemoteFailedBackup: _backupFilename,
 	}
 	// 如果超出并发限制，直接写入文件，缓慢背景发送
 }
@@ -62,7 +67,7 @@ func NewWriteRemote(cfg WriteRemoteConfig) *WriteRemote {
 	}
 	wr := &WriteRemote{
 		cfg:     cfg,
-		packets: NewPackets(cfg.MaxPacket),
+		packets: NewPackets(cfg.MaxPacket, cfg.RemoteFailedBackup),
 	}
 
 	wr.once.Do(func() {
