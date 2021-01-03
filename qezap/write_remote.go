@@ -9,8 +9,6 @@ import (
 	"time"
 
 	"github.com/huzhongqing/qelog/pb"
-
-	"github.com/huzhongqing/qelog/qezap/push"
 )
 
 var _backupFilename = path.Join(path.Dir(_logFilename), "backup", "backup.log")
@@ -54,7 +52,7 @@ func NewWriteRemoteConfig(addrs []string, moduleName string) WriteRemoteConfig {
 
 type WriteRemote struct {
 	cfg    WriteRemoteConfig
-	pusher push.Pusher
+	pusher Pusher
 
 	packets *Packets
 
@@ -81,8 +79,7 @@ func NewWriteRemote(cfg WriteRemoteConfig) *WriteRemote {
 func (wr *WriteRemote) Write(b []byte) (n int, err error) {
 	data, flush := wr.packets.AddPacket(b)
 	if flush {
-		wr.push(push.NewPacket(wr.cfg.ModuleName, data.val))
-		wr.packets.Free(data)
+		wr.push(NewDataPacket(wr.cfg.ModuleName, data))
 	}
 	return len(b), nil
 }
@@ -94,25 +91,26 @@ func (wr *WriteRemote) pullPacket() {
 		case <-tick.C:
 			data, flush := wr.packets.PullPacket()
 			if flush {
-				wr.push(push.NewPacket(wr.cfg.ModuleName, data.Val()))
-				wr.packets.Free(data)
+				wr.push(NewDataPacket(wr.cfg.ModuleName, data))
 			}
 		}
 	}
 }
 
-func (wr *WriteRemote) push(in *pb.Packet) {
-	if len(in.Data) <= 0 {
+func (wr *WriteRemote) push(in *DataPacket) {
+	if in.Data == nil || in.Data.Size() <= 0 {
 		// 没有类容的包，直接丢掉
 		return
 	}
 	if wr.pusher == nil {
-		_, _ = wr.packets.WriteBakPacket(in)
+		_, _ = wr.packets.WriteBakPacket(in.Packet())
+		in.Reset()
 		return
 	}
 	// 如果发送者满负荷，则直接丢文件
 	if wr.pusher.Concurrent() >= wr.cfg.MaxConcurrent {
-		_, _ = wr.packets.WriteBakPacket(in)
+		_, _ = wr.packets.WriteBakPacket(in.Packet())
+		in.Reset()
 		return
 	}
 
@@ -122,13 +120,14 @@ func (wr *WriteRemote) push(in *pb.Packet) {
 	}
 
 	go func() {
-		if err := wr.pusher.PushPacket(ctx, in); err != nil {
-			if err == push.ErrUnavailable {
+		if err := wr.pusher.PushPacket(ctx, in.Packet()); err != nil {
+			if err == ErrUnavailable {
 				// 只有当服务不可用时，放入错误备份文件里
-				_, _ = wr.packets.WriteBakPacket(in)
+				_, _ = wr.packets.WriteBakPacket(in.Packet())
 			}
 			log.Printf("write remote push packet %s\n", err.Error())
 		}
+		in.Reset()
 	}()
 }
 
@@ -138,14 +137,14 @@ func (wr *WriteRemote) initPusher() {
 	for {
 		if wr.pusher == nil {
 			if wr.cfg.Transport == "http" {
-				pusher, err := push.NewHttpPush(wr.cfg.Addrs[0], wr.cfg.MaxConcurrent)
+				pusher, err := NewHttpPush(wr.cfg.Addrs[0], wr.cfg.MaxConcurrent)
 				if err != nil {
 					log.Printf("init http push error %s\n", err.Error())
 					goto next
 				}
 				wr.pusher = pusher
 			} else {
-				pusher, err := push.NewGRPCPush(wr.cfg.Addrs, wr.cfg.MaxConcurrent)
+				pusher, err := NewGRPCPush(wr.cfg.Addrs, wr.cfg.MaxConcurrent)
 				if err != nil {
 					log.Printf("init grpc push error %s\n", err.Error())
 					goto next
@@ -175,7 +174,17 @@ func (wr *WriteRemote) backgroundRetry() {
 				fmt.Println("packets retry", err.Error())
 			}
 			if ok && len(v.Data) > 0 {
-				wr.push(v)
+			loop:
+				if wr.pusher != nil {
+					ctx, _ := context.WithTimeout(context.Background(), 10*time.Second)
+					if err := wr.pusher.PushPacket(ctx, v); err == nil {
+						break
+					} else {
+						log.Printf("write remote push packet %s\n", err.Error())
+					}
+				}
+				time.Sleep(time.Second)
+				goto loop
 			}
 		}
 	}
@@ -184,8 +193,7 @@ func (wr *WriteRemote) backgroundRetry() {
 func (wr *WriteRemote) Sync() error {
 	data, flush := wr.packets.PullPacket()
 	if flush {
-		wr.push(push.NewPacket(wr.cfg.ModuleName, data.Val()))
-		wr.packets.Free(data)
+		wr.push(NewDataPacket(wr.cfg.ModuleName, data))
 	}
 	sendEmpty := make(chan struct{}, 1)
 	go func() {

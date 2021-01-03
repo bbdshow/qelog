@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"sort"
+	"strings"
 	"time"
 
 	"github.com/huzhongqing/qelog/pkg/types"
@@ -203,7 +204,7 @@ func (srv *Service) FindLoggingList(ctx context.Context, in *entity.FindLoggingL
 	}
 
 	filter := bson.M{
-		"m": in.ModuleName,
+		"m": strings.TrimSpace(in.ModuleName),
 	}
 
 	// 必须存在时间
@@ -233,7 +234,7 @@ func (srv *Service) FindLoggingList(ctx context.Context, in *entity.FindLoggingL
 	findOpt := options.Find()
 	in.SetPage(findOpt)
 	findOpt.SetSort(bson.M{"ts": -1})
-
+	//fmt.Println(collectionName, filter)
 	docs := make([]*model.Logging, 0, in.Limit)
 	c, err := srv.store.FindLoggingList(ctx, collectionName, filter, &docs, findOpt)
 	if err != nil {

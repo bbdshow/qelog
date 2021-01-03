@@ -1,4 +1,4 @@
-package push
+package qezap
 
 import (
 	"bytes"
@@ -8,9 +8,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"log"
-	"math/rand"
 	"net/http"
-	"strconv"
 	"time"
 
 	"google.golang.org/grpc/balancer/roundrobin"
@@ -19,15 +17,6 @@ import (
 	"github.com/huzhongqing/qelog/pb"
 	"google.golang.org/grpc"
 )
-
-func NewPacket(module string, data []string) *pb.Packet {
-	return &pb.Packet{
-		// 尽可能唯一ID, 后面随机3位，是防止多进程同一时刻
-		Id:     strconv.FormatInt(time.Now().UnixNano()/1e6, 10) + "_" + strconv.FormatInt(rand.Int63n(1000), 10),
-		Module: module,
-		Data:   data,
-	}
-}
 
 var (
 	ErrUnavailable = errors.New("Push Unavailable")
@@ -78,7 +67,12 @@ func (gp *GRRCPush) PushPacket(ctx context.Context, in *pb.Packet) error {
 	if ctx == nil {
 		ctx, _ = context.WithTimeout(context.Background(), 10*time.Second)
 	}
-	return gp.push(ctx, in)
+
+	if err := gp.push(ctx, in); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (gp *GRRCPush) push(ctx context.Context, in *pb.Packet) error {

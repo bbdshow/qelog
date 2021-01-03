@@ -6,21 +6,14 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"math/rand"
 	"os"
+	"strconv"
 	"sync"
+	"time"
+
+	"github.com/huzhongqing/qelog/pb"
 )
-
-// data 数据最大容量
-var _maxPacketSize = 1024
-
-type Packets struct {
-	data *BuffSliceString
-
-	mutex       sync.Mutex
-	backWrite   *WriteSync
-	bakFilename string
-	offset      int64
-}
 
 type BuffSliceString struct {
 	mutex sync.RWMutex
@@ -62,7 +55,9 @@ func (bss *BuffSliceString) Size() int {
 
 func (bss *BuffSliceString) Val() []string {
 	bss.mutex.RLock()
+	//val := make([]string, len(bss.val))
 	val := bss.val[0:]
+	//copy(val, bss.val)
 	bss.mutex.RUnlock()
 	return val
 }
@@ -71,11 +66,59 @@ var dataFree = sync.Pool{
 	New: func() interface{} { return NewBuffSliceString() },
 }
 
+func DataPoolGet() *BuffSliceString {
+	return dataFree.Get().(*BuffSliceString)
+}
+
+func DataPoolPut(bss *BuffSliceString) {
+	bss.Reset()
+	dataFree.Put(bss)
+}
+
+type DataPacket struct {
+	ID     string
+	Module string
+	Data   *BuffSliceString
+}
+
+func (dp *DataPacket) Packet() *pb.Packet {
+	return &pb.Packet{
+		Id:     dp.ID,
+		Module: dp.Module,
+		Data:   dp.Data.Val(),
+	}
+}
+
+func (dp *DataPacket) Reset() {
+	DataPoolPut(dp.Data)
+}
+
+func NewDataPacket(module string, data *BuffSliceString) *DataPacket {
+	return &DataPacket{
+		// 尽可能唯一ID, 后面随机3位，是防止多进程同一时刻
+		ID:     strconv.FormatInt(time.Now().UnixNano()/1e6, 10) + "_" + strconv.FormatInt(rand.Int63n(1000), 10),
+		Module: module,
+		Data:   data,
+	}
+}
+
+// data 数据最大容量
+var _maxPacketSize = 1024
+
+type Packets struct {
+	data *BuffSliceString
+
+	mutex       sync.Mutex
+	backWrite   *WriteSync
+	bakFilename string
+	offset      int64
+}
+
 func NewPackets(maxSize int, backup string) *Packets {
 	if maxSize > 1 {
 		_maxPacketSize = maxSize
 	}
-	data := dataFree.Get().(*BuffSliceString)
+	data := DataPoolGet()
 	p := &Packets{
 		data:        data,
 		bakFilename: backup,
@@ -104,14 +147,9 @@ func (p *Packets) AddPacket(b []byte) (*BuffSliceString, bool) {
 	return nil, false
 }
 
-func (p *Packets) Free(bss *BuffSliceString) {
-	bss.Reset()
-	dataFree.Put(bss)
-}
-
 func (p *Packets) PullPacket() (*BuffSliceString, bool) {
 	bss := p.data
-	p.data = dataFree.Get().(*BuffSliceString)
+	p.data = DataPoolGet()
 	return bss, true
 }
 
