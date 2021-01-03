@@ -220,6 +220,9 @@ func (srv *Service) FindLoggingList(ctx context.Context, in *entity.FindLoggingL
 	if in.Level > -2 {
 		filter["l"] = in.Level
 	}
+	if in.IP != "" {
+		filter["ip"] = in.IP
+	}
 	// 必需要有前置条件，才能查询后面的，以便命中索引
 	if in.ConditionOne != "" {
 		filter["c1"] = in.ConditionOne
