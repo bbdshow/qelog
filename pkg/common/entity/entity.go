@@ -116,7 +116,6 @@ type FindLoggingListReq struct {
 	ConditionOne   string `json:"conditionOne"`
 	ConditionTwo   string `json:"conditionTwo"`
 	ConditionThree string `json:"conditionThree"`
-	TraceID        string `json:"traceId"`
 	TimeReq
 	PageReq
 }
