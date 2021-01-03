@@ -111,7 +111,7 @@ type FindLoggingListReq struct {
 	DBIndex        int32  `json:"dbIndex" binding:"required,min=0"`
 	ModuleName     string `json:"moduleName" binding:"required"`
 	Short          string `json:"short"`
-	Level          int32  `json:"level" binding:"omitempty,min=-1,max=8"`
+	Level          int32  `json:"level" binding:"omitempty,min=-2,max=5"`
 	IP             string `json:"ip"`
 	ConditionOne   string `json:"conditionOne"`
 	ConditionTwo   string `json:"conditionTwo"`

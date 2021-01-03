@@ -13,8 +13,8 @@ import (
 )
 
 func main() {
-	loopWriteLogging()
-	//writeLogging()
+	//loopWriteLogging()
+	writeLogging()
 }
 
 func loopWriteLogging() {
@@ -85,7 +85,7 @@ func writeLogging() {
 	qeLog.Error("Alarm", zap.String("info", "测试一条报警信息"))
 	qeLog.Error("Sync", zap.String("结束最后写入", "final"))
 	// sync 执行后，缓存在本地的日志，将全部发送
-	qeLog.Sync()
+	//qeLog.Sync()
 	time.Sleep(time.Minute)
 	qeLog.Fatal("Fatal", zap.String("这个Fatal, 也是能写进去的哟", "Fatal"))
 	fmt.Println("never print")

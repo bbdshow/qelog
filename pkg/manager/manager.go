@@ -216,7 +216,7 @@ func (srv *Service) FindLoggingList(ctx context.Context, in *entity.FindLoggingL
 		}
 	}
 
-	if in.Level >= 0 {
+	if in.Level > -2 {
 		filter["l"] = in.Level
 	}
 	// 必需要有前置条件，才能查询后面的，以便命中索引
