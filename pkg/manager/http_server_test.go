@@ -104,7 +104,7 @@ func TestCreateAlarmRule(t *testing.T) {
 func TestUpdateAlarmRule(t *testing.T) {
 	in := &entity.UpdateAlarmRuleReq{
 		ObjectIDReq: entity.ObjectIDReq{ID: "5feac25b147eb46108e919a0"},
-		Enable:      1,
+		Enable:      true,
 		CreateAlarmRuleReq: entity.CreateAlarmRuleReq{
 			ModuleName: "example",
 			Short:      "Alarm",
@@ -122,6 +122,14 @@ func TestUpdateAlarmRule(t *testing.T) {
 	}
 	req.Header.Set("Content-Type", "application/json")
 	resp, err := cli.Do(req)
+	if err != nil {
+		t.Fatal(err)
+	}
+	JSONOutput(resp, t)
+}
+
+func TestMetricsCount(t *testing.T) {
+	resp, err := http.Get(fmt.Sprintf("%s/v1/metrics/count", host))
 	if err != nil {
 		t.Fatal(err)
 	}

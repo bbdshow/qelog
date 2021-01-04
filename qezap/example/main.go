@@ -13,8 +13,8 @@ import (
 )
 
 func main() {
-	//loopWriteLogging()
-	writeLogging()
+	loopWriteLogging()
+	//writeLogging()
 }
 
 func loopWriteLogging() {

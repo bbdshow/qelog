@@ -34,7 +34,8 @@ type DataResp struct {
 }
 
 func RespError(c *gin.Context, err error) {
-	RespStatusCodeWithError(c, http.StatusBadRequest, err)
+	// 请求算成功，取业务Code码
+	RespStatusCodeWithError(c, http.StatusOK, err)
 }
 
 type errLog struct {

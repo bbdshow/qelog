@@ -53,7 +53,7 @@ type DBStatsResp struct {
 	Objects     int64  `json:"objects"`
 	DataSize    int64  `json:"dataSize"`
 	StorageSize int64  `json:"storageSize"`
-	Indexes     int32  `json:"indexes"`
+	Indexes     int64  `json:"indexes"`
 	IndexSize   int64  `json:"indexSize"`
 }
 

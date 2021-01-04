@@ -23,6 +23,10 @@ func New(database *mongo.Database) *Store {
 	return store
 }
 
+func (store *Store) Database() *mongo.Database {
+	return store.database
+}
+
 func (store *Store) ListAllCollectionNames(ctx context.Context) ([]string, error) {
 	names, err := store.database.ListAllCollectionNames(ctx)
 	return names, WrapError(err)

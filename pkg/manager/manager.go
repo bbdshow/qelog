@@ -7,6 +7,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/huzhongqing/qelog/pkg/mongoutil"
+
 	"github.com/huzhongqing/qelog/pkg/types"
 
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -22,11 +24,15 @@ import (
 )
 
 type Service struct {
-	store *storage.Store
+	store     *storage.Store
+	mongoUtil *mongoutil.MongodbUtil
 }
 
 func NewService(store *storage.Store) *Service {
-	srv := &Service{store: store}
+	srv := &Service{
+		store:     store,
+		mongoUtil: mongoutil.NewMongodbUtil(store.Database()),
+	}
 	return srv
 }
 

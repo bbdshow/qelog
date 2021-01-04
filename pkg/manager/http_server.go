@@ -96,7 +96,8 @@ func (srv *HTTPService) route(handler *gin.Engine, middleware ...gin.HandlerFunc
 	v1.POST("/logging/traceid", srv.FindLoggingByTraceID)
 
 	// 报表
-	v1.GET("/metrics/index")
+	v1.GET("/metrics/count", srv.MetricsCount)
+	v1.GET("/metrics/module/list", srv.MetricsModuleList)
 }
 
 func (srv *HTTPService) Login(c *gin.Context) {
@@ -262,4 +263,28 @@ func (srv *HTTPService) DeleteAlarmRule(c *gin.Context) {
 		return
 	}
 	httputil.RespSuccess(c)
+}
+
+func (srv *HTTPService) MetricsCount(c *gin.Context) {
+	out := &entity.MetricsCountResp{}
+	if err := srv.manager.MetricsCount(c.Request.Context(), out); err != nil {
+		httputil.RespError(c, err)
+		return
+	}
+	httputil.RespData(c, http.StatusOK, out)
+}
+
+func (srv *HTTPService) MetricsModuleList(c *gin.Context) {
+	in := &entity.MetricsModuleListReq{}
+	if err := c.ShouldBind(in); err != nil {
+		httputil.RespError(c, httputil.ErrArgsInvalid.MergeError(err))
+		return
+	}
+	out := &entity.ListResp{}
+
+	if err := srv.manager.MetricsModuleList(c.Request.Context(), in, out); err != nil {
+		httputil.RespError(c, err)
+		return
+	}
+	httputil.RespData(c, http.StatusOK, out)
 }
