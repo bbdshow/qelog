@@ -98,6 +98,7 @@ func (srv *HTTPService) route(handler *gin.Engine, middleware ...gin.HandlerFunc
 	// 报表
 	v1.GET("/metrics/count", srv.MetricsCount)
 	v1.GET("/metrics/module/list", srv.MetricsModuleList)
+	v1.GET("/metrics/module/trend", srv.MetricsModuleTrend)
 }
 
 func (srv *HTTPService) Login(c *gin.Context) {
@@ -283,6 +284,21 @@ func (srv *HTTPService) MetricsModuleList(c *gin.Context) {
 	out := &entity.ListResp{}
 
 	if err := srv.manager.MetricsModuleList(c.Request.Context(), in, out); err != nil {
+		httputil.RespError(c, err)
+		return
+	}
+	httputil.RespData(c, http.StatusOK, out)
+}
+
+func (srv *HTTPService) MetricsModuleTrend(c *gin.Context) {
+	in := &entity.MetricsModuleTrendReq{}
+	if err := c.ShouldBind(in); err != nil {
+		httputil.RespError(c, httputil.ErrArgsInvalid.MergeError(err))
+		return
+	}
+	out := &entity.MetricsModuleTrendResp{}
+
+	if err := srv.manager.MetricsModuleTrend(c.Request.Context(), in, out); err != nil {
 		httputil.RespError(c, err)
 		return
 	}

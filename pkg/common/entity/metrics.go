@@ -1,5 +1,7 @@
 package entity
 
+import "sort"
+
 type MetricsCountResp struct {
 	// 数据库最新统计周期
 	DBCount DBCount `json:"dbCount"`
@@ -41,25 +43,47 @@ type NumberData struct {
 	Number int64  `json:"number"`
 }
 
-type MetricsModuleReq struct {
-	ModuleName string ` binding:"required"`
-	LastDay    int    ` binding:"required,min=1,max=7"`
+type MetricsModuleTrendReq struct {
+	ModuleName string `json:"moduleName" form:"moduleName" binding:"required"`
+	LastDay    int    `json:"lastDay" form:"lastDay" binding:"required,min=1,max=7"`
 }
 
-type MetricsModule struct {
-	ModuleName string
-	Numbers    int64
-	Size       string
-	Levels     []string
-	LevelData  []LineNumData
-	IPs        []string
-	IPData     []LineNumData
+type MetricsModuleTrendResp struct {
+	// X坐标
+	XData []string `json:"xData"`
+	// 说明
+	LegendData []string `json:"legendData"`
+	// 等级条目
+	LevelSeries []Serie `json:"levelSeries"`
+	IPSeries    []Serie `json:"ipSeries"`
+	Number      int64   `json:"number"`
+	Size        int64   `json:"size"`
 }
 
-type LineNumData struct {
-	Name string
-	Data []int64
+type Serie struct {
+	Index int32   `json:"index"`
+	Name  string  `json:"name"`
+	Type  string  `json:"type"`
+	Color string  `json:"color"`
+	Data  []int32 `json:"data"`
 }
+type AscSeries []Serie
 
-type MetricsIPUpTop struct {
+func (v AscSeries) Len() int           { return len(v) }
+func (v AscSeries) Swap(i, j int)      { v[i], v[j] = v[j], v[i] }
+func (v AscSeries) Less(i, j int) bool { return v[i].Index < v[j].Index }
+
+type DescSeries []Serie
+
+func (v DescSeries) Len() int           { return len(v) }
+func (v DescSeries) Swap(i, j int)      { v[i], v[j] = v[j], v[i] }
+func (v DescSeries) Less(i, j int) bool { return v[i].Index > v[j].Index }
+func SortSeries(series []Serie, order string) {
+	if order == "ASC" {
+		sort.Sort(AscSeries(series))
+		return
+	}
+	if order == "DESC" {
+		sort.Sort(DescSeries(series))
+	}
 }

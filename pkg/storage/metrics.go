@@ -73,3 +73,7 @@ func (store *Store) MetricsModuleCountByDate(ctx context.Context, date time.Time
 func (store *Store) FindMetricsModuleList(ctx context.Context, filter bson.M, result interface{}, opt *options.FindOptions) (int64, error) {
 	return store.database.FindAndCount(ctx, store.database.Collection(model.CollectionNameModuleMetrics), filter, result, opt)
 }
+
+func (store *Store) FindModuleMetrics(ctx context.Context, filter bson.M, result interface{}, opt *options.FindOptions) error {
+	return store.database.Find(ctx, store.database.Collection(model.CollectionNameModuleMetrics), filter, result, opt)
+}

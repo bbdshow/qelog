@@ -135,3 +135,11 @@ func TestMetricsCount(t *testing.T) {
 	}
 	JSONOutput(resp, t)
 }
+
+func TestMetricsModuleTrend(t *testing.T) {
+	resp, err := http.Get(fmt.Sprintf("%s/v1/metrics/module/trend?moduleName=%s&lastDay=%d", host, "example", 7))
+	if err != nil {
+		t.Fatal(err)
+	}
+	JSONOutput(resp, t)
+}

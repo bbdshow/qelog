@@ -27,6 +27,17 @@ type Numbers struct {
 	IPs    map[string]int32 `bson:"ips"`
 }
 
+type TsNumbers struct {
+	Ts int64
+	Numbers
+}
+
+type AscTsNumbers []TsNumbers
+
+func (v AscTsNumbers) Len() int           { return len(v) }
+func (v AscTsNumbers) Swap(i, j int)      { v[i], v[j] = v[j], v[i] }
+func (v AscTsNumbers) Less(i, j int) bool { return v[i].Ts < v[j].Ts }
+
 func (mm ModuleMetrics) CollectionName() string {
 	return CollectionNameModuleMetrics
 }

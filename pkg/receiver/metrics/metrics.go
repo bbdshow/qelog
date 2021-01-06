@@ -128,7 +128,7 @@ func (m *Metrics) Statistics(moduleName, ip string, docs []*model.Logging) {
 		m.states[moduleName] = state
 	} else if state.IsInc() {
 		// 先检查是否超过周期
-		go m.inc(state)
+		m.inc(state)
 		state = initState(moduleName)
 		m.states[moduleName] = state
 	}
