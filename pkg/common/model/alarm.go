@@ -1,7 +1,7 @@
 package model
 
 import (
-	"fmt"
+	"bytes"
 	"time"
 
 	"go.mongodb.org/mongo-driver/bson"
@@ -37,7 +37,13 @@ func (AlarmRule) CollectionName() string {
 }
 
 func (am AlarmRule) Key() string {
-	return fmt.Sprintf("%s_%s_%d", am.ModuleName, am.Short, am.Level)
+	buf := bytes.Buffer{}
+	buf.WriteString(am.ModuleName)
+	buf.WriteString("_")
+	buf.WriteString(am.Short)
+	buf.WriteString("_")
+	buf.WriteString(am.Level.String())
+	return buf.String()
 }
 
 type Method int32
