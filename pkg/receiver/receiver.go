@@ -115,12 +115,8 @@ func (srv *Service) InsertPacket(ctx context.Context, ip string, in *pb.Packet) 
 	}
 
 	defer func() {
-		if aDoc != nil {
-			putInsertDocs(aDoc)
-		}
-		if bDoc != nil {
-			putInsertDocs(bDoc)
-		}
+		putInsertDocs(aDoc)
+		putInsertDocs(bDoc)
 	}()
 	if err := inserts(ctx, aDoc); err != nil {
 		return err
@@ -198,6 +194,9 @@ func getInsertDocs() *InsertDocs {
 }
 
 func putInsertDocs(v *InsertDocs) {
+	if v == nil {
+		return
+	}
 	v.CollectionName = ""
 	v.Docs = v.Docs[:0]
 	insertDocsPool.Put(v)
