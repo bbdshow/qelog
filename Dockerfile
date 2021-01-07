@@ -25,5 +25,6 @@ WORKDIR /app
 
 COPY --from=builder ./app/bin .
 COPY --from=builder ./app/configs ./configs
+COPY --from=builder ./app/web ./web
 
 CMD ["/bin/sh"]

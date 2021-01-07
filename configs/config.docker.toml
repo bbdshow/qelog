@@ -7,8 +7,13 @@ metricsEnable = true
 
 [mongodb]
 database = "qelog"
-uri = "mongodb://host.docker.internal:27017/admin"
+uri = "mongodb://root:111111@mongodb1.dev.crycx.com:27017,mongodb2.dev.crycx.com:27017/?replicaSet=fbj&authSource=admin"
+#uri = "mongodb://host.docker.internal:27017/admin"
 
 [adminUser]
 username = "admin"
 password = "111111"
+
+[logging]
+module = "qelog"
+addr = ["192.168.10.114:38102"]

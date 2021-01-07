@@ -99,6 +99,13 @@ func (srv *HTTPService) route(handler *gin.Engine, middleware ...gin.HandlerFunc
 	v1.GET("/metrics/count", srv.MetricsCount)
 	v1.GET("/metrics/module/list", srv.MetricsModuleList)
 	v1.GET("/metrics/module/trend", srv.MetricsModuleTrend)
+
+	// 单页应用
+	handler.StaticFile("/favicon.ico", "web/favicon.ico")
+	handler.Static("/static", "web/static")
+	handler.Static("/admin", "web")
+
+	//handler.Static("/static", "web/dist/static")
 }
 
 func (srv *HTTPService) Login(c *gin.Context) {

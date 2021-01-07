@@ -47,7 +47,7 @@ func main() {
 	}
 
 	config.SetGlobalConfig(cfg)
-	logs.InitQezap([]string{"127.0.0.1:31082"}, "example")
+	logs.InitQezap(cfg.Logging.Addr, cfg.Logging.Module)
 
 	httpSrv := manager.NewHTTPService(database)
 

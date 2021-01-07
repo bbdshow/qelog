@@ -27,6 +27,8 @@ type Config struct {
 
 	MongoDB   MongoDB
 	AdminUser AdminUser
+
+	Logging Logging
 }
 
 func InitConfig(filename string) *Config {
@@ -50,6 +52,11 @@ type MongoDB struct {
 type AdminUser struct {
 	Username string
 	Password string
+}
+
+type Logging struct {
+	Module string
+	Addr   []string
 }
 
 func MockDevConfig() *Config {
