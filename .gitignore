@@ -16,6 +16,6 @@
 
 .idea
 
+data
 log
 *.log
-failed.bak

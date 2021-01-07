@@ -25,9 +25,9 @@ func loopWriteLogging() {
 	s := time.Now()
 	count := 0
 	for {
-		//time.Sleep(time.Millisecond)
+		time.Sleep(10 * time.Millisecond)
 		count++
-		if count > 1000 {
+		if count > 10000000 {
 			break
 		}
 		ctx := context.Background()

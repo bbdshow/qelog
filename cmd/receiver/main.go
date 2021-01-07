@@ -2,6 +2,8 @@ package main
 
 import (
 	"context"
+	"flag"
+	"fmt"
 	"log"
 	"os"
 	"os/signal"
@@ -17,8 +19,26 @@ import (
 	"github.com/huzhongqing/qelog/pkg/config"
 )
 
+var (
+	goVersion = ""
+	buildTime = ""
+	gitHash   = ""
+
+	configPath = "./configs/config.toml"
+	version    = false
+)
+
 func main() {
-	cfg := config.InitConfig("./configs/config.toml")
+	flag.StringVar(&configPath, "f", "./configs/config.toml", "config file default(./configs/config.toml)")
+	flag.BoolVar(&version, "v", false, "show version")
+	flag.Parse()
+
+	if version {
+		fmt.Printf("goVersion: %s \nbuildTime: %s \ngitHash: %s \n", goVersion, buildTime, gitHash)
+		return
+	}
+
+	cfg := config.InitConfig(configPath)
 	ctx, _ := context.WithTimeout(context.Background(), 30*time.Second)
 	database, err := mongo.NewDatabase(ctx, cfg.MongoDB.URI,
 		cfg.MongoDB.DataBase)

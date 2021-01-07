@@ -1,0 +1,14 @@
+env = "dev"
+receiverAddr = "0.0.0.0:31081"
+receiverGRPCAddr = ":31082"
+managerAddr = "0.0.0.0:31080"
+alarmEnable = true
+metricsEnable = true
+
+[mongodb]
+database = "qelog"
+uri = "mongodb://host.docker.internal:27017/admin"
+
+[adminUser]
+username = "admin"
+password = "111111"
