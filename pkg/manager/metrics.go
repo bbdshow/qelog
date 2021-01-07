@@ -58,7 +58,7 @@ func (srv *Service) MetricsModuleList(ctx context.Context, in *entity.MetricsMod
 	date := time.Date(y, m, d, 0, 0, 0, 0, time.Local)
 
 	filter := bson.M{
-		"created_date": date.UTC(),
+		"created_date": date,
 	}
 
 	if in.ModuleName != "" {
@@ -100,7 +100,7 @@ func (srv *Service) MetricsModuleTrend(ctx context.Context, in *entity.MetricsMo
 	lastDay := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, time.Local).AddDate(0, 0, -in.LastDay)
 	filter := bson.M{
 		"module_name":  in.ModuleName,
-		"created_date": bson.M{"$gte": lastDay.UTC()},
+		"created_date": bson.M{"$gte": lastDay},
 	}
 	fmt.Println(filter)
 	docs := make([]*model.ModuleMetrics, 0, in.LastDay)

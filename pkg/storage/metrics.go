@@ -23,7 +23,7 @@ func (store *Store) MetricsModuleCountByDate(ctx context.Context, date time.Time
 
 	pipeline := mongo.Pipeline{
 		bson.D{
-			{Key: "$match", Value: bson.M{"created_date": date.UTC()}},
+			{Key: "$match", Value: bson.M{"created_date": date}},
 		},
 		bson.D{
 			{Key: "$group", Value: bson.M{
