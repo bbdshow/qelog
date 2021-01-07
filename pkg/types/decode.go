@@ -1,12 +1,12 @@
 package types
 
 import (
-	"encoding/json"
 	"fmt"
 	"strings"
 	"time"
 
 	"github.com/huzhongqing/qelog/pkg/common/model"
+	jsoniterator "github.com/json-iterator/go"
 )
 
 type Decoder struct {
@@ -98,10 +98,11 @@ func LevelStr2Int(lvl string) model.Level {
 	return -2
 }
 
+// 频繁调用，快速解析
 func Unmarshal(data []byte, v interface{}) error {
-	return json.Unmarshal(data, v)
+	return jsoniterator.Unmarshal(data, v)
 }
 
 func Marshal(v interface{}) ([]byte, error) {
-	return json.Marshal(v)
+	return jsoniterator.Marshal(v)
 }

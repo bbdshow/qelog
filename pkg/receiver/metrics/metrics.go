@@ -24,7 +24,7 @@ import (
 // 进行时统计，能够减少对Mongodb的资源消耗
 // 如果在更新的时候因为网络问题导致失败，那么将直接忽略
 var (
-	incIntervalSec int64 = 3600
+	incIntervalSec int64 = 60
 )
 
 func SetIncIntervalSec(sec int64) {

@@ -1,7 +1,8 @@
 package model
 
 import (
-	"fmt"
+	"bytes"
+	"strconv"
 	"time"
 
 	"github.com/huzhongqing/qelog/libs/mongo"
@@ -32,7 +33,13 @@ type Logging struct {
 }
 
 func (l Logging) Key() string {
-	return fmt.Sprintf("%s_%s_%d", l.Module, l.Short, l.Level)
+	buf := bytes.Buffer{}
+	buf.WriteString(l.Module)
+	buf.WriteString("_")
+	buf.WriteString(l.Short)
+	buf.WriteString("_")
+	buf.WriteString(l.Level.String())
+	return buf.String()
 }
 
 type Level int32
@@ -62,9 +69,16 @@ func (lvl Level) String() string {
 }
 
 func LoggingCollectionName(dbIndex int32, unix int64) string {
-	name := fmt.Sprintf("logging_%d_%s",
-		dbIndex, time.Unix(unix, 0).Format(LoggingShardingTime))
-	return name
+	buff := bytes.Buffer{}
+	buff.WriteString("logging_")
+	buff.WriteString(strconv.Itoa(int(dbIndex)))
+	buff.WriteString("_")
+	y, m, _ := time.Unix(unix, 0).Date()
+	buff.WriteString(strconv.Itoa(y))
+	buff.WriteString(strconv.Itoa(int(m)))
+	//name := fmt.Sprintf("logging_%d_%s",
+	//	dbIndex, time.Unix(unix, 0).Format(LoggingShardingTime))
+	return buff.String()
 }
 
 // 因为有分片的机制，那么同一collection下面，同一uniqueKey module 占多数情况。

@@ -71,7 +71,7 @@ func (srv *Service) InsertPacket(ctx context.Context, ip string, in *pb.Packet) 
 	}
 	// 判断 module 是否有效，如果无效，则不接受写入
 	srv.mutex.RLock()
-	mReg, ok := srv.modules[in.Module]
+	module, ok := srv.modules[in.Module]
 	srv.mutex.RUnlock()
 	if !ok {
 		return httputil.NewError(httputil.ErrCodeNotFound, "module unregistered")
@@ -88,33 +88,48 @@ func (srv *Service) InsertPacket(ctx context.Context, ip string, in *pb.Packet) 
 		go srv.metrics.Statistics(in.Module, ip, docs)
 	}
 
-	sMap := srv.loggingShardingByTimestamp(mReg.DBIndex, docs)
+	aDoc, bDoc := srv.loggingShardingByTimestamp(module.DBIndex, docs)
 
 	if ctx == nil {
 		ctx, _ = context.WithTimeout(context.Background(), 5*time.Second)
 	}
-	for collectionName, docs := range sMap {
-		ok, err := srv.collectionExists(collectionName)
+	inserts := func(ctx context.Context, v *InsertDocs) error {
+		if v == nil {
+			return nil
+		}
+		ok, err := srv.collectionExists(v.CollectionName)
 		if err != nil {
 			return httputil.ErrSystemException.MergeError(err)
 		}
 		if !ok {
 			// 如果不存在创建索引
-			if err := srv.store.UpsertCollectionIndexMany(model.LoggingIndexMany(collectionName)); err != nil {
+			if err := srv.store.UpsertCollectionIndexMany(model.LoggingIndexMany(v.CollectionName)); err != nil {
 				return httputil.ErrSystemException.MergeError(err)
 			}
 		}
 
-		if err := srv.store.InsertManyLogging(ctx, collectionName, docs); err != nil {
+		if err := srv.store.InsertManyLogging(ctx, v.CollectionName, v.Docs); err != nil {
 			return httputil.ErrSystemException.MergeError(err)
 		}
+		return nil
+	}
+
+	defer func() {
+		putInsertDocs(aDoc)
+		putInsertDocs(bDoc)
+	}()
+	if err := inserts(ctx, aDoc); err != nil {
+		return err
+	}
+	if err := inserts(ctx, bDoc); err != nil {
+		return err
 	}
 
 	return nil
 }
 
 func (srv *Service) decodePacket(ip string, in *pb.Packet) []*model.Logging {
-	records := make([]*model.Logging, 0, len(in.Data))
+	records := make([]*model.Logging, len(in.Data))
 	for i, v := range in.Data {
 		r := &model.Logging{
 			Module:    in.Module,
@@ -133,10 +148,12 @@ func (srv *Service) decodePacket(ip string, in *pb.Packet) []*model.Logging {
 			r.Condition2 = dec.Condition(2)
 			r.Condition3 = dec.Condition(3)
 			r.TraceID = dec.TraceID()
-			r.Full = dec.Full()
 			r.TimeMill = dec.Time()
+			r.TimeSec = r.TimeMill / 1e3
+			// full 去掉已经提取出来的字段
+			r.Full = dec.Full()
 		}
-		records = append(records, r)
+		records[i] = r
 	}
 	return records
 }
@@ -163,19 +180,51 @@ func (srv *Service) collectionExists(collectionName string) (bool, error) {
 	return exists, nil
 }
 
+type InsertDocs struct {
+	CollectionName string
+	Docs           []interface{}
+}
+
+var insertDocsPool = sync.Pool{New: func() interface{} {
+	return &InsertDocs{CollectionName: "", Docs: make([]interface{}, 0, 32)}
+}}
+
+func getInsertDocs() *InsertDocs {
+	return insertDocsPool.Get().(*InsertDocs)
+}
+
+func putInsertDocs(v *InsertDocs) {
+	if v == nil {
+		return
+	}
+	v.CollectionName = ""
+	v.Docs = v.Docs[:0]
+	insertDocsPool.Put(v)
+}
+
 // 因为是合并包，有少数情况下，根据时间分集合，一个包的内容会写入到不同的集合中区
-func (srv *Service) loggingShardingByTimestamp(dbIndex int32, docs []*model.Logging) map[string][]interface{} {
-	out := make(map[string][]interface{})
+func (srv *Service) loggingShardingByTimestamp(dbIndex int32, docs []*model.Logging) (a, b *InsertDocs) {
+	// 当前时间分片，一组数据最多只会出现在两片上
+	currentName := ""
+	a = getInsertDocs()
 	for _, v := range docs {
 		name := model.LoggingCollectionName(dbIndex, v.TimeSec)
-		val, ok := out[name]
-		if ok {
-			out[name] = append(val, v)
-		} else {
-			out[name] = []interface{}{v}
+		if currentName == "" {
+			currentName = name
+			a.CollectionName = name
 		}
+		if name != currentName {
+			// 出现了两片的情况
+			if b == nil {
+				b = getInsertDocs()
+				b.CollectionName = name
+			}
+			b.Docs = append(b.Docs, v)
+			continue
+		}
+		a.Docs = append(a.Docs, v)
 	}
-	return out
+	return a, b
 }
 
 func (srv *Service) syncModule() error {
