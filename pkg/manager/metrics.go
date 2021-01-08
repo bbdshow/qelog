@@ -212,5 +212,5 @@ func levelColor(lvl model.Level) string {
 	return "rgba(255,255,255,1)"
 }
 func ipColor() string {
-	return fmt.Sprintf("rgba(%d,%d,%d,1)", rand.Int31n(100), rand.Int31n(255), rand.Int31n(255))
+	return fmt.Sprintf("rgba(%d,%d,%d,1)", rand.Int31n(100)+150, rand.Int31n(80)+100, rand.Int31n(135)+100)
 }
