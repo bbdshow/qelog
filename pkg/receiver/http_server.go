@@ -55,10 +55,8 @@ func (srv *HTTPService) Close() error {
 	return nil
 }
 
-func (srv *HTTPService) route(handler *gin.Engine, middleware ...gin.HandlerFunc) {
+func (srv *HTTPService) route(handler *gin.Engine) {
 	handler.HEAD("/", func(c *gin.Context) { c.Status(200) })
-
-	handler.Use(middleware...)
 	handler.POST("/v1/receiver/packet", srv.ReceivePacket)
 }
 
@@ -70,7 +68,7 @@ func (srv *HTTPService) ReceivePacket(c *gin.Context) {
 	}
 
 	if err := srv.receiver.InsertPacket(c.Request.Context(), c.ClientIP(), in); err != nil {
-		httputil.RespError(c, httputil.ErrClaimsNotFound)
+		httputil.RespError(c, err)
 		return
 	}
 	httputil.RespSuccess(c)
