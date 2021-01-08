@@ -5,12 +5,12 @@ import (
 	"os"
 	"time"
 
+	"github.com/huzhongqing/qelog/libs/logs"
+	"go.uber.org/zap"
+
 	"github.com/huzhongqing/qelog/libs/jwt"
 
 	"github.com/huzhongqing/qelog/pkg/config"
-
-	"github.com/huzhongqing/qelog/libs/logs"
-	"go.uber.org/zap"
 
 	"github.com/huzhongqing/qelog/pkg/common/model"
 

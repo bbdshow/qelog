@@ -48,7 +48,7 @@ func (store *Store) MetricsModuleCountByDate(ctx context.Context, date time.Time
 	}
 	cursor, err := coll.Aggregate(ctx, pipeline)
 	if err != nil {
-		return nil, err
+		return nil, handlerError(err)
 	}
 	defer cursor.Close(ctx)
 
@@ -59,7 +59,7 @@ func (store *Store) MetricsModuleCountByDate(ctx context.Context, date time.Time
 	}
 	val := make([]counts, 0)
 	if err := cursor.All(ctx, &val); err != nil {
-		return nil, err
+		return nil, handlerError(err)
 	}
 	out := &entity.ModuleCount{}
 	if len(val) > 0 {
@@ -71,9 +71,11 @@ func (store *Store) MetricsModuleCountByDate(ctx context.Context, date time.Time
 }
 
 func (store *Store) FindMetricsModuleList(ctx context.Context, filter bson.M, result interface{}, opt *options.FindOptions) (int64, error) {
-	return store.database.FindAndCount(ctx, store.database.Collection(model.CollectionNameModuleMetrics), filter, result, opt)
+	c, err := store.database.FindAndCount(ctx, store.database.Collection(model.CollectionNameModuleMetrics), filter, result, opt)
+	return c, handlerError(err)
 }
 
 func (store *Store) FindModuleMetrics(ctx context.Context, filter bson.M, result interface{}, opt *options.FindOptions) error {
-	return store.database.Find(ctx, store.database.Collection(model.CollectionNameModuleMetrics), filter, result, opt)
+	err := store.database.Find(ctx, store.database.Collection(model.CollectionNameModuleMetrics), filter, result, opt)
+	return handlerError(err)
 }

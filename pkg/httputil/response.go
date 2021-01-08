@@ -3,8 +3,8 @@ package httputil
 import (
 	"encoding/json"
 	"fmt"
-	"log"
 	"net/http"
+	"net/url"
 
 	"github.com/gin-gonic/gin"
 )
@@ -38,20 +38,22 @@ func RespError(c *gin.Context, err error) {
 	RespStatusCodeWithError(c, http.StatusOK, err)
 }
 
-type errLog struct {
-	Method      string `json:"method"`
-	Path        string `json:"path"`
-	HandlerFunc string `json:"handler_func"`
-	Err         string `json:"err"`
+type ResponseErr struct {
+	Method   string     `json:"method"`
+	Path     string     `json:"path"`
+	Form     url.Values `json:"form"`
+	PostForm url.Values `json:"postForm"`
+	Func     string     `json:"func"`
+	Error    string     `json:"error"`
 }
 
-func (e errLog) Marshal() []byte {
-	b, _ := json.Marshal(e)
-	return b
+func (err ResponseErr) Marshal() ([]byte, error) {
+	return json.Marshal(err)
 }
 
-func (e errLog) String() string {
-	return string(e.Marshal())
+func (err ResponseErr) String() string {
+	byt, _ := err.Marshal()
+	return string(byt)
 }
 
 func RespStatusCodeWithError(c *gin.Context, statusCode int, err error) {
@@ -67,16 +69,17 @@ func RespStatusCodeWithError(c *gin.Context, statusCode int, err error) {
 	}
 	switch code {
 	case ErrCodeSystemException:
-		e := errLog{
-			Method:      c.Request.Method,
-			Path:        c.Request.URL.RequestURI(),
-			HandlerFunc: c.HandlerName(),
-			Err:         err.Error(),
-		}
-
 		if gin.DefaultErrorWriter != nil {
-			l := log.New(gin.DefaultErrorWriter, "", log.LstdFlags)
-			l.Println(e)
+			respErr := ResponseErr{
+				Method:   c.Request.Method,
+				Path:     c.Request.URL.RequestURI(),
+				Form:     c.Request.Form,
+				PostForm: c.Request.PostForm,
+				Func:     c.HandlerName(),
+				Error:    err.Error(),
+			}
+			byt, _ := respErr.Marshal()
+			_, _ = gin.DefaultErrorWriter.Write(byt)
 		}
 	}
 

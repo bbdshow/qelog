@@ -15,4 +15,4 @@ password = "111111"
 
 [logging]
 module = "qelog"
-addr = ["127.0.0.1:38102"]
+addr = ["127.0.0.1:31082"]

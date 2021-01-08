@@ -14,27 +14,28 @@ func (store *Store) FindAllModule(ctx context.Context) ([]*model.Module, error) 
 	docs := make([]*model.Module, 0)
 	coll := store.database.Collection(model.CollectionNameModule)
 	err := store.database.Find(ctx, coll, bson.M{}, &docs)
-	return docs, err
+	return docs, handlerError(err)
 }
 
 func (store *Store) FindModuleList(ctx context.Context, filter bson.M, result interface{}, opt *options.FindOptions) (int64, error) {
 	c, err := store.database.FindAndCount(ctx, store.database.Collection(model.CollectionNameModule), filter, result, opt)
-	return c, err
+	return c, handlerError(err)
 }
 
 func (store *Store) InsertModule(ctx context.Context, doc *model.Module) error {
 	_, err := store.database.Collection(doc.CollectionName()).InsertOne(ctx, doc)
-	return err
+	return handlerError(err)
 }
 
 func (store *Store) FindOneModule(ctx context.Context, filter bson.M, doc *model.Module) (bool, error) {
-	return store.database.FindOne(ctx, store.database.Collection(doc.CollectionName()), filter, doc)
+	ok, err := store.database.FindOne(ctx, store.database.Collection(doc.CollectionName()), filter, doc)
+	return ok, handlerError(err)
 }
 
 func (store *Store) UpdateModule(ctx context.Context, filter, update bson.M) error {
 	uRet, err := store.database.Collection(model.CollectionNameModule).UpdateOne(ctx, filter, update)
 	if err != nil {
-		return err
+		return handlerError(err)
 	}
 	if uRet.MatchedCount <= 0 {
 		return ErrNotMatched
@@ -47,5 +48,5 @@ func (store *Store) DeleteModule(ctx context.Context, id primitive.ObjectID) err
 		"_id": id,
 	}
 	_, err := store.database.Collection(model.CollectionNameModule).DeleteOne(ctx, filter)
-	return err
+	return handlerError(err)
 }

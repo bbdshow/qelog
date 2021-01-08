@@ -12,7 +12,7 @@ import (
 
 func (store *Store) InsertManyLogging(ctx context.Context, name string, docs []interface{}) error {
 	_, err := store.database.Collection(name).InsertMany(ctx, docs)
-	return WrapError(err)
+	return handlerError(err)
 }
 
 func (store *Store) FindLoggingList(ctx context.Context, collectionName string, filter bson.M, result interface{}, opt *options.FindOptions) (int64, error) {
@@ -20,7 +20,8 @@ func (store *Store) FindLoggingList(ctx context.Context, collectionName string, 
 	calcCount := func(ctx context.Context) (int64, error) {
 		countOpt := options.Count()
 		countOpt.SetLimit(50000)
-		return store.database.Collection(collectionName).CountDocuments(ctx, filter, countOpt)
+		c, err := store.database.Collection(collectionName).CountDocuments(ctx, filter, countOpt)
+		return c, handlerError(err)
 	}
 	countResp := make(chan int64, 1)
 	go func() {
@@ -33,7 +34,7 @@ func (store *Store) FindLoggingList(ctx context.Context, collectionName string, 
 
 	err := store.database.Find(ctx, store.database.Collection(collectionName), filter, result, opt)
 	if err != nil {
-		return 0, err
+		return 0, handlerError(err)
 	}
 
 	select {

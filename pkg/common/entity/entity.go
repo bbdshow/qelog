@@ -179,3 +179,6 @@ type UpdateAlarmRuleReq struct {
 type DeleteAlarmRuleReq struct {
 	ObjectIDReq
 }
+
+type FindCollectionListReq struct {
+}

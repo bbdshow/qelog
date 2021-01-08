@@ -5,6 +5,8 @@ import (
 	"errors"
 	"time"
 
+	"go.mongodb.org/mongo-driver/bson/primitive"
+
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
@@ -95,7 +97,17 @@ func (db *Database) FindAndCount(ctx context.Context, coll *mongo.Collection, fi
 }
 
 func (db *Database) ListAllCollectionNames(ctx context.Context) ([]string, error) {
-	return db.Database.ListCollectionNames(ctx, bson.M{})
+	return db.ListCollectionNames(ctx)
+}
+
+func (db *Database) ListCollectionNames(ctx context.Context, prefix ...string) ([]string, error) {
+	filter := bson.M{}
+	if len(prefix) > 0 && prefix[0] != "" {
+		filter["name"] = primitive.Regex{
+			Pattern: prefix[0],
+		}
+	}
+	return db.Database.ListCollectionNames(ctx, filter)
 }
 
 type Index struct {

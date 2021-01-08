@@ -15,17 +15,17 @@ func (store *Store) FindAllEnableAlarmRule(ctx context.Context) ([]*model.AlarmR
 	docs := make([]*model.AlarmRule, 0)
 	coll := store.database.Collection(model.CollectionNameAlarmRule)
 	err := store.database.Find(ctx, coll, bson.M{"enable": true}, &docs)
-	return docs, err
+	return docs, handlerError(err)
 }
 
 func (store *Store) FindAlarmRuleList(ctx context.Context, filter bson.M, result interface{}, opt *options.FindOptions) (int64, error) {
 	c, err := store.database.FindAndCount(ctx, store.database.Collection(model.CollectionNameAlarmRule), filter, result, opt)
-	return c, err
+	return c, handlerError(err)
 }
 
 func (store *Store) InsertAlarmRule(ctx context.Context, doc *model.AlarmRule) error {
 	_, err := store.database.Collection(doc.CollectionName()).InsertOne(ctx, doc)
-	return err
+	return handlerError(err)
 }
 
 func (store *Store) FindOneAlarmRule(ctx context.Context, filter bson.M, doc *model.AlarmRule) (bool, error) {
@@ -35,7 +35,7 @@ func (store *Store) FindOneAlarmRule(ctx context.Context, filter bson.M, doc *mo
 func (store *Store) UpdateAlarmRule(ctx context.Context, filter, update bson.M) error {
 	uRet, err := store.database.Collection(model.CollectionNameAlarmRule).UpdateOne(ctx, filter, update)
 	if err != nil {
-		return err
+		return handlerError(err)
 	}
 	if uRet.MatchedCount <= 0 {
 		return ErrNotMatched
@@ -48,5 +48,5 @@ func (store *Store) DeleteAlarmRule(ctx context.Context, id primitive.ObjectID) 
 		"_id": id,
 	}
 	_, err := store.database.Collection(model.CollectionNameAlarmRule).DeleteOne(ctx, filter)
-	return err
+	return handlerError(err)
 }
