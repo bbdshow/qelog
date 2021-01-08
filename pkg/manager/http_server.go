@@ -5,6 +5,8 @@ import (
 	"os"
 	"time"
 
+	"github.com/huzhongqing/qelog/libs/jwt"
+
 	"github.com/huzhongqing/qelog/pkg/config"
 
 	"github.com/huzhongqing/qelog/libs/logs"
@@ -69,12 +71,12 @@ func (srv *HTTPService) Close() error {
 	return nil
 }
 
-func (srv *HTTPService) route(handler *gin.Engine, middleware ...gin.HandlerFunc) {
+func (srv *HTTPService) route(handler *gin.Engine) {
 	handler.HEAD("/", func(c *gin.Context) { c.Status(200) })
 
 	handler.POST("/v1/login", srv.Login)
 
-	v1 := handler.Group("/v1", middleware...)
+	v1 := handler.Group("/v1", AuthVerify())
 
 	v1.GET("/module/list", srv.FindModuleList)
 	//v1.GET("/module")
@@ -104,8 +106,6 @@ func (srv *HTTPService) route(handler *gin.Engine, middleware ...gin.HandlerFunc
 	handler.StaticFile("/favicon.ico", "web/favicon.ico")
 	handler.Static("/static", "web/static")
 	handler.Static("/admin", "web")
-
-	//handler.Static("/static", "web/dist/static")
 }
 
 func (srv *HTTPService) Login(c *gin.Context) {
@@ -116,13 +116,20 @@ func (srv *HTTPService) Login(c *gin.Context) {
 	}
 	if in.Username != config.GlobalConfig.AdminUser.Username ||
 		in.Password != config.GlobalConfig.AdminUser.Password {
-		httputil.RespStatusCodeWithError(c, http.StatusUnauthorized, httputil.NewError(httputil.ErrCodeUnauthorized, "账户或密码错误"))
+		httputil.RespError(c, httputil.NewError(httputil.ErrCodeUnauthorized, "账户或密码错误"))
 		return
 	}
-	out := &entity.LoginResp{
-		Token: "mock-token",
+
+	claims := jwt.NewCustomClaims(nil, 72*time.Hour)
+	token, err := jwt.GenerateJWTToken(claims)
+	if err != nil {
+		httputil.RespError(c, httputil.NewError(httputil.ErrCodeUnauthorized, "系统异常，联系管理员"))
+		return
 	}
-	// mock
+
+	out := &entity.LoginResp{
+		Token: token,
+	}
 	httputil.RespData(c, http.StatusOK, out)
 }
 

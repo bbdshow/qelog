@@ -195,22 +195,22 @@ func (srv *Service) MetricsModuleTrend(ctx context.Context, in *entity.MetricsMo
 func levelColor(lvl model.Level) string {
 	switch lvl.String() {
 	case "DEBUG":
-		return "rgba(23,32,42,1)"
+		return "rgba(144,202,249,1)"
 	case "INFO":
-		return "rgba(97,97,97,1)"
+		return "rgba(30,150,243,1)"
 	case "WARN":
-		return "rgba(255,183,77,1)"
+		return "rgba(251,192,45,1)"
 	case "ERROR":
 		return "rgba(244,67,54,1)"
 	case "DPANIC":
-		return "rgba(156,32,42,1)"
+		return "rgba(211,47,47,1)"
 	case "PANIC":
-		return "rgba(74,20,140,1)"
+		return "rgba(198,40,40,1)"
 	case "FATAL":
-		return "rgba(183,28,28,1)"
+		return "rgba(0,0,0,1)"
 	}
-	return "rgba(23,32,42,1)"
+	return "rgba(255,255,255,1)"
 }
 func ipColor() string {
-	return fmt.Sprintf("rgba(%d,%d,%d,1)", rand.Int31n(255), rand.Int31n(255), rand.Int31n(255))
+	return fmt.Sprintf("rgba(%d,%d,%d,1)", rand.Int31n(100), rand.Int31n(255), rand.Int31n(255))
 }

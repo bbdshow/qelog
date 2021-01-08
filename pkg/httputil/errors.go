@@ -33,7 +33,7 @@ var CodeMessage = map[int]string{
 }
 
 var (
-	ErrClaimsNotFound  = NewError(ErrCodeUnauthorized, "auth context nil")
+	ErrUnauthorized    = NewError(ErrCodeUnauthorized, CodeMessage[ErrCodeUnauthorized])
 	ErrArgsRequired    = NewError(ErrCodeArgsRequired, "arguments required")
 	ErrArgsInvalid     = NewError(ErrCodeArgsInvalid, CodeMessage[ErrCodeArgsInvalid])
 	ErrNotFound        = NewError(ErrCodeNotFound, CodeMessage[ErrCodeNotFound])
