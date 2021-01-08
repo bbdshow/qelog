@@ -7,6 +7,8 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/huzhongqing/qelog/pkg/common/kit"
+
 	"github.com/huzhongqing/qelog/libs/logs"
 	"go.uber.org/zap"
 
@@ -15,6 +17,7 @@ import (
 
 var (
 	ContentPrefix = "[QELOG]"
+	machineIP, _  = kit.GetLocalIPV4()
 )
 
 type Alarm struct {
@@ -117,8 +120,9 @@ IP: %s
 等级: %s
 短消息: %s
 详情: %s
-频次: %d/%ds`, ContentPrefix, rs.rule.Tag, v.IP, time.Unix(v.TimeSec, 0), v.Level.String(),
-		v.Short, v.Full, atomic.LoadInt32(&rs.count), rs.rule.RateSec)
+频次: %d/%ds
+报警节点: %s`, ContentPrefix, rs.rule.Tag, v.IP, time.Unix(v.TimeSec, 0), v.Level.String(),
+		v.Short, v.Full, atomic.LoadInt32(&rs.count), rs.rule.RateSec, machineIP)
 }
 
 func (rs *RuleState) Key() string {

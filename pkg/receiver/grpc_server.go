@@ -4,8 +4,8 @@ import (
 	"context"
 	"net"
 	"os"
-	"strings"
 
+	"github.com/huzhongqing/qelog/pkg/common/kit"
 	"github.com/huzhongqing/qelog/pkg/common/model"
 
 	"google.golang.org/grpc/peer"
@@ -94,13 +94,15 @@ func (srv *GRPCService) PushPacket(ctx context.Context, in *pb.Packet) (*pb.Base
 }
 
 func (srv *GRPCService) clientIP(ctx context.Context) string {
-	p, ok := peer.FromContext(ctx)
-	if ok && p.Addr != nil {
-		addr := p.Addr.String()
-		if strings.HasPrefix(addr, "[") {
-			return strings.Split(strings.TrimPrefix(addr, "["), "]:")[0]
+	ctxPeer, ok := peer.FromContext(ctx)
+	if ok && ctxPeer.Addr != nil {
+		if ipnet, ok := ctxPeer.Addr.(*net.IPNet); ok {
+			if ipnet.IP.To4() != nil || ipnet.IP.To16() != nil {
+				return ipnet.IP.String()
+			}
 		}
-		return strings.Split(addr, ":")[0]
+		// 上述解析不成功，则自行拼接
+		return kit.AddrStringToIP(ctxPeer.Addr)
 	}
 	return ""
 }
