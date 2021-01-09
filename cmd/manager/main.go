@@ -39,9 +39,15 @@ func main() {
 	}
 
 	cfg := config.InitConfig(configPath)
+	if err := cfg.Validate(); err != nil {
+		panic(fmt.Sprintf("config validate %s", err.Error()))
+		return
+	}
+	config.SetGlobalConfig(cfg)
+
 	ctx, _ := context.WithTimeout(context.Background(), 30*time.Second)
-	database, err := mongo.NewDatabase(ctx, cfg.MongoDB.URI,
-		cfg.MongoDB.DataBase)
+	database, err := mongo.NewDatabase(ctx, cfg.MainDB.URI,
+		cfg.MainDB.DataBase)
 	if err != nil {
 		log.Fatalln("mongo connect failed ", err.Error())
 	}

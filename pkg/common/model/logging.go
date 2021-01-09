@@ -11,9 +11,21 @@ import (
 )
 
 const (
-	MaxDBIndex          int32 = 16
-	LoggingShardingTime       = "200601"
+	LoggingShardingTime = "200601"
 )
+
+// 分片最大索引数
+// 如果只有一个 DB 实例，默认则分8个序列集合
+// 如果存在 4个 DB 实例，则分配规则为 [1,2] = db1 [3,4] = db2 ...类推
+// 通过此类设计，实现一个简单的存储横向扩展。
+// 横向扩展时，应在原有基础上增加此值，预留给扩展的DB实例
+var (
+	MaxDBShardingIndex int32 = 8
+)
+
+func SetMaxDBShardingIndex(index int32) {
+	MaxDBShardingIndex = index
+}
 
 type Logging struct {
 	ID         primitive.ObjectID `bson:"_id,omitempty"`

@@ -22,12 +22,19 @@ type Config struct {
 	AlarmEnable   bool
 	MetricsEnable bool
 
-	// 不同的模块存储不同的集合前缀里 (类似 redis db0-15 ...)
-	DBSize int32
+	// 不同的分片索引，可能存储在不同的数据库与集合里
+	// 索引决定集合的命名
+	MaxShardingIndex int32
 
-	MongoDB   MongoDB
+	MongoDB MongoDB
+	// 储存管理配置的实例
+	MainDB MongoDB
+	// 存储日志内容的实例
+	Sharding []ShardingDB
+
 	AdminUser AdminUser
 
+	// 日志配置，管理端产生的日志，也可以存储到远端
 	Logging Logging
 }
 
@@ -42,6 +49,16 @@ func InitConfig(filename string) *Config {
 
 func (c *Config) Release() bool {
 	return c.Env == "release"
+}
+
+func (c *Config) Validate() error {
+	return nil
+}
+
+type ShardingDB struct {
+	// 这个库需负责的存储序列
+	Index   []int32
+	MongoDB MongoDB
 }
 
 type MongoDB struct {
@@ -69,7 +86,7 @@ func MockDevConfig() *Config {
 		AlarmEnable:   true,
 		MetricsEnable: true,
 
-		DBSize: 16,
+		MaxShardingIndex: 8,
 
 		MongoDB: MongoDB{
 			DataBase: "qelog",

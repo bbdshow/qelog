@@ -293,7 +293,7 @@ func (srv *Service) GetDBIndex(ctx context.Context, out *entity.GetDBIndexResp) 
 		return httputil.ErrSystemException.MergeError(err)
 	}
 	state := make(map[int32]int)
-	for i := int32(1); i <= model.MaxDBIndex; i++ {
+	for i := int32(1); i <= model.MaxDBShardingIndex; i++ {
 		state[i] = 0
 	}
 	for _, v := range docs {
@@ -313,13 +313,13 @@ func (srv *Service) GetDBIndex(ctx context.Context, out *entity.GetDBIndexResp) 
 	sort.Sort(AscDBIndexState(states))
 
 	// 找到最小的，作为推荐
-	suggestDBIndex := model.MaxDBIndex
+	suggestDBIndex := model.MaxDBShardingIndex
 	if len(states) > 0 {
 		suggestDBIndex = states[0].Index
 	}
 
 	out.SuggestDBIndex = suggestDBIndex
-	out.MaxDBIndex = model.MaxDBIndex
+	out.MaxDBIndex = model.MaxDBShardingIndex
 	out.UseState = states
 
 	return nil
