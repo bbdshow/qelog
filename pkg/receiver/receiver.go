@@ -25,7 +25,8 @@ import (
 )
 
 type Service struct {
-	store *storage.Store
+	store    *storage.Store
+	sharding *storage.Sharding
 
 	mutex       sync.RWMutex
 	modules     map[string]*model.Module
@@ -35,9 +36,14 @@ type Service struct {
 	metrics *metrics.Metrics
 }
 
-func NewService(store *storage.Store) *Service {
+func NewService(sharding *storage.Sharding) *Service {
+	mainDB, err := sharding.MainStore()
+	if err != nil {
+		panic(err)
+	}
 	srv := &Service{
-		store:       store,
+		store:       mainDB,
+		sharding:    sharding,
 		modules:     make(map[string]*model.Module, 0),
 		collections: make(map[string]struct{}, 0),
 	}
@@ -97,18 +103,24 @@ func (srv *Service) InsertPacket(ctx context.Context, ip string, in *pb.Packet) 
 		if v == nil {
 			return nil
 		}
-		ok, err := srv.collectionExists(v.CollectionName)
+
+		shardingStore, err := srv.sharding.GetStore(v.DBIndex)
+		if err != nil {
+			return httputil.ErrArgsInvalid.MergeError(err)
+		}
+
+		ok, err := srv.collectionExists(shardingStore, v.CollectionName)
 		if err != nil {
 			return httputil.ErrSystemException.MergeError(err)
 		}
 		if !ok {
 			// 如果不存在创建索引
-			if err := srv.store.UpsertCollectionIndexMany(model.LoggingIndexMany(v.CollectionName)); err != nil {
+			if err := shardingStore.UpsertCollectionIndexMany(model.LoggingIndexMany(v.CollectionName)); err != nil {
 				return httputil.ErrSystemException.MergeError(err)
 			}
 		}
 
-		if err := srv.store.InsertManyLogging(ctx, v.CollectionName, v.Docs); err != nil {
+		if err := shardingStore.InsertManyLogging(ctx, v.CollectionName, v.Docs); err != nil {
 			return httputil.ErrSystemException.MergeError(err)
 		}
 		return nil
@@ -159,14 +171,15 @@ func (srv *Service) decodePacket(ip string, in *pb.Packet) []*model.Logging {
 }
 
 // 判断集合是否存在，如果不存在需要创建索引
-func (srv *Service) collectionExists(collectionName string) (bool, error) {
+// 因为有序号绑定，每一个集合名都是唯一的
+func (srv *Service) collectionExists(store *storage.Store, collectionName string) (bool, error) {
 	srv.mutex.Lock()
 	defer srv.mutex.Unlock()
 	if _, ok := srv.collections[collectionName]; ok {
 		return true, nil
 	}
 	ctx, _ := context.WithTimeout(context.Background(), 3*time.Second)
-	names, err := srv.store.ListAllCollectionNames(ctx)
+	names, err := store.ListAllCollectionNames(ctx)
 	if err != nil {
 		return false, err
 	}
@@ -181,6 +194,7 @@ func (srv *Service) collectionExists(collectionName string) (bool, error) {
 }
 
 type InsertDocs struct {
+	DBIndex        int32
 	CollectionName string
 	Docs           []interface{}
 }
@@ -198,6 +212,7 @@ func putInsertDocs(v *InsertDocs) {
 		return
 	}
 	v.CollectionName = ""
+	v.DBIndex = 0
 	v.Docs = v.Docs[:0]
 	insertDocsPool.Put(v)
 }
@@ -212,12 +227,14 @@ func (srv *Service) loggingShardingByTimestamp(dbIndex int32, docs []*model.Logg
 		if currentName == "" {
 			currentName = name
 			a.CollectionName = name
+			a.DBIndex = dbIndex
 		}
 		if name != currentName {
 			// 出现了两片的情况
 			if b == nil {
 				b = getInsertDocs()
 				b.CollectionName = name
+				b.DBIndex = dbIndex
 			}
 			b.Docs = append(b.Docs, v)
 			continue

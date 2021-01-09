@@ -1,7 +1,6 @@
 package main
 
 import (
-	"context"
 	"flag"
 	"fmt"
 	"log"
@@ -10,11 +9,13 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/huzhongqing/qelog/pkg/common/model"
+
+	"github.com/huzhongqing/qelog/pkg/storage"
+
 	"github.com/huzhongqing/qelog/libs/logs"
 
 	"github.com/huzhongqing/qelog/pkg/manager"
-
-	"github.com/huzhongqing/qelog/libs/mongo"
 
 	"github.com/huzhongqing/qelog/pkg/config"
 )
@@ -43,19 +44,29 @@ func main() {
 		panic(fmt.Sprintf("config validate %s", err.Error()))
 		return
 	}
+
 	config.SetGlobalConfig(cfg)
 
-	ctx, _ := context.WithTimeout(context.Background(), 30*time.Second)
-	database, err := mongo.NewDatabase(ctx, cfg.MainDB.URI,
-		cfg.MainDB.DataBase)
+	sharding, err := storage.NewSharding(cfg.Main, cfg.Sharding)
 	if err != nil {
 		log.Fatalln("mongo connect failed ", err.Error())
 	}
 
-	config.SetGlobalConfig(cfg)
+	if !cfg.Release() {
+		db, err := sharding.MainStore()
+		if err != nil {
+			panic(err)
+		}
+		if err := db.Database().UpsertCollectionIndexMany(
+			model.ModuleIndexMany(),
+			model.AlarmRuleIndexMany()); err != nil {
+			panic("create main db index " + err.Error())
+		}
+	}
+
 	logs.InitQezap(cfg.Logging.Addr, cfg.Logging.Module)
 
-	httpSrv := manager.NewHTTPService(database)
+	httpSrv := manager.NewHTTPService(sharding)
 
 	go func() {
 		if err := httpSrv.Run(cfg.ManagerAddr); err != nil {
@@ -66,7 +77,7 @@ func main() {
 
 	signalAccept()
 
-	_ = database.Client().Disconnect(nil)
+	_ = sharding.Disconnect
 }
 
 func signalAccept() {

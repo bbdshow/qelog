@@ -75,6 +75,20 @@ func TestFindLoggingList(t *testing.T) {
 
 }
 
+func TestFindLoggingByTraceID(t *testing.T) {
+	in := entity.FindLoggingByTraceIDReq{
+		DBIndex:    7,
+		ModuleName: "example",
+		TraceID:    "1610201334536326300111441",
+	}
+	resp, err := http.Post(fmt.Sprintf("%s/v1/logging/traceid", host), ContentTypeJSON, JSONReader(in))
+	if err != nil {
+		t.Fatal(err)
+	}
+	JSONOutput(resp, t)
+
+}
+
 func TestGetDBIndex(t *testing.T) {
 	resp, err := http.Get(fmt.Sprintf("%s/v1/db-index", host))
 	if err != nil {

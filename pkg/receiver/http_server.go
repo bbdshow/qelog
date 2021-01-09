@@ -2,8 +2,9 @@ package receiver
 
 import (
 	"net/http"
-	"os"
 	"time"
+
+	"github.com/huzhongqing/qelog/pkg/config"
 
 	"github.com/huzhongqing/qelog/pb"
 	"github.com/huzhongqing/qelog/pkg/httputil"
@@ -11,28 +12,26 @@ import (
 	"github.com/huzhongqing/qelog/pkg/storage"
 
 	"github.com/gin-gonic/gin"
-	"github.com/huzhongqing/qelog/libs/mongo"
 )
 
 type HTTPService struct {
-	database *mongo.Database
 	server   *http.Server
 	receiver *Service
 }
 
-func NewHTTPService(database *mongo.Database) *HTTPService {
+func NewHTTPService(sharding *storage.Sharding) *HTTPService {
 	srv := &HTTPService{
-		database: database,
-		receiver: NewService(storage.New(database)),
+		receiver: NewService(sharding),
 	}
 	return srv
 }
 
 func (srv *HTTPService) Run(addr string) error {
 	handler := gin.Default()
-	if os.Getenv("ENV") == gin.ReleaseMode {
+	if config.GlobalConfig.Release() {
 		gin.SetMode(gin.ReleaseMode)
 		handler = gin.New()
+		handler.Use(gin.Recovery())
 	}
 
 	srv.route(handler)

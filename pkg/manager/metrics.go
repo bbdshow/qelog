@@ -9,6 +9,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/huzhongqing/qelog/pkg/mongoutil"
+
 	"go.mongodb.org/mongo-driver/bson/primitive"
 
 	"github.com/huzhongqing/qelog/pkg/common/model"
@@ -21,7 +23,9 @@ import (
 )
 
 func (srv *Service) MetricsCount(ctx context.Context, out *entity.MetricsCountResp) error {
-	dbStats, err := srv.mongoUtil.DBStats(ctx)
+	// TODO 后面修改，sharding
+	mu := mongoutil.NewMongodbUtil(srv.store.Database())
+	dbStats, err := mu.DBStats(ctx)
 	if err != nil {
 		return httputil.ErrSystemException.MergeError(err)
 	}

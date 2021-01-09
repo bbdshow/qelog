@@ -1,7 +1,6 @@
 package main
 
 import (
-	"context"
 	"flag"
 	"fmt"
 	"log"
@@ -10,11 +9,12 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/huzhongqing/qelog/pkg/common/model"
+	"github.com/huzhongqing/qelog/pkg/storage"
+
 	"github.com/huzhongqing/qelog/libs/logs"
 
 	"github.com/huzhongqing/qelog/pkg/receiver"
-
-	"github.com/huzhongqing/qelog/libs/mongo"
 
 	"github.com/huzhongqing/qelog/pkg/config"
 )
@@ -39,18 +39,32 @@ func main() {
 	}
 
 	cfg := config.InitConfig(configPath)
-	ctx, _ := context.WithTimeout(context.Background(), 30*time.Second)
-	database, err := mongo.NewDatabase(ctx, cfg.MongoDB.URI,
-		cfg.MongoDB.DataBase)
-	if err != nil {
-		log.Fatalln("mongo connect failed ", err.Error())
+	if err := cfg.Validate(); err != nil {
+		panic(fmt.Sprintf("config validate %s", err.Error()))
+		return
 	}
 
 	config.SetGlobalConfig(cfg)
 
+	sharding, err := storage.NewSharding(cfg.Main, cfg.Sharding)
+	if err != nil {
+		log.Fatalln("mongo connect failed ", err.Error())
+	}
+
+	if !cfg.Release() {
+		db, err := sharding.MainStore()
+		if err != nil {
+			panic(err)
+		}
+		if err := db.Database().UpsertCollectionIndexMany(
+			model.ModuleMetricsIndexMany()); err != nil {
+			panic("create main db index " + err.Error())
+		}
+	}
+
 	logs.InitQezap(nil, "")
 
-	httpSrv := receiver.NewHTTPService(database)
+	httpSrv := receiver.NewHTTPService(sharding)
 
 	go func() {
 		log.Println("http server listen ", cfg.ReceiverAddr)
@@ -59,7 +73,7 @@ func main() {
 		}
 	}()
 
-	grpcSrv := receiver.NewGRPCService(database)
+	grpcSrv := receiver.NewGRPCService(sharding)
 	go func() {
 		log.Println("grpc server listen ", cfg.ReceiverGRPCAddr)
 		if err := grpcSrv.Run(cfg.ReceiverGRPCAddr); err != nil {
@@ -70,7 +84,7 @@ func main() {
 	signalAccept()
 	_ = httpSrv.Close()
 	_ = grpcSrv.Close()
-	_ = database.Client().Disconnect(nil)
+	_ = sharding.Disconnect
 }
 
 func signalAccept() {

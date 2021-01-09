@@ -1,6 +1,8 @@
 package config
 
 import (
+	"errors"
+
 	"github.com/BurntSushi/toml"
 )
 
@@ -19,6 +21,7 @@ type Config struct {
 	ReceiverGRPCAddr string
 	ManagerAddr      string
 
+	AuthEnable    bool
 	AlarmEnable   bool
 	MetricsEnable bool
 
@@ -26,11 +29,10 @@ type Config struct {
 	// 索引决定集合的命名
 	MaxShardingIndex int32
 
-	MongoDB MongoDB
 	// 储存管理配置的实例
-	MainDB MongoDB
+	Main MongoDB
 	// 存储日志内容的实例
-	Sharding []ShardingDB
+	Sharding []MongoDBIndex
 
 	AdminUser AdminUser
 
@@ -52,13 +54,35 @@ func (c *Config) Release() bool {
 }
 
 func (c *Config) Validate() error {
+	if c.MaxShardingIndex <= 0 {
+		c.MaxShardingIndex = 8
+	}
+	if c.Main.URI == "" {
+		return errors.New("main.uri required")
+	}
+
+	if len(c.Sharding) <= 0 {
+		return errors.New("sharding required")
+	}
+	indexExists := make(map[int32]struct{})
+	for _, v := range c.Sharding {
+		for _, i := range v.Index {
+			_, ok := indexExists[i]
+			if ok {
+				return errors.New("sharding index dump key")
+			}
+			indexExists[i] = struct{}{}
+		}
+	}
+
 	return nil
 }
 
-type ShardingDB struct {
+type MongoDBIndex struct {
 	// 这个库需负责的存储序列
-	Index   []int32
-	MongoDB MongoDB
+	Index    []int32
+	DataBase string
+	URI      string
 }
 
 type MongoDB struct {
@@ -83,15 +107,27 @@ func MockDevConfig() *Config {
 		ReceiverGRPCAddr: ":31082",
 		ManagerAddr:      "0.0.0.0:31080",
 
+		AuthEnable:    false,
 		AlarmEnable:   true,
 		MetricsEnable: true,
 
 		MaxShardingIndex: 8,
 
-		MongoDB: MongoDB{
+		Main: MongoDB{
 			DataBase: "qelog",
 			URI:      "mongodb://127.0.0.1:27017/admin",
 		},
+		Sharding: []MongoDBIndex{
+			{
+				Index:    []int32{1, 2, 3, 4},
+				DataBase: "qelog",
+				URI:      "mongodb://127.0.0.1:27017/admin",
+			},
+			{
+				Index:    []int32{5, 6, 7, 8},
+				DataBase: "qelog2",
+				URI:      "mongodb://127.0.0.1:27017/admin",
+			}},
 		AdminUser: AdminUser{
 			Username: "admin",
 			Password: "111111",

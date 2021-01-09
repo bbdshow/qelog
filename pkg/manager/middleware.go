@@ -10,8 +10,12 @@ func init() {
 	jwt.SetSigningKey("qelog_jwt_signg_key")
 }
 
-func AuthVerify() gin.HandlerFunc {
+func AuthVerify(enable bool) gin.HandlerFunc {
 	return func(c *gin.Context) {
+		if !enable {
+			c.Next()
+			return
+		}
 		token := c.GetHeader("X-QELOG-Token")
 		if token == "" {
 			httputil.RespError(c, httputil.ErrUnauthorized)

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"math/rand"
 	"strconv"
+	"sync"
 	"time"
 
 	"github.com/huzhongqing/qelog/qezap"
@@ -13,8 +14,9 @@ import (
 )
 
 func main() {
-	loopWriteLogging()
+	//loopWriteLogging()
 	//writeLogging()
+	multiModuleLogging()
 }
 
 func loopWriteLogging() {
@@ -89,4 +91,35 @@ func writeLogging() {
 	time.Sleep(time.Minute)
 	qeLog.Fatal("Fatal", zap.String("这个Fatal, 也是能写进去的哟", "Fatal"))
 	fmt.Println("never print")
+}
+
+func multiModuleLogging() {
+	addrs := []string{"127.0.0.1:31082"}
+
+	exp := qezap.New(qezap.NewConfig(addrs, "example"), zap.DebugLevel)
+	exp2 := qezap.New(qezap.NewConfig(addrs, "example2"), zap.DebugLevel)
+
+	wg := sync.WaitGroup{}
+	wg.Add(2)
+	count := 10
+	go func(c int) {
+		for c > 0 {
+			c--
+			exp.Debug("example", exp.ConditionOne(strconv.Itoa(c)))
+		}
+		wg.Done()
+	}(count)
+	go func(c int) {
+		for c > 0 {
+			c--
+			exp2.Debug("example2", exp.ConditionOne(strconv.Itoa(c)))
+		}
+		wg.Done()
+	}(count)
+	wg.Wait()
+
+	exp.Sync()
+	exp2.Sync()
+
+	//time.Sleep(3 * time.Second)
 }

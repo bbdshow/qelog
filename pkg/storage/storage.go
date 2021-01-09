@@ -10,7 +10,9 @@ import (
 )
 
 var (
-	ErrNotMatched = errors.New("not matched")
+	ErrNotMatched         = errors.New("not matched")
+	ErrMainDBNotFound     = errors.New("main db not found")
+	ErrShardingDBNotFound = errors.New("sharding db not found")
 )
 
 type Store struct {

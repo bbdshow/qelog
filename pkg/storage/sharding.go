@@ -4,6 +4,7 @@ import (
 	"context"
 	"time"
 
+	"github.com/huzhongqing/qelog/libs/mongo"
 	"github.com/huzhongqing/qelog/pkg/config"
 )
 
@@ -14,23 +15,46 @@ type Sharding struct {
 	shardingStore map[int32]*Store
 }
 
-func NewSharding(main config.MongoDB, sharding []config.ShardingDB) (*Sharding, error) {
+// Sharding Store Lib
+func NewSharding(main config.MongoDB, sharding []config.MongoDBIndex) (*Sharding, error) {
+	ctx, _ := context.WithTimeout(context.Background(), 30*time.Second)
+	mainDB, err := mongo.NewDatabase(ctx, main.URI, main.DataBase)
+	if err != nil {
+		return nil, err
+	}
+	s := &Sharding{
+		mainStore:     New(mainDB),
+		shardingStore: make(map[int32]*Store, 0),
+	}
+	for _, v := range sharding {
+		db, err := mongo.NewDatabase(ctx, v.URI, v.DataBase)
+		if err != nil {
+			return nil, err
+		}
+		shardingStore := New(db)
+		for _, i := range v.Index {
+			s.shardingStore[i] = shardingStore
+		}
+	}
 
-	return nil, nil
+	return s, nil
 }
 
 // 配置管理的存储实例
-func (s *Sharding) MainStore() (*Store, bool) {
+func (s *Sharding) MainStore() (*Store, error) {
 	if s.mainStore != nil {
-		return s.mainStore, true
+		return s.mainStore, nil
 	}
-	return nil, false
+	return nil, ErrMainDBNotFound
 }
 
 // 日志记录的实例
-func (s *Sharding) GetStore(index int32) (*Store, bool) {
+func (s *Sharding) GetStore(index int32) (*Store, error) {
 	store, ok := s.shardingStore[index]
-	return store, ok
+	if !ok {
+		return nil, ErrShardingDBNotFound
+	}
+	return store, nil
 }
 
 func (s *Sharding) Disconnect() {

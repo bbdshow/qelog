@@ -3,32 +3,26 @@ package receiver
 import (
 	"context"
 	"net"
-	"os"
 
 	"github.com/huzhongqing/qelog/pkg/common/kit"
-	"github.com/huzhongqing/qelog/pkg/common/model"
-
 	"google.golang.org/grpc/peer"
 
 	"github.com/huzhongqing/qelog/pkg/httputil"
 
-	"github.com/huzhongqing/qelog/libs/mongo"
 	"github.com/huzhongqing/qelog/pb"
 	"github.com/huzhongqing/qelog/pkg/storage"
 	"google.golang.org/grpc"
 )
 
 type GRPCService struct {
-	database *mongo.Database
 	server   *grpc.Server
 	receiver *Service
 }
 
-func NewGRPCService(database *mongo.Database) *GRPCService {
+func NewGRPCService(sharding *storage.Sharding) *GRPCService {
 	srv := &GRPCService{
-		database: database,
 		server:   nil,
-		receiver: NewService(storage.New(database)),
+		receiver: NewService(sharding),
 	}
 
 	return srv
@@ -38,15 +32,6 @@ func (srv *GRPCService) Run(addr string) error {
 	listen, err := net.Listen("tcp", addr)
 	if err != nil {
 		return err
-	}
-
-	if os.Getenv("ENV") == "release" {
-
-	} else {
-		if err := srv.database.UpsertCollectionIndexMany(
-			model.ModuleMetricsIndexMany()); err != nil {
-			return err
-		}
 	}
 
 	server := grpc.NewServer()

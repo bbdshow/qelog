@@ -2,7 +2,6 @@ package manager
 
 import (
 	"net/http"
-	"os"
 	"time"
 
 	"github.com/huzhongqing/qelog/libs/logs"
@@ -12,8 +11,6 @@ import (
 
 	"github.com/huzhongqing/qelog/pkg/config"
 
-	"github.com/huzhongqing/qelog/pkg/common/model"
-
 	"github.com/huzhongqing/qelog/pkg/common/entity"
 
 	"github.com/huzhongqing/qelog/pkg/httputil"
@@ -21,19 +18,16 @@ import (
 	"github.com/huzhongqing/qelog/pkg/storage"
 
 	"github.com/gin-gonic/gin"
-	"github.com/huzhongqing/qelog/libs/mongo"
 )
 
 type HTTPService struct {
-	database *mongo.Database
-	server   *http.Server
-	manager  *Service
+	server  *http.Server
+	manager *Service
 }
 
-func NewHTTPService(database *mongo.Database) *HTTPService {
+func NewHTTPService(sharding *storage.Sharding) *HTTPService {
 	srv := &HTTPService{
-		database: database,
-		manager:  NewService(storage.New(database)),
+		manager: NewService(sharding),
 	}
 	return srv
 }
@@ -41,16 +35,10 @@ func NewHTTPService(database *mongo.Database) *HTTPService {
 func (srv *HTTPService) Run(addr string) error {
 
 	handler := gin.Default()
-	if os.Getenv("ENV") == gin.ReleaseMode {
+	if config.GlobalConfig.Release() {
 		gin.SetMode(gin.ReleaseMode)
 		gin.DefaultErrorWriter = logs.Qezap.Clone().SetWritePrefix("ginError").SetWriteLevel(zap.ErrorLevel)
 		gin.DefaultWriter = logs.Qezap.Clone().SetWritePrefix("ginDebug").SetWriteLevel(zap.DebugLevel)
-	} else {
-		if err := srv.database.UpsertCollectionIndexMany(
-			model.ModuleIndexMany(),
-			model.AlarmRuleIndexMany()); err != nil {
-			return err
-		}
 	}
 
 	srv.route(handler)
@@ -76,7 +64,7 @@ func (srv *HTTPService) route(handler *gin.Engine) {
 
 	handler.POST("/v1/login", srv.Login)
 
-	v1 := handler.Group("/v1", AuthVerify())
+	v1 := handler.Group("/v1", AuthVerify(config.GlobalConfig.AuthEnable))
 
 	v1.GET("/module/list", srv.FindModuleList)
 	//v1.GET("/module")

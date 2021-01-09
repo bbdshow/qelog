@@ -7,8 +7,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/huzhongqing/qelog/pkg/mongoutil"
-
 	"github.com/huzhongqing/qelog/pkg/types"
 
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -24,14 +22,18 @@ import (
 )
 
 type Service struct {
-	store     *storage.Store
-	mongoUtil *mongoutil.MongodbUtil
+	store    *storage.Store
+	sharding *storage.Sharding
 }
 
-func NewService(store *storage.Store) *Service {
+func NewService(sharding *storage.Sharding) *Service {
+	mainStore, err := sharding.MainStore()
+	if err != nil {
+		panic(err)
+	}
 	srv := &Service{
-		store:     store,
-		mongoUtil: mongoutil.NewMongodbUtil(store.Database()),
+		store:    mainStore,
+		sharding: sharding,
 	}
 	return srv
 }
@@ -162,7 +164,12 @@ func (srv *Service) FindLoggingByTraceID(ctx context.Context, in *entity.FindLog
 		// 正序，调用流
 		findOpt.SetSort(bson.M{"ts": 1})
 		docs := make([]*model.Logging, 0)
-		c, err := srv.store.FindLoggingList(ctx, coll, filter, &docs, findOpt)
+
+		shardingStore, err := srv.sharding.GetStore(in.DBIndex)
+		if err != nil {
+			return httputil.ErrArgsInvalid.MergeError(err)
+		}
+		c, err := shardingStore.FindLoggingList(ctx, coll, filter, &docs, findOpt)
 		if err != nil {
 			return httputil.ErrSystemException.MergeError(err)
 		}
@@ -245,7 +252,12 @@ func (srv *Service) FindLoggingList(ctx context.Context, in *entity.FindLoggingL
 	findOpt.SetSort(bson.M{"ts": -1})
 	//fmt.Println(collectionName, filter)
 	docs := make([]*model.Logging, 0, in.Limit)
-	c, err := srv.store.FindLoggingList(ctx, collectionName, filter, &docs, findOpt)
+
+	shardingStore, err := srv.sharding.GetStore(in.DBIndex)
+	if err != nil {
+		return httputil.ErrArgsInvalid.MergeError(err)
+	}
+	c, err := shardingStore.FindLoggingList(ctx, collectionName, filter, &docs, findOpt)
 	if err != nil {
 		return httputil.ErrSystemException.MergeError(err)
 	}
