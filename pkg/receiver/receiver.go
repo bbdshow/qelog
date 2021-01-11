@@ -204,17 +204,17 @@ var insertDocsPool = sync.Pool{New: func() interface{} {
 }}
 
 func getInsertDocs() *InsertDocs {
-	return insertDocsPool.Get().(*InsertDocs)
-}
-
-func putInsertDocs(v *InsertDocs) {
-	if v == nil {
-		return
-	}
+	v := insertDocsPool.Get().(*InsertDocs)
 	v.CollectionName = ""
 	v.DBIndex = 0
 	v.Docs = v.Docs[:0]
-	insertDocsPool.Put(v)
+	return v
+}
+
+func putInsertDocs(v *InsertDocs) {
+	if v != nil {
+		insertDocsPool.Put(v)
+	}
 }
 
 // 因为是合并包，有少数情况下，根据时间分集合，一个包的内容会写入到不同的集合中区

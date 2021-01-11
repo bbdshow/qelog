@@ -67,12 +67,15 @@ var dataFree = sync.Pool{
 }
 
 func DataPoolGet() *BuffSliceString {
-	return dataFree.Get().(*BuffSliceString)
+	buff := dataFree.Get().(*BuffSliceString)
+	buff.Reset()
+	return buff
 }
 
 func DataPoolPut(bss *BuffSliceString) {
-	bss.Reset()
-	dataFree.Put(bss)
+	if bss != nil {
+		dataFree.Put(bss)
+	}
 }
 
 type DataPacket struct {
