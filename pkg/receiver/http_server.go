@@ -4,9 +4,10 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/huzhongqing/qelog/pkg/common/entity"
+
 	"github.com/huzhongqing/qelog/pkg/config"
 
-	"github.com/huzhongqing/qelog/pb"
 	"github.com/huzhongqing/qelog/pkg/httputil"
 
 	"github.com/huzhongqing/qelog/pkg/storage"
@@ -56,19 +57,19 @@ func (srv *HTTPService) Close() error {
 
 func (srv *HTTPService) route(handler *gin.Engine) {
 	handler.HEAD("/", func(c *gin.Context) { c.Status(200) })
-	//handler.POST("/v1/receiver/packet", srv.ReceivePacket)
+	handler.POST("/v1/receiver/packet", srv.ReceivePacket)
 }
 
 func (srv *HTTPService) ReceivePacket(c *gin.Context) {
-	in := &pb.Packet{}
+	in := &entity.JSONPacket{}
 	if err := c.ShouldBind(in); err != nil {
 		httputil.RespError(c, httputil.ErrArgsInvalid)
 		return
 	}
 
-	//if err := srv.receiver.InsertPacket(c.Request.Context(), c.ClientIP(), in); err != nil {
-	//	httputil.RespError(c, err)
-	//	return
-	//}
+	if err := srv.receiver.InsertJSONPacket(c.Request.Context(), c.ClientIP(), in); err != nil {
+		httputil.RespError(c, err)
+		return
+	}
 	httputil.RespSuccess(c)
 }

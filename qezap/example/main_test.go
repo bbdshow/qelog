@@ -19,7 +19,7 @@ func TestQezapLoopWrite(t *testing.T) {
 	//cfg.SetEnableRemote(false)
 	// 如果对默认配置不满足，可直接设置
 	qeLog := qezap.New(cfg, zap.DebugLevel)
-	time.Sleep(2 * time.Second)
+	time.Sleep(time.Second)
 	go func() {
 		for i := 0; i < 10000; i++ {
 			qeLog.Info(strconv.Itoa(i), zap.Int("index", i))
@@ -35,7 +35,17 @@ func TestQezapLoopWrite(t *testing.T) {
 			qeLog.Error(strconv.Itoa(i), zap.Int("index", i))
 		}
 	}()
-	time.Sleep(5 * time.Minute)
+	go func() {
+		for i := 0; i < 10000; i++ {
+			qeLog.Error(strconv.Itoa(i), zap.Int("index", i))
+		}
+	}()
+	go func() {
+		for i := 0; i < 10000; i++ {
+			qeLog.Error(strconv.Itoa(i), zap.Int("index", i))
+		}
+	}()
+	time.Sleep(10 * time.Second)
 	qeLog.Sync()
 }
 

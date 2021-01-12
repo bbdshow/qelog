@@ -80,9 +80,9 @@ func NewWriteSync(cfg WriteSyncConfig) *WriteSync {
 }
 
 func (ws *WriteSync) Write(b []byte) (n int, err error) {
-	//ws.mutex.Lock()
-	//defer ws.mutex.Unlock()
-	// zap 已经对 WriteSync 进行了加锁，保证并发安全
+	ws.mutex.Lock()
+	defer ws.mutex.Unlock()
+
 	if ws.file == nil {
 		err = ws.openFile()
 		if err != nil {

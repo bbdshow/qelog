@@ -83,10 +83,6 @@ func NewWriteRemote(cfg WriteRemoteConfig) *WriteRemote {
 }
 
 func (wr *WriteRemote) Write(b []byte) (n int, err error) {
-	//data, flush := wr.packets.AddPacket(b)
-	//if flush {
-	//	wr.push(NewDataPacket(wr.cfg.ModuleName, data))
-	//}
 	sendPacket := wr.packet.AppendData(b)
 	if sendPacket != nil {
 		wr.push(sendPacket)

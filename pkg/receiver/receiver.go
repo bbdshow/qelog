@@ -7,6 +7,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/huzhongqing/qelog/pkg/common/entity"
+
 	"github.com/huzhongqing/qelog/pkg/config"
 
 	"github.com/huzhongqing/qelog/pkg/receiver/metrics"
@@ -72,6 +74,32 @@ func NewService(sharding *storage.Sharding) *Service {
 	return srv
 }
 
+func (srv *Service) InsertJSONPacket(ctx context.Context, ip string, in *entity.JSONPacket) error {
+	if len(in.Data) <= 0 {
+		return nil
+	}
+	// 判断 module 是否有效，如果无效，则不接受写入
+	srv.mutex.RLock()
+	module, ok := srv.modules[in.Module]
+	srv.mutex.RUnlock()
+	if !ok {
+		return httputil.NewError(httputil.ErrCodeNotFound, "module unregistered")
+	}
+
+	docs := srv.decodeJSONPacket(ip, in)
+
+	if config.GlobalConfig.AlarmEnable && srv.alarm.ModuleIsEnable(in.Module) {
+		// 异步执行报警逻辑
+		go srv.alarm.AlarmIfHitRule(docs)
+	}
+
+	if config.GlobalConfig.MetricsEnable {
+		go srv.metrics.Statistics(in.Module, ip, docs)
+	}
+
+	return srv.insertLogging(ctx, module.DBIndex, docs)
+}
+
 func (srv *Service) InsertPacket(ctx context.Context, ip string, in *pb.Packet) error {
 	if len(in.Data) <= 0 {
 		return nil
@@ -95,12 +123,16 @@ func (srv *Service) InsertPacket(ctx context.Context, ip string, in *pb.Packet) 
 		go srv.metrics.Statistics(in.Module, ip, docs)
 	}
 
-	aDoc, bDoc := srv.loggingShardingByTimestamp(module.DBIndex, docs)
+	return srv.insertLogging(ctx, module.DBIndex, docs)
+}
+
+func (srv *Service) insertLogging(ctx context.Context, dbIndex int32, docs []*model.Logging) error {
+	aDoc, bDoc := srv.loggingShardingByTimestamp(dbIndex, docs)
 
 	if ctx == nil {
 		ctx, _ = context.WithTimeout(context.Background(), 5*time.Second)
 	}
-	inserts := func(ctx context.Context, v *InsertDocs) error {
+	inserts := func(ctx context.Context, v *documents) error {
 		if v == nil {
 			return nil
 		}
@@ -128,8 +160,7 @@ func (srv *Service) InsertPacket(ctx context.Context, ip string, in *pb.Packet) 
 	}
 
 	defer func() {
-		putInsertDocs(aDoc)
-		putInsertDocs(bDoc)
+		freeDocuments(aDoc, bDoc)
 	}()
 	if err := inserts(ctx, aDoc); err != nil {
 		return err
@@ -176,6 +207,40 @@ func (srv *Service) decodePacket(ip string, in *pb.Packet) []*model.Logging {
 	return records
 }
 
+func (srv *Service) decodeJSONPacket(ip string, in *entity.JSONPacket) []*model.Logging {
+	records := make([]*model.Logging, 0, len(in.Data))
+
+	for i, v := range in.Data {
+		if v == "" {
+			continue
+		}
+		r := &model.Logging{
+			Module:    in.Module,
+			IP:        ip,
+			Full:      v,
+			MessageID: in.Id + "_" + strconv.Itoa(i),
+			TimeSec:   time.Now().Unix(),
+			Size:      len(v),
+		}
+		val := make(map[string]interface{})
+		if err := types.Unmarshal([]byte(v), &val); err == nil {
+			dec := types.Decoder{Val: val}
+			r.Short = dec.Short()
+			r.Level = dec.Level()
+			r.Condition1 = dec.Condition(1)
+			r.Condition2 = dec.Condition(2)
+			r.Condition3 = dec.Condition(3)
+			r.TraceID = dec.TraceID()
+			r.TimeMill = dec.Time()
+			r.TimeSec = r.TimeMill / 1e3
+			// full 去掉已经提取出来的字段
+			r.Full = dec.Full()
+		}
+		records = append(records, r)
+	}
+	return records
+}
+
 // 判断集合是否存在，如果不存在需要创建索引
 // 因为有序号绑定，每一个集合名都是唯一的
 func (srv *Service) collectionExists(store *storage.Store, collectionName string) (bool, error) {
@@ -199,35 +264,37 @@ func (srv *Service) collectionExists(store *storage.Store, collectionName string
 	return exists, nil
 }
 
-type InsertDocs struct {
+type documents struct {
 	DBIndex        int32
 	CollectionName string
 	Docs           []interface{}
 }
 
-var insertDocsPool = sync.Pool{New: func() interface{} {
-	return &InsertDocs{CollectionName: "", Docs: make([]interface{}, 0, 32)}
+var documentsPool = sync.Pool{New: func() interface{} {
+	return &documents{CollectionName: "", Docs: make([]interface{}, 0, 32)}
 }}
 
-func getInsertDocs() *InsertDocs {
-	v := insertDocsPool.Get().(*InsertDocs)
+func initDocuments() *documents {
+	v := documentsPool.Get().(*documents)
 	v.CollectionName = ""
 	v.DBIndex = 0
 	v.Docs = v.Docs[:0]
 	return v
 }
 
-func putInsertDocs(v *InsertDocs) {
-	if v != nil {
-		insertDocsPool.Put(v)
+func freeDocuments(docs ...*documents) {
+	for _, v := range docs {
+		if v != nil {
+			documentsPool.Put(v)
+		}
 	}
 }
 
 // 因为是合并包，有少数情况下，根据时间分集合，一个包的内容会写入到不同的集合中区
-func (srv *Service) loggingShardingByTimestamp(dbIndex int32, docs []*model.Logging) (a, b *InsertDocs) {
+func (srv *Service) loggingShardingByTimestamp(dbIndex int32, docs []*model.Logging) (a, b *documents) {
 	// 当前时间分片，一组数据最多只会出现在两片上
 	currentName := ""
-	a = getInsertDocs()
+	a = initDocuments()
 	for _, v := range docs {
 		name := model.LoggingCollectionName(dbIndex, v.TimeSec)
 		if currentName == "" {
@@ -238,7 +305,7 @@ func (srv *Service) loggingShardingByTimestamp(dbIndex int32, docs []*model.Logg
 		if name != currentName {
 			// 出现了两片的情况
 			if b == nil {
-				b = getInsertDocs()
+				b = initDocuments()
 				b.CollectionName = name
 				b.DBIndex = dbIndex
 			}

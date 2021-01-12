@@ -131,7 +131,20 @@ func (hp *HttpPush) PushPacket(ctx context.Context, in *pb.Packet) error {
 	if ctx == nil {
 		ctx, _ = context.WithTimeout(context.Background(), 10*time.Second)
 	}
-	return hp.push(ctx, in)
+	v := struct {
+		ID     string   `json:"id"`
+		Module string   `json:"module"`
+		Data   []string `json:"data"`
+	}{ID: in.Id, Module: in.Module}
+	byteItems := bytes.Split(in.Data, []byte{'\n'})
+	for _, b := range byteItems {
+		if b == nil || bytes.Equal(b, []byte{}) || bytes.Equal(b, []byte{'\n'}) {
+			continue
+		}
+		v.Data = append(v.Data, string(b))
+	}
+
+	return hp.push(ctx, v)
 }
 
 func (hp *HttpPush) push(ctx context.Context, body interface{}) error {

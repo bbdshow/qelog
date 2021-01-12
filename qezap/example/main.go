@@ -55,14 +55,15 @@ func loopWriteLogging() {
 }
 
 func writeLogging() {
+	//addrs := []string{"http://127.0.0.1:31081/v1/receiver/packet"}
 	addrs := []string{"127.0.0.1:31082"}
 	cfg := qezap.NewConfig(addrs, "example")
-
+	//cfg.SetHTTPTransport()
 	// 如果设置 false，可以 addrs = nil
 	// cfg.SetEnableRemote(false)
 
 	// 如果对默认配置不满足，可直接设置
-	cfg.WriteRemote.MaxPacket = 256
+	cfg.WriteRemote.MaxPacket = 512
 
 	qeLog := qezap.New(cfg, zap.DebugLevel)
 

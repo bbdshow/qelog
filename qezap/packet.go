@@ -9,9 +9,8 @@ import (
 	"github.com/huzhongqing/qelog/pb"
 )
 
-// 并发不安全
-
 type Packet struct {
+	mutex   sync.Mutex
 	pool    sync.Pool
 	packet  *pb.Packet
 	maxSize int
@@ -41,24 +40,33 @@ func (p *Packet) FreePacket(v *pb.Packet) {
 }
 
 func (p *Packet) AppendData(b []byte) *pb.Packet {
+	p.mutex.Lock()
 	if p.packet == nil {
 		p.initPacket()
 	}
 	p.packet.Data = append(p.packet.Data, b...)
 	if p.maxSize <= len(p.packet.Data) {
-		return p.FlushData()
+		v := p.packet
+		v.Id = p.packetID()
+		p.packet = nil
+		p.mutex.Unlock()
+		return v
 	}
+	p.mutex.Unlock()
 	return nil
 }
 
 func (p *Packet) FlushData() *pb.Packet {
+	p.mutex.Lock()
 	if p.packet == nil {
+		p.mutex.Unlock()
 		return nil
 	}
 	v := p.packet
 	v.Id = p.packetID()
 
 	p.packet = nil
+	p.mutex.Unlock()
 	return v
 }
 
