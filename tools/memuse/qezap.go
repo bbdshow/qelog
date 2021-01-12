@@ -28,12 +28,12 @@ func main() {
 	qelog := qezap.New(cfg, zap.DebugLevel)
 
 	initMem := readMem()
-	ctx, _ := context.WithTimeout(context.Background(), 5*time.Minute)
+	ctx, _ := context.WithTimeout(context.Background(), 3*time.Minute)
 
 	size := 4 * 1024
 	tick := time.NewTicker(5 * time.Millisecond)
 	exit := false
-
+	printNum := 0
 	sumSize := int64(size)
 	count := 0
 	for range tick.C {
@@ -45,7 +45,8 @@ func main() {
 			sumSize += int64(size)
 			count++
 			if count%1000 == 0 {
-				fmt.Println(memStatsString(readMem()))
+				printNum++
+				fmt.Println(printNum, memStatsString(readMem()))
 			}
 			buff := make([]byte, size)
 			_, _ = rand.Read(buff)
