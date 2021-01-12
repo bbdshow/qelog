@@ -5,10 +5,22 @@ managerAddr = "0.0.0.0:31080"
 alarmEnable = true
 metricsEnable = true
 
-[mongodb]
+[main]
 database = "qelog"
 uri = "mongodb://root:111111@mongodb1.dev.crycx.com:27017,mongodb2.dev.crycx.com:27017/?replicaSet=fbj&authSource=admin"
 #uri = "mongodb://host.docker.internal:27017/admin"
+
+[[sharding]]
+index = [1,2,3,4]
+database = "qelog"
+uri = "mongodb://root:111111@mongodb1.dev.crycx.com:27017,mongodb2.dev.crycx.com:27017/?replicaSet=fbj&authSource=admin"
+
+[[sharding]]
+index = [5,6,7,8]
+database = "qelog2"
+uri = "mongodb://root:111111@mongodb1.dev.crycx.com:27017,mongodb2.dev.crycx.com:27017/?replicaSet=fbj&authSource=admin"
+
+
 
 [adminUser]
 username = "admin"
