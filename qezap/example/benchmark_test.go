@@ -14,9 +14,9 @@ import (
 func BenchmarkQezapRpc(b *testing.B) {
 	addrs := []string{"127.0.0.1:31082"}
 	cfg := qezap.NewConfig(addrs, "example")
-	//cfg.WriteRemote.MaxConcurrent = 50
+	//cfg.WriteRemote.MaxConcurrent = 100
 	// 如果设置 false，可以 addrs = nil
-	cfg.SetEnableRemote(false)
+	//cfg.SetEnableRemote(true)
 	// 如果对默认配置不满足，可直接设置
 	qeLog := qezap.New(cfg, zap.DebugLevel)
 	time.Sleep(2 * time.Second)

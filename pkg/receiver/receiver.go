@@ -1,6 +1,7 @@
 package receiver
 
 import (
+	"bytes"
 	"context"
 	"strconv"
 	"sync"
@@ -141,18 +142,23 @@ func (srv *Service) InsertPacket(ctx context.Context, ip string, in *pb.Packet) 
 }
 
 func (srv *Service) decodePacket(ip string, in *pb.Packet) []*model.Logging {
-	records := make([]*model.Logging, len(in.Data))
-	for i, v := range in.Data {
+	byteItems := bytes.Split(in.Data, []byte{'\n'})
+	records := make([]*model.Logging, 0, len(byteItems))
+
+	for i, v := range byteItems {
+		if v == nil || bytes.Equal(v, []byte{}) || bytes.Equal(v, []byte{'\n'}) {
+			continue
+		}
 		r := &model.Logging{
 			Module:    in.Module,
 			IP:        ip,
-			Full:      v,
+			Full:      string(v),
 			MessageID: in.Id + "_" + strconv.Itoa(i),
 			TimeSec:   time.Now().Unix(),
 			Size:      len(v),
 		}
 		val := make(map[string]interface{})
-		if err := types.Unmarshal([]byte(v), &val); err == nil {
+		if err := types.Unmarshal(v, &val); err == nil {
 			dec := types.Decoder{Val: val}
 			r.Short = dec.Short()
 			r.Level = dec.Level()
@@ -165,7 +171,7 @@ func (srv *Service) decodePacket(ip string, in *pb.Packet) []*model.Logging {
 			// full 去掉已经提取出来的字段
 			r.Full = dec.Full()
 		}
-		records[i] = r
+		records = append(records, r)
 	}
 	return records
 }

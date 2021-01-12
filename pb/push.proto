@@ -19,5 +19,5 @@ message Packet {
     // 包属于哪一个模块
     string module = 2;
     // 包具体的数据
-    repeated string data = 3;
+    bytes data = 3;
 }

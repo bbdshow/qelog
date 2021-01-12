@@ -21,17 +21,17 @@ func TestQezapLoopWrite(t *testing.T) {
 	qeLog := qezap.New(cfg, zap.DebugLevel)
 	time.Sleep(2 * time.Second)
 	go func() {
-		for i := 0; i < 1000000; i++ {
+		for i := 0; i < 10000; i++ {
 			qeLog.Info(strconv.Itoa(i), zap.Int("index", i))
 		}
 	}()
 	go func() {
-		for i := 0; i < 1000000; i++ {
+		for i := 0; i < 10000; i++ {
 			qeLog.Warn(strconv.Itoa(i), zap.Int("index", i))
 		}
 	}()
 	go func() {
-		for i := 0; i < 1000000; i++ {
+		for i := 0; i < 10000; i++ {
 			qeLog.Error(strconv.Itoa(i), zap.Int("index", i))
 		}
 	}()

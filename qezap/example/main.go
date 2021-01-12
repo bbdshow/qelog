@@ -15,8 +15,8 @@ import (
 
 func main() {
 	//loopWriteLogging()
-	//writeLogging()
-	multiModuleLogging()
+	writeLogging()
+	//multiModuleLogging()
 }
 
 func loopWriteLogging() {
