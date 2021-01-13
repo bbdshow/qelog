@@ -1,9 +1,9 @@
 syntax = "proto3";
 
 // protoc --go_out=plugins=grpc:.  *.proto
-package pb;
+package receiverpb;
 
-service Push {
+service Receiver {
     // 推送数据包
     rpc PushPacket(Packet) returns (BaseResp);
 }

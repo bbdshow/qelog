@@ -7,24 +7,17 @@ import (
 	"sync"
 	"time"
 
-	"github.com/huzhongqing/qelog/pkg/common/entity"
-
-	"github.com/huzhongqing/qelog/pkg/config"
-
-	"github.com/huzhongqing/qelog/pkg/receiver/metrics"
-
+	"github.com/huzhongqing/qelog/api"
+	"github.com/huzhongqing/qelog/api/receiverpb"
 	"github.com/huzhongqing/qelog/libs/logs"
-	"go.uber.org/zap"
-
-	"github.com/huzhongqing/qelog/pb"
-
-	"github.com/huzhongqing/qelog/pkg/receiver/alarm"
-
-	"github.com/huzhongqing/qelog/pkg/httputil"
-
 	"github.com/huzhongqing/qelog/pkg/common/model"
+	"github.com/huzhongqing/qelog/pkg/config"
+	"github.com/huzhongqing/qelog/pkg/httputil"
+	"github.com/huzhongqing/qelog/pkg/receiver/alarm"
+	"github.com/huzhongqing/qelog/pkg/receiver/metrics"
 	"github.com/huzhongqing/qelog/pkg/storage"
 	"github.com/huzhongqing/qelog/pkg/types"
+	"go.uber.org/zap"
 )
 
 type Service struct {
@@ -74,7 +67,7 @@ func NewService(sharding *storage.Sharding) *Service {
 	return srv
 }
 
-func (srv *Service) InsertJSONPacket(ctx context.Context, ip string, in *entity.JSONPacket) error {
+func (srv *Service) InsertJSONPacket(ctx context.Context, ip string, in *api.JSONPacket) error {
 	if len(in.Data) <= 0 {
 		return nil
 	}
@@ -100,7 +93,7 @@ func (srv *Service) InsertJSONPacket(ctx context.Context, ip string, in *entity.
 	return srv.insertLogging(ctx, module.DBIndex, docs)
 }
 
-func (srv *Service) InsertPacket(ctx context.Context, ip string, in *pb.Packet) error {
+func (srv *Service) InsertPacket(ctx context.Context, ip string, in *receiverpb.Packet) error {
 	if len(in.Data) <= 0 {
 		return nil
 	}
@@ -172,7 +165,7 @@ func (srv *Service) insertLogging(ctx context.Context, dbIndex int32, docs []*mo
 	return nil
 }
 
-func (srv *Service) decodePacket(ip string, in *pb.Packet) []*model.Logging {
+func (srv *Service) decodePacket(ip string, in *receiverpb.Packet) []*model.Logging {
 	byteItems := bytes.Split(in.Data, []byte{'\n'})
 	records := make([]*model.Logging, 0, len(byteItems))
 
@@ -207,7 +200,7 @@ func (srv *Service) decodePacket(ip string, in *pb.Packet) []*model.Logging {
 	return records
 }
 
-func (srv *Service) decodeJSONPacket(ip string, in *entity.JSONPacket) []*model.Logging {
+func (srv *Service) decodeJSONPacket(ip string, in *api.JSONPacket) []*model.Logging {
 	records := make([]*model.Logging, 0, len(in.Data))
 
 	for i, v := range in.Data {

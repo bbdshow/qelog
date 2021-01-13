@@ -14,7 +14,7 @@ import (
 	"google.golang.org/grpc/balancer/roundrobin"
 	"google.golang.org/grpc/resolver"
 
-	"github.com/huzhongqing/qelog/pb"
+	"github.com/huzhongqing/qelog/api/receiverpb"
 	"google.golang.org/grpc"
 )
 
@@ -23,12 +23,12 @@ var (
 )
 
 type Pusher interface {
-	PushPacket(ctx context.Context, in *pb.Packet) error
+	PushPacket(ctx context.Context, in *receiverpb.Packet) error
 	Concurrent() int
 }
 
 type GRRCPush struct {
-	cli   pb.PushClient
+	cli   receiverpb.PushClient
 	conn  *grpc.ClientConn
 	cChan chan struct{}
 }
@@ -51,7 +51,7 @@ func NewGRPCPush(addrs []string, concurrent int) (*GRRCPush, error) {
 	}
 
 	gp := &GRRCPush{
-		cli:   pb.NewPushClient(conn),
+		cli:   receiverpb.NewPushClient(conn),
 		conn:  conn,
 		cChan: make(chan struct{}, concurrent),
 	}
@@ -59,7 +59,7 @@ func NewGRPCPush(addrs []string, concurrent int) (*GRRCPush, error) {
 	return gp, nil
 }
 
-func (gp *GRRCPush) PushPacket(ctx context.Context, in *pb.Packet) error {
+func (gp *GRRCPush) PushPacket(ctx context.Context, in *receiverpb.Packet) error {
 	gp.cChan <- struct{}{}
 	defer func() {
 		<-gp.cChan
@@ -75,7 +75,7 @@ func (gp *GRRCPush) PushPacket(ctx context.Context, in *pb.Packet) error {
 	return nil
 }
 
-func (gp *GRRCPush) push(ctx context.Context, in *pb.Packet) error {
+func (gp *GRRCPush) push(ctx context.Context, in *receiverpb.Packet) error {
 	resp, err := gp.cli.PushPacket(ctx, in)
 	if err != nil {
 		// 认为服务不可用
@@ -123,7 +123,7 @@ func NewHttpPush(addr string, concurrent int) (*HttpPush, error) {
 	return hp, nil
 }
 
-func (hp *HttpPush) PushPacket(ctx context.Context, in *pb.Packet) error {
+func (hp *HttpPush) PushPacket(ctx context.Context, in *receiverpb.Packet) error {
 	hp.cChan <- struct{}{}
 	defer func() {
 		<-hp.cChan

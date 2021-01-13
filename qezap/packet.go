@@ -6,7 +6,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/huzhongqing/qelog/pb"
+	"github.com/huzhongqing/qelog/api/receiverpb"
 )
 
 var (
@@ -15,7 +15,7 @@ var (
 
 	_packetPool = sync.Pool{New: func() interface{} {
 		return &packet{
-			p: &pb.Packet{Module: _module, Data: make([]byte, 0, 1024)},
+			p: &receiverpb.Packet{Module: _module, Data: make([]byte, 0, 1024)},
 		}
 	}}
 )
@@ -26,7 +26,7 @@ func setMaxPacketSizeAndModule(size int, module string) {
 }
 
 type packet struct {
-	p      *pb.Packet
+	p      *receiverpb.Packet
 	isFree bool
 }
 

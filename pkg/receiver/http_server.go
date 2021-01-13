@@ -4,15 +4,11 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/huzhongqing/qelog/pkg/common/entity"
-
-	"github.com/huzhongqing/qelog/pkg/config"
-
-	"github.com/huzhongqing/qelog/pkg/httputil"
-
-	"github.com/huzhongqing/qelog/pkg/storage"
-
 	"github.com/gin-gonic/gin"
+	"github.com/huzhongqing/qelog/api"
+	"github.com/huzhongqing/qelog/pkg/config"
+	"github.com/huzhongqing/qelog/pkg/httputil"
+	"github.com/huzhongqing/qelog/pkg/storage"
 )
 
 type HTTPService struct {
@@ -61,7 +57,7 @@ func (srv *HTTPService) route(handler *gin.Engine) {
 }
 
 func (srv *HTTPService) ReceivePacket(c *gin.Context) {
-	in := &entity.JSONPacket{}
+	in := &api.JSONPacket{}
 	if err := c.ShouldBind(in); err != nil {
 		httputil.RespError(c, httputil.ErrArgsInvalid)
 		return

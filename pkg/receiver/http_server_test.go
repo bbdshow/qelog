@@ -10,7 +10,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/huzhongqing/qelog/pb"
+	"github.com/huzhongqing/qelog/api"
 )
 
 const (
@@ -46,7 +46,7 @@ func TestHTTPService_ReceivePacket(t *testing.T) {
 	b := `{"_level":"INFO","_time":1609944069261.2573,"_caller":"example/main.go:39","_func":"main.loopWriteLogging","_short":"2","_traceid":"160994406926125730025244977","val":823537}`
 	c := `{"_level":"INFO","_time":1612630357000.2573,"_caller":"example/main.go:39","_func":"main.loopWriteLogging","_short":"3","_traceid":"160994406926125730025244977","val":823537}`
 
-	in := &pb.Packet{
+	in := &api.JSONPacket{
 		Id:     fmt.Sprintf("%d", time.Now().UnixNano()),
 		Module: "example",
 		Data:   []string{a, b, c},

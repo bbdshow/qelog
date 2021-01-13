@@ -8,7 +8,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/huzhongqing/qelog/pb"
+	"github.com/huzhongqing/qelog/api/receiverpb"
 )
 
 type WriteRemote struct {
@@ -127,7 +127,7 @@ type _jsonPacket struct {
 	Data   string `json:"data"`
 }
 
-func (w *WriteRemote) backup(in *pb.Packet) error {
+func (w *WriteRemote) backup(in *receiverpb.Packet) error {
 	jsonPacket := _jsonPacket{
 		ID:     in.Id,
 		Module: in.Module,
@@ -173,7 +173,7 @@ func (w *WriteRemote) backgroundRetrySendPacket() {
 					fmt.Println("packets retry", err.Error())
 					break
 				}
-				v := &pb.Packet{
+				v := &receiverpb.Packet{
 					Id:     jsonPacket.ID,
 					Module: jsonPacket.Module,
 					Data:   []byte(jsonPacket.Data),
