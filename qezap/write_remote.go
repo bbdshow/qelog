@@ -41,9 +41,10 @@ func NewWriteRemoteConfig(addrs []string, moduleName string) WriteRemoteConfig {
 		Addrs:         addrs,
 		ModuleName:    moduleName,
 		MaxConcurrent: 50,
-		// 包的大小对写入效率有着比较重要的影响。 当设置 1MB时，会快于 64KB
-		// 但是小对象对于GC相对更加友好 (grpc 默认最大4MB一个包)
-		MaxPacket:          62 << 10,
+		// 包的大小对写入效率有着比较重要的影响。 设置的相对大，有利于减少rpc调用次数，整体写入速度会更快。
+		// 但是因为使用 sync.Pool 占用内存会更高一点。
+		// 小对象对于GC与内存占用相对更加友好 (grpc 默认最大4MB一个包)
+		MaxPacket:          32 << 10,
 		WriteTimeout:       5 * time.Second,
 		RemoteFailedBackup: _backupFilename,
 	}
@@ -68,8 +69,7 @@ func NewWriteRemote(cfg WriteRemoteConfig) *WriteRemote {
 		panic("config validate error " + err.Error())
 	}
 	wr := &WriteRemote{
-		cfg: cfg,
-		//packets: NewPackets(cfg.MaxPacket, cfg.RemoteFailedBackup),
+		cfg:    cfg,
 		packet: NewPacket(cfg.ModuleName, cfg.MaxPacket),
 		bw:     NewBackupWrite(cfg.RemoteFailedBackup),
 	}
@@ -90,8 +90,9 @@ func (wr *WriteRemote) Write(b []byte) (n int, err error) {
 	return len(b), nil
 }
 
+// 当一定时间内，包容量没有达到，则也会默认发送已在缓存中的日志
 func (wr *WriteRemote) pullPacket() {
-	tick := time.NewTicker(2 * time.Second)
+	tick := time.NewTicker(time.Second)
 	for {
 		select {
 		case <-tick.C:
@@ -104,7 +105,7 @@ func (wr *WriteRemote) pullPacket() {
 }
 
 func (wr *WriteRemote) push(in *pb.Packet) {
-	if in.Data == nil || len(in.Data) <= 0 {
+	if in == nil || in.Data == nil || len(in.Data) <= 0 {
 		// 没有类容的包，直接丢掉
 		return
 	}

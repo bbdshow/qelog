@@ -10,20 +10,22 @@ import (
 )
 
 type Packet struct {
-	mutex   sync.Mutex
-	pool    sync.Pool
-	packet  *pb.Packet
-	maxSize int
+	mutex    sync.Mutex
+	pool     sync.Pool
+	packet   *pb.Packet
+	maxSize  int
+	capLimit int
 }
 
 func NewPacket(module string, maxSize int) *Packet {
 	p := &Packet{
 		packet:  nil,
 		maxSize: maxSize,
+		// 预留一定容量，避免最后一条信息写入，导致扩容
+		capLimit: maxSize + 128,
 	}
 	p.pool = sync.Pool{New: func() interface{} {
-		// 预留1kb空间，减少最后一条信息过长导致 byte 扩容
-		return &pb.Packet{Module: module, Data: make([]byte, 0, p.maxSize+1024)}
+		return &pb.Packet{Module: module, Data: make([]byte, 0, p.capLimit)}
 	}}
 
 	return p
@@ -31,11 +33,17 @@ func NewPacket(module string, maxSize int) *Packet {
 
 func (p *Packet) initPacket() {
 	v := p.pool.Get().(*pb.Packet)
-	v.Id = ""
-	v.Data = v.Data[:0]
 	p.packet = v
 }
 func (p *Packet) FreePacket(v *pb.Packet) {
+	if cap(v.Data) > p.capLimit {
+		// 如果产生了扩容，则不放回池子里面，让GC回收
+		return
+	}
+
+	v.Id = ""
+	v.Data = v.Data[:0]
+
 	p.pool.Put(v)
 }
 

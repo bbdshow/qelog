@@ -83,7 +83,7 @@ func (srv *Service) InsertJSONPacket(ctx context.Context, ip string, in *entity.
 	module, ok := srv.modules[in.Module]
 	srv.mutex.RUnlock()
 	if !ok {
-		return httputil.NewError(httputil.ErrCodeNotFound, "module unregistered")
+		return httputil.NewError(httputil.ErrCodeNotFound, in.Module+"module unregistered")
 	}
 
 	docs := srv.decodeJSONPacket(ip, in)
