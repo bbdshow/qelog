@@ -28,7 +28,7 @@ type Pusher interface {
 }
 
 type GRRCPush struct {
-	cli   receiverpb.PushClient
+	cli   receiverpb.ReceiverClient
 	conn  *grpc.ClientConn
 	cChan chan struct{}
 }
@@ -51,7 +51,7 @@ func NewGRPCPush(addrs []string, concurrent int) (*GRRCPush, error) {
 	}
 
 	gp := &GRRCPush{
-		cli:   receiverpb.NewPushClient(conn),
+		cli:   receiverpb.NewReceiverClient(conn),
 		conn:  conn,
 		cChan: make(chan struct{}, concurrent),
 	}

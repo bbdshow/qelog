@@ -9,7 +9,7 @@ import (
 
 	"github.com/huzhongqing/qelog/pkg/httputil"
 
-	"github.com/huzhongqing/qelog/pb"
+	"github.com/huzhongqing/qelog/api/receiverpb"
 	"github.com/huzhongqing/qelog/pkg/storage"
 	"google.golang.org/grpc"
 )
@@ -37,7 +37,7 @@ func (srv *GRPCService) Run(addr string) error {
 	server := grpc.NewServer()
 	srv.server = server
 
-	pb.RegisterPushServer(srv.server, srv)
+	receiverpb.RegisterReceiverServer(srv.server, srv)
 
 	//reflection.Register(srv.server)
 
@@ -56,7 +56,7 @@ func (srv *GRPCService) Close() error {
 	return nil
 }
 
-func (srv *GRPCService) PushPacket(ctx context.Context, in *pb.Packet) (*pb.BaseResp, error) {
+func (srv *GRPCService) PushPacket(ctx context.Context, in *receiverpb.Packet) (*receiverpb.BaseResp, error) {
 	// 获取 clientIP
 	if err := srv.receiver.InsertPacket(ctx, srv.clientIP(ctx), in); err != nil {
 		e, ok := err.(httputil.Error)
@@ -65,14 +65,14 @@ func (srv *GRPCService) PushPacket(ctx context.Context, in *pb.Packet) (*pb.Base
 			if e.Code == httputil.ErrCodeSystemException {
 				return nil, httputil.ErrSystemException
 			}
-			return &pb.BaseResp{
+			return &receiverpb.BaseResp{
 				Code:    int32(e.Code),
 				Message: e.Message,
 			}, nil
 		}
 		return nil, err
 	}
-	return &pb.BaseResp{
+	return &receiverpb.BaseResp{
 		Code:    httputil.CodeSuccess,
 		Message: "success",
 	}, nil
