@@ -5,161 +5,112 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
-	"path"
 	"sync"
 	"time"
 
 	"github.com/huzhongqing/qelog/pb"
 )
 
-var _backupFilename = path.Join(path.Dir(_logFilename), "backup", "backup.log")
-
-type WriteRemoteConfig struct {
-	Transport  string // 支持 http || grpc 默认grpc
-	Addrs      []string
-	ModuleName string
-
-	MaxConcurrent      int           // 默认 1 个并发
-	MaxPacket          int           // 默认不缓冲
-	WriteTimeout       time.Duration // 默认不超时
-	RemoteFailedBackup string        // 远程发送失败，备份文件
-}
-
-func (cfg WriteRemoteConfig) Validate() error {
-	if len(cfg.Addrs) == 0 {
-		return fmt.Errorf("address required, grpc [ip:port]  http[url]")
-	}
-	if cfg.ModuleName == "" {
-		return fmt.Errorf("moduleName required")
-	}
-	return nil
-}
-
-func NewWriteRemoteConfig(addrs []string, moduleName string) WriteRemoteConfig {
-	return WriteRemoteConfig{
-		Transport:     "grpc",
-		Addrs:         addrs,
-		ModuleName:    moduleName,
-		MaxConcurrent: 50,
-		// 包的大小对写入效率有着比较重要的影响。 设置的相对大，有利于减少rpc调用次数，整体写入速度会更快。
-		// 但是因为使用 sync.Pool 占用内存会更高一点。
-		// 小对象对于GC与内存占用相对更加友好 (grpc 默认最大4MB一个包)
-		MaxPacket:          32 << 10,
-		WriteTimeout:       5 * time.Second,
-		RemoteFailedBackup: _backupFilename,
-	}
-	// 如果超出并发限制，直接写入文件，缓慢背景发送
-}
-
 type WriteRemote struct {
-	cfg    WriteRemoteConfig
+	mutex sync.Mutex
+	cfg   *Config
+
 	pusher Pusher
+	packet *packet
 
-	//packets *Packets
-
-	packet *Packet
-
-	bw *BackupWrite
-
+	bw   *BackupWrite
 	once sync.Once
 }
 
-func NewWriteRemote(cfg WriteRemoteConfig) *WriteRemote {
-	if err := cfg.Validate(); err != nil {
-		panic("config validate error " + err.Error())
-	}
-	wr := &WriteRemote{
-		cfg:    cfg,
-		packet: NewPacket(cfg.ModuleName, cfg.MaxPacket),
-		bw:     NewBackupWrite(cfg.RemoteFailedBackup),
-	}
+func NewWriteRemote(cfg *Config) *WriteRemote {
 
-	wr.once.Do(func() {
-		go wr.initPusher()
-		go wr.backgroundRetry()
-		go wr.pullPacket()
+	w := &WriteRemote{
+		cfg: cfg,
+		bw:  NewBackupWrite(cfg.BackupFilename),
+	}
+	setMaxPacketSizeAndModule(cfg.MaxPacketSize, cfg.ModuleName)
+
+	w.once.Do(func() {
+		go w.initPusher()
+		go w.backgroundSendPacket()
+		go w.backgroundRetrySendPacket()
 	})
-	return wr
+	return w
 }
 
-func (wr *WriteRemote) Write(b []byte) (n int, err error) {
-	sendPacket := wr.packet.AppendData(b)
-	if sendPacket != nil {
-		wr.push(sendPacket)
+func (w *WriteRemote) Write(b []byte) (n int, err error) {
+	w.mutex.Lock()
+	if w.packet == nil {
+		w.packet = newPacket()
 	}
+	p := w.packet.append(b)
+	if p.isFree {
+		w.push(p)
+	}
+	w.mutex.Unlock()
+
 	return len(b), nil
 }
 
-// 当一定时间内，包容量没有达到，则也会默认发送已在缓存中的日志
-func (wr *WriteRemote) pullPacket() {
-	tick := time.NewTicker(time.Second)
-	for {
-		select {
-		case <-tick.C:
-			sendPacket := wr.packet.FlushData()
-			if sendPacket != nil {
-				wr.push(sendPacket)
-			}
-		}
-	}
-}
-
-func (wr *WriteRemote) push(in *pb.Packet) {
-	if in == nil || in.Data == nil || len(in.Data) <= 0 {
+func (w *WriteRemote) push(p *packet) {
+	defer func() {
+		w.packet = nil
+	}()
+	if len(p.p.Data) <= 0 {
 		// 没有类容的包，直接丢掉
 		return
 	}
-	if wr.pusher == nil {
-		_ = wr.backup(in)
-		wr.packet.FreePacket(in)
+	if w.pusher == nil {
+		_ = w.backup(p.p)
+		p.free()
 		return
 	}
 	// 如果发送者满负荷，则直接丢文件
-	if wr.pusher.Concurrent() >= wr.cfg.MaxConcurrent {
-		_ = wr.backup(in)
-		wr.packet.FreePacket(in)
+	if w.pusher.Concurrent() >= w.cfg.MaxConcurrent {
+		_ = w.backup(p.p)
+		p.free()
 		return
 	}
 
 	ctx := context.Background()
-	if wr.cfg.WriteTimeout > 0 {
-		ctx, _ = context.WithTimeout(context.Background(), wr.cfg.WriteTimeout)
+	if w.cfg.WriteTimeout > 0 {
+		ctx, _ = context.WithTimeout(context.Background(), w.cfg.WriteTimeout)
 	}
 
 	go func() {
-		if err := wr.pusher.PushPacket(ctx, in); err != nil {
+		if err := w.pusher.PushPacket(ctx, p.p); err != nil {
 			if err == ErrUnavailable {
 				// 只有当服务不可用时，放入错误备份文件里
-				_ = wr.backup(in)
+				_ = w.backup(p.p)
 			}
 			log.Printf("write remote push packet %s\n", err.Error())
 		}
-		wr.packet.FreePacket(in)
+		p.free()
 	}()
 }
 
-func (wr *WriteRemote) initPusher() {
+func (w *WriteRemote) initPusher() {
 	// 在发送的时候，才去链接， 如果链接不通，不能影响主进程
 	tick := time.NewTicker(time.Second)
 	for {
-		if wr.pusher == nil {
-			if wr.cfg.Transport == "http" {
-				pusher, err := NewHttpPush(wr.cfg.Addrs[0], wr.cfg.MaxConcurrent)
+		if w.pusher == nil {
+			if w.cfg.Transport == "http" {
+				pusher, err := NewHttpPush(w.cfg.Addrs[0], w.cfg.MaxConcurrent)
 				if err != nil {
 					log.Printf("init http push error %s\n", err.Error())
 					goto next
 				}
-				wr.pusher = pusher
+				w.pusher = pusher
 			} else {
-				pusher, err := NewGRPCPush(wr.cfg.Addrs, wr.cfg.MaxConcurrent)
+				pusher, err := NewGRPCPush(w.cfg.Addrs, w.cfg.MaxConcurrent)
 				if err != nil {
 					log.Printf("init grpc push error %s\n", err.Error())
 					goto next
 				}
-				wr.pusher = pusher
+				w.pusher = pusher
 
 			}
-			log.Printf("init %s push success \n", wr.cfg.Transport)
+			log.Printf("init %s push success \n", w.cfg.Transport)
 			tick.Stop()
 			return
 		}
@@ -176,7 +127,7 @@ type _jsonPacket struct {
 	Data   string `json:"data"`
 }
 
-func (wr *WriteRemote) backup(in *pb.Packet) error {
+func (w *WriteRemote) backup(in *pb.Packet) error {
 	jsonPacket := _jsonPacket{
 		ID:     in.Id,
 		Module: in.Module,
@@ -187,16 +138,32 @@ func (wr *WriteRemote) backup(in *pb.Packet) error {
 	if err != nil {
 		return err
 	}
-	_, err = wr.bw.WriteBakPacket(byt)
+	_, err = w.bw.WriteBakPacket(byt)
 	return err
 }
 
-func (wr *WriteRemote) backgroundRetry() {
+// 当一定时间内，包容量没有达到，则也会默认发送已在缓存中的日志
+func (w *WriteRemote) backgroundSendPacket() {
+	tick := time.NewTicker(time.Second)
+	for {
+		select {
+		case <-tick.C:
+			w.mutex.Lock()
+			if w.packet != nil {
+				p := w.packet.flush()
+				w.push(p)
+			}
+			w.mutex.Unlock()
+		}
+	}
+}
+
+func (w *WriteRemote) backgroundRetrySendPacket() {
 	tick := time.NewTicker(200 * time.Millisecond)
 	for {
 		select {
 		case <-tick.C:
-			byt, err := wr.bw.ReadBakPacket()
+			byt, err := w.bw.ReadBakPacket()
 			if err != nil {
 				fmt.Println("packets retry", err.Error())
 			}
@@ -212,9 +179,9 @@ func (wr *WriteRemote) backgroundRetry() {
 					Data:   []byte(jsonPacket.Data),
 				}
 			loop:
-				if wr.pusher != nil {
-					ctx, _ := context.WithTimeout(context.Background(), 10*time.Second)
-					if err := wr.pusher.PushPacket(ctx, v); err == nil {
+				if w.pusher != nil {
+					ctx, _ := context.WithTimeout(context.Background(), w.cfg.WriteTimeout)
+					if err := w.pusher.PushPacket(ctx, v); err == nil {
 						break
 					} else {
 						log.Printf("write remote push packet %s\n", err.Error())
@@ -227,15 +194,17 @@ func (wr *WriteRemote) backgroundRetry() {
 	}
 }
 
-func (wr *WriteRemote) Sync() error {
-	sendPacket := wr.packet.FlushData()
-	if sendPacket != nil {
-		wr.push(sendPacket)
+func (w *WriteRemote) Sync() error {
+	w.mutex.Lock()
+	defer w.mutex.Unlock()
+	if w.packet != nil {
+		p := w.packet.flush()
+		w.push(p)
 	}
 	sendEmpty := make(chan struct{}, 1)
 	go func() {
 		for {
-			if wr.pusher != nil && wr.pusher.Concurrent() == 0 {
+			if w.pusher != nil && w.pusher.Concurrent() == 0 {
 				time.Sleep(10 * time.Millisecond)
 				sendEmpty <- struct{}{}
 				return
@@ -244,12 +213,12 @@ func (wr *WriteRemote) Sync() error {
 		}
 	}()
 
-	ctx, _ := context.WithTimeout(context.Background(), 5*time.Second)
+	ctx, _ := context.WithTimeout(context.Background(), w.cfg.WriteTimeout)
 	select {
 	case <-ctx.Done():
 		log.Println("sync ", ctx.Err())
 	case <-sendEmpty:
 	}
 
-	return wr.bw.Close()
+	return w.bw.Close()
 }

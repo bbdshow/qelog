@@ -24,8 +24,8 @@ type WriteSync struct {
 	size    int64
 	maxSize int64
 
-	ttl  time.Duration // 0 永久保存
-	once sync.Once
+	maxAge time.Duration // 0 永久保存
+	once   sync.Once
 
 	compress    bool
 	compressing chan struct{} // 正在压缩
@@ -36,39 +36,14 @@ type WriteSync struct {
 	exit bool
 }
 
-type WriteSyncConfig struct {
-	Filename string
-	MaxSize  int64 // 超过大小 滚动 默认 0 不滚动
-	// 保留文件时间
-	TTL time.Duration // 滚动日志文件最大时间， 默认 0 永久
-	// Gzip 压缩
-	GzipCompress bool // 滚动日志是否Gzip压缩， 默认 false 不压缩
-}
-
-func (cfg WriteSyncConfig) Validate() error {
-	if cfg.Filename == "" {
-		return fmt.Errorf("filename required")
-	}
-	return nil
-}
-
-func NewWriteSyncConfig(filename string) WriteSyncConfig {
-	return WriteSyncConfig{
-		Filename:     filename,
-		MaxSize:      200 << 20, // 200MB
-		TTL:          0,         // 保存永久
-		GzipCompress: true,
-	}
-}
-
-func NewWriteSync(cfg WriteSyncConfig) *WriteSync {
+func NewWriteSync(cfg *Config) *WriteSync {
 	ws := &WriteSync{
 		mutex:       sync.Mutex{},
 		dir:         path.Dir(cfg.Filename),
 		filename:    cfg.Filename,
 		size:        0,
 		maxSize:     cfg.MaxSize,
-		ttl:         cfg.TTL,
+		maxAge:      cfg.MaxAge,
 		compress:    cfg.GzipCompress,
 		compressing: make(chan struct{}, 1),
 		file:        nil,
@@ -231,7 +206,7 @@ func (ws *WriteSync) rotateFilename() string {
 
 // 删除滚动切割出来的日志
 func (ws *WriteSync) backgroundDelExpiredFile() {
-	if ws.ttl > 0 {
+	if ws.maxAge > 0 {
 		tick := time.NewTicker(30 * time.Second)
 		for {
 			select {
@@ -240,7 +215,7 @@ func (ws *WriteSync) backgroundDelExpiredFile() {
 					return
 				}
 
-				expired := time.Now().Add(-ws.ttl)
+				expired := time.Now().Add(-ws.maxAge)
 				fs, err := ioutil.ReadDir(ws.dir)
 				if err == nil {
 					for _, f := range fs {

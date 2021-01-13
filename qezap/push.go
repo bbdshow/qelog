@@ -49,7 +49,7 @@ func NewGRPCPush(addrs []string, concurrent int) (*GRRCPush, error) {
 	if err != nil {
 		return nil, err
 	}
-	//conn, _ := grpc.Dial(addrs[0], grpc.WithInsecure())
+
 	gp := &GRRCPush{
 		cli:   pb.NewPushClient(conn),
 		conn:  conn,

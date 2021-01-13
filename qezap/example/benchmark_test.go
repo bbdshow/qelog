@@ -14,11 +14,6 @@ import (
 func BenchmarkQezapRpc(b *testing.B) {
 	addrs := []string{"127.0.0.1:31082"}
 	cfg := qezap.NewConfig(addrs, "example")
-	//cfg.WriteRemote.MaxConcurrent = 100
-	//cfg.WriteRemote.MaxPacket = 500 * 1024
-	// 如果设置 false，可以 addrs = nil
-	//cfg.SetEnableRemote(true)
-	// 如果对默认配置不满足，可直接设置
 	qeLog := qezap.New(cfg, zap.DebugLevel)
 	time.Sleep(time.Second)
 
@@ -37,12 +32,6 @@ func BenchmarkQezapHTTP(b *testing.B) {
 	addrs := []string{"http://127.0.0.1:31081/v1/receiver/packet"}
 	cfg := qezap.NewConfig(addrs, "example")
 	cfg.SetHTTPTransport()
-	//cfg.WriteRemote.MaxConcurrent = 100
-	// 如果设置 false，可以 addrs = nil
-	// cfg.SetEnableRemote(false)
-	//cfg.WriteRemote.MaxConcurrent = 200
-	//cfg.WriteRemote.MaxPacket = 500 * 1024
-	// 如果对默认配置不满足，可直接设置
 	qeLog := qezap.New(cfg, zap.DebugLevel)
 	time.Sleep(time.Second)
 
@@ -65,13 +54,11 @@ func BenchmarkTraceID(b *testing.B) {
 
 func BenchmarkQezapRpcWrite(b *testing.B) {
 	addrs := []string{"127.0.0.1:31082"}
-	cfg := qezap.NewWriteRemoteConfig(addrs, "example")
-	//cfg.WriteRemote.MaxConcurrent = 50
-	// 如果设置 false，可以 addrs = nil
-	writeRemote := qezap.NewWriteRemote(cfg)
-	// 如果对默认配置不满足，可直接设置
+	cfg := qezap.NewConfig(addrs, "benchmark")
 
-	time.Sleep(2 * time.Second)
+	writeRemote := qezap.NewWriteRemote(cfg)
+
+	time.Sleep(time.Second)
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		c := fmt.Sprintf(`{"_level":"INFO","_time":1609944069261.2573,"_caller":"example/main.go:39","_func":"main.loopWriteLogging","_short":"%d","_traceid":"160994406926125730025244977","val":823537}`, i)

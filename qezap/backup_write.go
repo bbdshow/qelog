@@ -27,10 +27,10 @@ func NewBackupWrite(filename string) *BackupWrite {
 }
 
 func (bw *BackupWrite) initWrite() {
-	bw.w = NewWriteSync(WriteSyncConfig{
+	bw.w = NewWriteSync(&Config{
 		Filename:     bw.filename,
 		MaxSize:      0, // 不滚动
-		TTL:          0, // 不切割
+		MaxAge:       0, // 不切割
 		GzipCompress: false,
 	})
 }

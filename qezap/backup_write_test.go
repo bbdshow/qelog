@@ -1,14 +1,14 @@
 package qezap
 
 import (
-	"fmt"
+	"os"
 	"testing"
 )
 
-func TestBackupWrite_BakPacket(t *testing.T) {
-	bw := NewBackupWrite("./testing/backup")
-	bw.WriteBakPacket([]byte("hello"))
-	bw.WriteBakPacket([]byte("world"))
+func TestBackupWrite(t *testing.T) {
+	bw := NewBackupWrite("./testing/backup.log")
+	_, _ = bw.WriteBakPacket([]byte("hello"))
+	_, _ = bw.WriteBakPacket([]byte("world"))
 
 	hello, err := bw.ReadBakPacket()
 	if err != nil {
@@ -18,8 +18,7 @@ func TestBackupWrite_BakPacket(t *testing.T) {
 		t.Fatal("not exists hello")
 	}
 	if string(hello) != "hello" {
-		fmt.Println(string(hello))
-		t.Fatal("hello not eq")
+		t.Fatal("hello not eq ", string(hello))
 	}
 
 	world, err := bw.ReadBakPacket()
@@ -31,6 +30,9 @@ func TestBackupWrite_BakPacket(t *testing.T) {
 	}
 
 	if string(world) != "world" {
-		t.Fatal("world not eq")
+		t.Fatal("world not eq ", string(world))
 	}
+	_ = bw.Close()
+
+	os.Remove(bw.filename)
 }

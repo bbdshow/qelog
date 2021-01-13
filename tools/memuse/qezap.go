@@ -30,7 +30,7 @@ func main() {
 	initMem := readMem()
 	ctx, _ := context.WithTimeout(context.Background(), 30*time.Minute)
 
-	tick := time.NewTicker(time.Millisecond)
+	tick := time.NewTicker(10 * time.Millisecond)
 	exit := false
 	printNum := 0
 	sumSize := int64(0)

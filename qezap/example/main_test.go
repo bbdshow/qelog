@@ -10,11 +10,10 @@ import (
 )
 
 func TestQezapLoopWrite(t *testing.T) {
-
 	// 持续写一段时间
 	addrs := []string{"127.0.0.1:31082"}
 	cfg := qezap.NewConfig(addrs, "example")
-	cfg.WriteRemote.MaxConcurrent = 100
+	cfg.SetMaxConcurrent(100)
 	// 如果设置 false，可以 addrs = nil
 	//cfg.SetEnableRemote(false)
 	// 如果对默认配置不满足，可直接设置

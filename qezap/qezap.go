@@ -5,7 +5,6 @@ import (
 	"context"
 	"fmt"
 	"os"
-	"path"
 	"strconv"
 	"sync/atomic"
 	"time"
@@ -14,41 +13,6 @@ import (
 	"go.uber.org/zap/zapcore"
 )
 
-var _logFilename = "./log/logger.log"
-
-type Config struct {
-	WriteSync WriteSyncConfig
-
-	EnableRemote bool
-	WriteRemote  WriteRemoteConfig
-}
-
-func NewConfig(addrs []string, moduleName string) *Config {
-	cfg := &Config{
-		WriteSync:    NewWriteSyncConfig(_logFilename),
-		EnableRemote: true,
-		WriteRemote:  NewWriteRemoteConfig(addrs, moduleName),
-	}
-	return cfg
-}
-
-func (cfg *Config) SetFilename(filename string) *Config {
-	dir := path.Dir(filename)
-	cfg.WriteSync.Filename = filename
-	cfg.WriteRemote.RemoteFailedBackup = path.Join(dir, "backup", "backup.log")
-	return cfg
-}
-
-func (cfg *Config) SetEnableRemote(enable bool) *Config {
-	cfg.EnableRemote = enable
-	return cfg
-}
-
-func (cfg *Config) SetHTTPTransport() *Config {
-	cfg.WriteRemote.Transport = "http"
-	return cfg
-}
-
 type Logger struct {
 	*zap.Logger
 	WritePrefix string
@@ -56,19 +20,14 @@ type Logger struct {
 }
 
 func New(cfg *Config, level zapcore.Level) *Logger {
-	if err := cfg.WriteSync.Validate(); err != nil {
+	if err := cfg.Validate(); err != nil {
 		panic(err)
-	}
-	if cfg.EnableRemote {
-		if err := cfg.WriteRemote.Validate(); err != nil {
-			panic(err)
-		}
 	}
 
 	prodEncCfg := zap.NewProductionEncoderConfig()
 	prodEncCfg.EncodeTime = zapcore.ISO8601TimeEncoder
 	localEnc := zapcore.NewConsoleEncoder(prodEncCfg)
-	localCore := zapcore.NewCore(localEnc, NewWriteSync(cfg.WriteSync), level)
+	localCore := zapcore.NewCore(localEnc, NewWriteSync(cfg), level)
 
 	var core zapcore.Core
 
@@ -89,7 +48,7 @@ func New(cfg *Config, level zapcore.Level) *Logger {
 			ConsoleSeparator: zapcore.DefaultLineEnding,
 		})
 
-		remoteCore := zapcore.NewCore(remoteEnc, NewWriteRemote(cfg.WriteRemote), level)
+		remoteCore := zapcore.NewCore(remoteEnc, NewWriteRemote(cfg), level)
 
 		core = zapcore.NewTee(localCore, remoteCore)
 	} else {

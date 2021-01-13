@@ -63,7 +63,7 @@ func writeLogging() {
 	// cfg.SetEnableRemote(false)
 
 	// 如果对默认配置不满足，可直接设置
-	cfg.WriteRemote.MaxPacket = 512
+	cfg.SetMaxPacketSize(256)
 
 	qeLog := qezap.New(cfg, zap.DebugLevel)
 
