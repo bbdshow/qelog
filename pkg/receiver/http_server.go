@@ -68,7 +68,7 @@ func (srv *HTTPService) ReceivePacket(c *gin.Context) {
 	}
 
 	if err := srv.receiver.InsertJSONPacket(c.Request.Context(), c.ClientIP(), in); err != nil {
-		httputil.RespError(c, err)
+		httputil.RespStatusCodeWithError(c, http.StatusBadRequest, err)
 		return
 	}
 	httputil.RespSuccess(c)

@@ -12,8 +12,9 @@ import (
 )
 
 func BenchmarkQezapRpc(b *testing.B) {
-	addrs := []string{"127.0.0.1:31082"}
-	cfg := qezap.NewConfig(addrs, "example")
+	//addrs := []string{"127.0.0.1:31082"}
+	addrs := []string{"192.168.10.114:31082"}
+	cfg := qezap.NewConfig(addrs, "benchmark")
 	qeLog := qezap.New(cfg, zap.DebugLevel)
 	time.Sleep(time.Second)
 
@@ -23,14 +24,12 @@ func BenchmarkQezapRpc(b *testing.B) {
 	}
 	fmt.Println(b.N)
 	qeLog.Sync()
-	// BenchmarkQezapRpc-8   	  101323	     11634 ns/op
-	// 关闭远程传输 性能相差接近2倍， 是因为 zap.core 要生成两份数据。
-	// BenchmarkQezap-8   	  160515	      6305 ns/op
 }
 
 func BenchmarkQezapHTTP(b *testing.B) {
-	addrs := []string{"http://127.0.0.1:31081/v1/receiver/packet"}
-	cfg := qezap.NewConfig(addrs, "example")
+	//addrs := []string{"http://127.0.0.1:31081/v1/receiver/packet"}
+	addrs := []string{"http://192.168.10.114:31081/v1/receiver/packet"}
+	cfg := qezap.NewConfig(addrs, "benchmark")
 	cfg.SetHTTPTransport()
 	qeLog := qezap.New(cfg, zap.DebugLevel)
 	time.Sleep(time.Second)
@@ -42,7 +41,6 @@ func BenchmarkQezapHTTP(b *testing.B) {
 	}
 	fmt.Println(b.N)
 	qeLog.Sync()
-	// BenchmarkQezapHTTP-8   	   89986	     12213 ns/op
 }
 
 func BenchmarkTraceID(b *testing.B) {
@@ -66,7 +64,4 @@ func BenchmarkQezapRpcWrite(b *testing.B) {
 	}
 	fmt.Println(b.N)
 	writeRemote.Sync()
-	// BenchmarkQezapRpc-8   	  101323	     11634 ns/op
-	// 关闭远程传输 性能相差接近2倍， 是因为 zap.core 要生成两份数据。
-	// BenchmarkQezap-8   	  160515	      6305 ns/op
 }
