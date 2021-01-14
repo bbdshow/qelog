@@ -9,8 +9,8 @@ var (
 	EncoderFunctionKey   = "_func"
 	EncoderStacktraceKey = "_stack"
 
-	EncoderConditionOneKey  = "_condition1"
-	EncoderConditionTwoKey  = "_condition2"
-	EncoderConditionTreeKey = "_condition3"
-	EncoderTraceIDKey       = "_traceid"
+	EncoderConditionOneKey   = "_condition1"
+	EncoderConditionTwoKey   = "_condition2"
+	EncoderConditionThreeKey = "_condition3"
+	EncoderTraceIDKey        = "_traceid"
 )
