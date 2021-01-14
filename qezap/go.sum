@@ -35,6 +35,8 @@ github.com/google/renameio v0.1.0/go.mod h1:KWCgfxg9yswjAJkECMjeO8J8rahYeXnNhOm4
 github.com/google/uuid v1.1.2/go.mod h1:TIyPZe4MgqvfeYDBFedMoGGpEw/LqOeaOT+nhxU+yHo=
 github.com/huzhongqing/qelog/api v0.0.0-20210113094021-1461dd9c5fa4 h1:QEn45OXubwLh1z6O1YplhonXQMF7alG9/+qhBoXH/BI=
 github.com/huzhongqing/qelog/api v0.0.0-20210113094021-1461dd9c5fa4/go.mod h1:TExt7hcq9L1IYIjxaSOXEC6eUnJs5Ys3vDrj0Cuxg4g=
+github.com/huzhongqing/qelog/api v0.10.0 h1:xrVE+KsK7P5pYmSykOWY6l1/btIKJpwLyzg727JRkjo=
+github.com/huzhongqing/qelog/api v0.10.0/go.mod h1:TExt7hcq9L1IYIjxaSOXEC6eUnJs5Ys3vDrj0Cuxg4g=
 github.com/kisielk/gotool v1.0.0/go.mod h1:XhKaO+MFFWcvkIS/tQcRk01m1F5IRFswLeQ+oQHNcck=
 github.com/kr/pretty v0.1.0 h1:L/CwN0zerZDmRFUapSPitk6f+Q3+0za1rQkzVuMiMFI=
 github.com/kr/pretty v0.1.0/go.mod h1:dAy3ld7l9f0ibDNOQOHHMYYIIbhfbHSm3C4ZsoJORNo=
