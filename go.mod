@@ -2,11 +2,6 @@ module github.com/huzhongqing/qelog
 
 go 1.14
 
-replace (
-	github.com/huzhongqing/qelog/api => ./api
-	github.com/huzhongqing/qelog/qezap => ./qezap
-)
-
 require (
 	github.com/BurntSushi/toml v0.3.1
 	github.com/dgrijalva/jwt-go v3.2.0+incompatible
