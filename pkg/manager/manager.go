@@ -7,7 +7,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/huzhongqing/qelog/pkg/types"
+	apitypes "github.com/huzhongqing/qelog/api/types"
 
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo/options"
@@ -140,7 +140,10 @@ func (srv *Service) DeleteModule(ctx context.Context, in *entity.DeleteModuleReq
 }
 
 func (srv *Service) FindLoggingByTraceID(ctx context.Context, in *entity.FindLoggingByTraceIDReq, out *entity.ListResp) error {
-	tid := types.TraceID(in.TraceID)
+	tid, err := apitypes.TraceIDFromHex(in.TraceID)
+	if err != nil {
+		return httputil.ErrArgsInvalid.MergeError(err)
+	}
 	// 如果查询条件存在TraceID, 则时间范围从 traceID 里面去解析
 	// 在TraceTime前后2小时
 	tidTime := tid.Time()

@@ -16,10 +16,12 @@ func BenchmarkDecoder(b *testing.B) {
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		dec := Decoder{Val: val}
-		dec.Time()
+		dec.TimeMill()
 		dec.Short()
 		dec.Level()
 		dec.Full()
+		dec.Condition(1)
+		dec.TraceIDHex()
 	}
 }
 
@@ -31,7 +33,6 @@ func TestDecoder_Full(t *testing.T) {
 	}
 	dec := Decoder{Val: val}
 	r := model.Logging{
-		UniqueKey:  "",
 		Module:     "",
 		IP:         "",
 		Level:      dec.Level(),
@@ -40,8 +41,8 @@ func TestDecoder_Full(t *testing.T) {
 		Condition1: "",
 		Condition2: "",
 		Condition3: "",
-		Time:       dec.Time(),
-		TimeStamp:  0,
+		TimeMill:   dec.TimeMill(),
+		TimeSec:    0,
 	}
 	fmt.Println(r)
 }

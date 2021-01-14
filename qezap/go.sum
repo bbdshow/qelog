@@ -37,6 +37,10 @@ github.com/huzhongqing/qelog/api v0.0.0-20210113094021-1461dd9c5fa4 h1:QEn45OXub
 github.com/huzhongqing/qelog/api v0.0.0-20210113094021-1461dd9c5fa4/go.mod h1:TExt7hcq9L1IYIjxaSOXEC6eUnJs5Ys3vDrj0Cuxg4g=
 github.com/huzhongqing/qelog/api v0.10.0 h1:xrVE+KsK7P5pYmSykOWY6l1/btIKJpwLyzg727JRkjo=
 github.com/huzhongqing/qelog/api v0.10.0/go.mod h1:TExt7hcq9L1IYIjxaSOXEC6eUnJs5Ys3vDrj0Cuxg4g=
+github.com/huzhongqing/qelog/api v0.11.0 h1:6VTv1XcWKiUpER3FN32kfntvk4IfTAqwM1Yap4JyZZs=
+github.com/huzhongqing/qelog/api v0.11.0/go.mod h1:TExt7hcq9L1IYIjxaSOXEC6eUnJs5Ys3vDrj0Cuxg4g=
+github.com/huzhongqing/qelog/api v0.11.1 h1:yNxfT+7WWNXu7Wxj7xcp5tMchWTHUazhEYTMos+tEnU=
+github.com/huzhongqing/qelog/api v0.11.1/go.mod h1:TExt7hcq9L1IYIjxaSOXEC6eUnJs5Ys3vDrj0Cuxg4g=
 github.com/kisielk/gotool v1.0.0/go.mod h1:XhKaO+MFFWcvkIS/tQcRk01m1F5IRFswLeQ+oQHNcck=
 github.com/kr/pretty v0.1.0 h1:L/CwN0zerZDmRFUapSPitk6f+Q3+0za1rQkzVuMiMFI=
 github.com/kr/pretty v0.1.0/go.mod h1:dAy3ld7l9f0ibDNOQOHHMYYIIbhfbHSm3C4ZsoJORNo=

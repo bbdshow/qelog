@@ -1,13 +1,11 @@
 package qezap
 
 import (
-	"bytes"
 	"context"
-	"fmt"
-	"os"
-	"strconv"
-	"sync/atomic"
-	"time"
+
+	"go.uber.org/multierr"
+
+	"github.com/huzhongqing/qelog/api/types"
 
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
@@ -19,43 +17,136 @@ type Logger struct {
 	WriteLevel  zapcore.Level
 }
 
+func NewOneEncoderMultiWriterCore(enc zapcore.Encoder, enab zapcore.LevelEnabler, multiW []zapcore.WriteSyncer) zapcore.Core {
+	return &oneEncoderMultiWriter{
+		LevelEnabler: enab,
+		enc:          enc,
+		multiW:       multiW,
+	}
+}
+
+type oneEncoderMultiWriter struct {
+	zapcore.LevelEnabler
+	enc    zapcore.Encoder
+	multiW []zapcore.WriteSyncer
+}
+
+func (mw *oneEncoderMultiWriter) With(fields []zap.Field) zapcore.Core {
+	clone := mw.clone()
+	for i := range fields {
+		fields[i].AddTo(clone.enc)
+	}
+	return clone
+}
+
+func (mw *oneEncoderMultiWriter) Check(ent zapcore.Entry, ce *zapcore.CheckedEntry) *zapcore.CheckedEntry {
+	if mw.Enabled(ent.Level) {
+		return ce.AddCore(ent, mw)
+	}
+	return ce
+}
+
+func (mw *oneEncoderMultiWriter) Write(ent zapcore.Entry, fields []zap.Field) error {
+	buf, err := mw.enc.EncodeEntry(ent, fields)
+	if err != nil {
+		return err
+	}
+
+	for _, w := range mw.multiW {
+		_, err = w.Write(buf.Bytes())
+		if err != nil {
+			err = multierr.Append(err, err)
+			continue
+		}
+	}
+	buf.Free()
+
+	if ent.Level > zapcore.ErrorLevel {
+		// Since we may be crashing the program, sync the output. Ignore Sync
+		// errors, pending a clean solution to issue #370.
+		mw.Sync()
+	}
+	return err
+}
+
+func (mw *oneEncoderMultiWriter) Sync() error {
+	var err error
+	for i := range mw.multiW {
+		err = multierr.Append(err, mw.multiW[i].Sync())
+	}
+	return err
+}
+
+func (mw *oneEncoderMultiWriter) clone() *oneEncoderMultiWriter {
+	return &oneEncoderMultiWriter{
+		LevelEnabler: mw.LevelEnabler,
+		enc:          mw.enc.Clone(),
+		multiW:       mw.multiW,
+	}
+}
+
 func New(cfg *Config, level zapcore.Level) *Logger {
 	if err := cfg.Validate(); err != nil {
 		panic(err)
 	}
+	enc := zapcore.NewJSONEncoder(zapcore.EncoderConfig{
+		MessageKey:       types.EncoderMessageKey,
+		LevelKey:         types.EncoderLevelKey,
+		TimeKey:          types.EncoderTimeKey,
+		NameKey:          types.EncoderNameKey,
+		CallerKey:        types.EncoderCallerKey,
+		FunctionKey:      types.EncoderFunctionKey,
+		StacktraceKey:    types.EncoderStacktraceKey,
+		LineEnding:       "",
+		EncodeLevel:      zapcore.CapitalLevelEncoder,
+		EncodeTime:       zapcore.EpochMillisTimeEncoder,
+		EncodeDuration:   zapcore.SecondsDurationEncoder,
+		EncodeCaller:     zapcore.ShortCallerEncoder,
+		ConsoleSeparator: zapcore.DefaultLineEnding,
+	})
 
-	prodEncCfg := zap.NewProductionEncoderConfig()
-	prodEncCfg.EncodeTime = zapcore.ISO8601TimeEncoder
-	localEnc := zapcore.NewConsoleEncoder(prodEncCfg)
-	localCore := zapcore.NewCore(localEnc, NewWriteSync(cfg), level)
-
-	var core zapcore.Core
+	multiW := make([]zapcore.WriteSyncer, 0)
+	multiW = append(multiW, NewWriteSync(cfg))
 
 	if cfg.EnableRemote {
-		remoteEnc := zapcore.NewJSONEncoder(zapcore.EncoderConfig{
-			MessageKey:       "_short",
-			LevelKey:         "_level",
-			TimeKey:          "_time",
-			NameKey:          "_name",
-			CallerKey:        "_caller",
-			FunctionKey:      "_func",
-			StacktraceKey:    "_stack",
-			LineEnding:       "",
-			EncodeLevel:      zapcore.CapitalLevelEncoder,
-			EncodeTime:       zapcore.EpochMillisTimeEncoder,
-			EncodeDuration:   zapcore.SecondsDurationEncoder,
-			EncodeCaller:     zapcore.ShortCallerEncoder,
-			ConsoleSeparator: zapcore.DefaultLineEnding,
-		})
-
-		remoteCore := zapcore.NewCore(remoteEnc, NewWriteRemote(cfg), level)
-
-		core = zapcore.NewTee(localCore, remoteCore)
-	} else {
-		core = localCore
+		multiW = append(multiW, NewWriteRemote(cfg))
 	}
 
+	core := NewOneEncoderMultiWriterCore(enc, level, multiW)
 	return &Logger{Logger: zap.New(core, zap.AddCaller(), zap.AddStacktrace(zap.DPanicLevel))}
+
+	//prodEncCfg := zap.NewProductionEncoderConfig()
+	//prodEncCfg.EncodeTime = zapcore.ISO8601TimeEncoder
+	//localEnc := zapcore.NewConsoleEncoder(prodEncCfg)
+	//localCore := zapcore.NewCore(localEnc, NewWriteSync(cfg), level)
+	//
+	//var core zapcore.Core
+	//
+	//if cfg.EnableRemote {
+	//	remoteEnc := zapcore.NewJSONEncoder(zapcore.EncoderConfig{
+	//		MessageKey:       types.EncoderMessageKey,
+	//		LevelKey:         types.EncoderLevelKey,
+	//		TimeKey:          types.EncoderTimeKey,
+	//		NameKey:          types.EncoderNameKey,
+	//		CallerKey:        types.EncoderCallerKey,
+	//		FunctionKey:      types.EncoderFunctionKey,
+	//		StacktraceKey:    types.EncoderStacktraceKey,
+	//		LineEnding:       "",
+	//		EncodeLevel:      zapcore.CapitalLevelEncoder,
+	//		EncodeTime:       zapcore.EpochMillisTimeEncoder,
+	//		EncodeDuration:   zapcore.SecondsDurationEncoder,
+	//		EncodeCaller:     zapcore.ShortCallerEncoder,
+	//		ConsoleSeparator: zapcore.DefaultLineEnding,
+	//	})
+	//
+	//	remoteCore := zapcore.NewCore(remoteEnc, NewWriteRemote(cfg), level)
+	//
+	//	core = zapcore.NewTee(localCore, remoteCore)
+	//} else {
+	//	core = localCore
+	//}
+
+	//return &Logger{Logger: zap.New(core, zap.AddCaller(), zap.AddStacktrace(zap.DPanicLevel))}
 }
 
 // 暴露Write方法，用于替换使用  io.Writer 接口的地方
@@ -84,60 +175,78 @@ func (log *Logger) Clone() *Logger {
 }
 
 func (log *Logger) ConditionOne(v string) zap.Field {
-	return zap.String("_condition1", v)
+	return zap.String(types.EncoderConditionOneKey, v)
 }
 
 func (log *Logger) ConditionTwo(v string) zap.Field {
-	return zap.String("_condition2", v)
+	return zap.String(types.EncoderConditionTwoKey, v)
 }
 
 func (log *Logger) ConditionThree(v string) zap.Field {
-	return zap.String("_condition3", v)
+	return zap.String(types.EncoderConditionThreeKey, v)
 }
 
 func (log *Logger) WithTraceID(ctx context.Context) context.Context {
-	return context.WithValue(ctx, "_traceid", new(TraceID).New())
+	return context.WithValue(ctx, types.EncoderTraceIDKey, types.NewTraceID())
 }
 
-func (log *Logger) TraceIDField(ctx context.Context) zap.Field {
-	id := ""
-	val := ctx.Value("_traceid")
-	tid, ok := val.(TraceID)
+// 用于把上下文的一些信息打入日志
+func (log *Logger) DebugWithCtx(ctx context.Context, msg string, fields ...zap.Field) {
+	log.encoderWithCtx(zapcore.DebugLevel, ctx, msg, fields...)
+}
+
+func (log *Logger) InfoWithCtx(ctx context.Context, msg string, fields ...zap.Field) {
+	log.encoderWithCtx(zapcore.InfoLevel, ctx, msg, fields...)
+}
+
+func (log *Logger) WarnWithCtx(ctx context.Context, msg string, fields ...zap.Field) {
+	log.encoderWithCtx(zapcore.WarnLevel, ctx, msg, fields...)
+}
+
+func (log *Logger) ErrorWithCtx(ctx context.Context, msg string, fields ...zap.Field) {
+	log.encoderWithCtx(zapcore.ErrorLevel, ctx, msg, fields...)
+}
+
+func (log *Logger) DPanicWithCtx(ctx context.Context, msg string, fields ...zap.Field) {
+	log.encoderWithCtx(zapcore.DPanicLevel, ctx, msg, fields...)
+}
+
+func (log *Logger) PanicWithCtx(ctx context.Context, msg string, fields ...zap.Field) {
+	log.encoderWithCtx(zapcore.PanicLevel, ctx, msg, fields...)
+}
+
+func (log *Logger) FatalWithCtx(ctx context.Context, msg string, fields ...zap.Field) {
+	log.encoderWithCtx(zapcore.FatalLevel, ctx, msg, fields...)
+}
+
+func (log *Logger) MustGetTraceID(ctx context.Context) types.TraceID {
+	val := ctx.Value(types.EncoderTraceIDKey)
+	id, ok := val.(types.TraceID)
 	if ok {
-		id = tid.String()
+		return id
 	}
-	return zap.String("_traceid", id)
+	return types.NilTraceID
 }
 
-var _pidString = func() string {
-	pid := os.Getpid()
-	return fmt.Sprintf("%05d", pid)
-}()
-
-var _incInt64 int64 = 0
-
-type TraceID string
-
-// [nsec:19]
-func (tid TraceID) New() TraceID {
-	buff := bytes.Buffer{}
-	nsec := time.Now().UnixNano()
-	nsecStr := strconv.FormatInt(nsec, 10)
-
-	buff.WriteString(nsecStr)
-	buff.WriteString(_pidString)
-	buff.WriteString(strconv.FormatInt(atomic.AddInt64(&_incInt64, 1), 10))
-	return TraceID(buff.String())
-}
-
-func (tid TraceID) Time() time.Time {
-	if tid != "" {
-		nsec, _ := strconv.ParseInt(string(tid[:19]), 10, 64)
-		return time.Unix(0, nsec)
+func (log *Logger) encoderWithCtx(level zapcore.Level, ctx context.Context, msg string, fields ...zap.Field) {
+	if ctx != nil {
+		id := log.MustGetTraceID(ctx)
+		fields = append(fields, zap.String(types.EncoderTraceIDKey, id.Hex()))
 	}
-	return time.Unix(0, 0)
-}
-
-func (tid TraceID) String() string {
-	return string(tid)
+	switch level {
+	case zapcore.DebugLevel:
+		log.Debug(msg, fields...)
+	case zapcore.InfoLevel:
+		log.Info(msg, fields...)
+	case zapcore.WarnLevel:
+		log.Warn(msg, fields...)
+	case zapcore.ErrorLevel:
+		log.Error(msg, fields...)
+	case zapcore.DPanicLevel:
+		log.DPanic(msg, fields...)
+	case zapcore.PanicLevel:
+		log.Panic(msg, fields...)
+	case zapcore.FatalLevel:
+		log.Fatal(msg, fields...)
+	}
 }

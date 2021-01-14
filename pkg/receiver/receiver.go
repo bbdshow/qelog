@@ -189,8 +189,8 @@ func (srv *Service) decodePacket(ip string, in *receiverpb.Packet) []*model.Logg
 			r.Condition1 = dec.Condition(1)
 			r.Condition2 = dec.Condition(2)
 			r.Condition3 = dec.Condition(3)
-			r.TraceID = dec.TraceID()
-			r.TimeMill = dec.Time()
+			r.TraceID = dec.TraceIDHex()
+			r.TimeMill = dec.TimeMill()
 			r.TimeSec = r.TimeMill / 1e3
 			// full 去掉已经提取出来的字段
 			r.Full = dec.Full()
@@ -223,8 +223,8 @@ func (srv *Service) decodeJSONPacket(ip string, in *api.JSONPacket) []*model.Log
 			r.Condition1 = dec.Condition(1)
 			r.Condition2 = dec.Condition(2)
 			r.Condition3 = dec.Condition(3)
-			r.TraceID = dec.TraceID()
-			r.TimeMill = dec.Time()
+			r.TraceID = dec.TraceIDHex()
+			r.TimeMill = dec.TimeMill()
 			r.TimeSec = r.TimeMill / 1e3
 			// full 去掉已经提取出来的字段
 			r.Full = dec.Full()

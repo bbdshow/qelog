@@ -1,9 +1,10 @@
 package types
 
 import (
-	"fmt"
 	"strings"
 	"time"
+
+	apitypes "github.com/huzhongqing/qelog/api/types"
 
 	"github.com/huzhongqing/qelog/pkg/common/model"
 	jsoniterator "github.com/json-iterator/go"
@@ -14,7 +15,7 @@ type Decoder struct {
 }
 
 func (dec Decoder) Level() model.Level {
-	interfaceV, ok := dec.Val["_level"]
+	interfaceV, ok := dec.Val[apitypes.EncoderLevelKey]
 	if ok {
 		val, ok1 := interfaceV.(string)
 		if ok1 {
@@ -23,8 +24,8 @@ func (dec Decoder) Level() model.Level {
 	}
 	return 0
 }
-func (dec Decoder) Time() int64 {
-	interfaceV, ok := dec.Val["_time"]
+func (dec Decoder) TimeMill() int64 {
+	interfaceV, ok := dec.Val[apitypes.EncoderTimeKey]
 	if ok {
 		val, ok1 := interfaceV.(float64)
 		if ok1 {
@@ -35,7 +36,7 @@ func (dec Decoder) Time() int64 {
 }
 
 func (dec Decoder) Short() string {
-	interfaceV, ok := dec.Val["_short"]
+	interfaceV, ok := dec.Val[apitypes.EncoderMessageKey]
 	if ok {
 		val, ok1 := interfaceV.(string)
 		if ok1 {
@@ -46,7 +47,16 @@ func (dec Decoder) Short() string {
 }
 
 func (dec Decoder) Condition(num int) string {
-	interfaceV, ok := dec.Val[fmt.Sprintf("_condition%d", num)]
+	key := ""
+	switch num {
+	case 1:
+		key = apitypes.EncoderConditionOneKey
+	case 2:
+		key = apitypes.EncoderConditionTwoKey
+	case 3:
+		key = apitypes.EncoderConditionThreeKey
+	}
+	interfaceV, ok := dec.Val[key]
 	if ok {
 		val, ok1 := interfaceV.(string)
 		if ok1 {
@@ -56,8 +66,8 @@ func (dec Decoder) Condition(num int) string {
 	return ""
 }
 
-func (dec Decoder) TraceID() string {
-	interfaceV, ok := dec.Val["_traceid"]
+func (dec Decoder) TraceIDHex() string {
+	interfaceV, ok := dec.Val[apitypes.EncoderTraceIDKey]
 	if ok {
 		val, ok1 := interfaceV.(string)
 		if ok1 {
@@ -69,8 +79,8 @@ func (dec Decoder) TraceID() string {
 
 // 删除一些不必要的字段，节约存储
 func (dec Decoder) Full() string {
-	delFields := []string{"_level", "_time", "_short",
-		"_condition1", "_condition2", "_condition3", "_traceid"}
+	delFields := []string{apitypes.EncoderLevelKey, apitypes.EncoderTimeKey, apitypes.EncoderMessageKey,
+		apitypes.EncoderConditionOneKey, apitypes.EncoderConditionTwoKey, apitypes.EncoderConditionThreeKey, apitypes.EncoderTraceIDKey}
 	for _, v := range delFields {
 		delete(dec.Val, v)
 	}

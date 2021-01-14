@@ -83,11 +83,17 @@ github.com/google/uuid v1.1.2/go.mod h1:TIyPZe4MgqvfeYDBFedMoGGpEw/LqOeaOT+nhxU+
 github.com/huzhongqing/qelog/api v0.0.0-20210113094021-1461dd9c5fa4/go.mod h1:TExt7hcq9L1IYIjxaSOXEC6eUnJs5Ys3vDrj0Cuxg4g=
 github.com/huzhongqing/qelog/api v0.0.0-20210113094426-c820ea78a937 h1:ayAIBOPs/ETJyJ0HRkCjK3yGZKDrTxGlZHMdz1MpOyU=
 github.com/huzhongqing/qelog/api v0.0.0-20210113094426-c820ea78a937/go.mod h1:TExt7hcq9L1IYIjxaSOXEC6eUnJs5Ys3vDrj0Cuxg4g=
+github.com/huzhongqing/qelog/api v0.10.0 h1:xrVE+KsK7P5pYmSykOWY6l1/btIKJpwLyzg727JRkjo=
 github.com/huzhongqing/qelog/api v0.10.0/go.mod h1:TExt7hcq9L1IYIjxaSOXEC6eUnJs5Ys3vDrj0Cuxg4g=
+github.com/huzhongqing/qelog/api v0.11.0 h1:6VTv1XcWKiUpER3FN32kfntvk4IfTAqwM1Yap4JyZZs=
+github.com/huzhongqing/qelog/api v0.11.0/go.mod h1:TExt7hcq9L1IYIjxaSOXEC6eUnJs5Ys3vDrj0Cuxg4g=
+github.com/huzhongqing/qelog/api v0.11.1 h1:yNxfT+7WWNXu7Wxj7xcp5tMchWTHUazhEYTMos+tEnU=
+github.com/huzhongqing/qelog/api v0.11.1/go.mod h1:TExt7hcq9L1IYIjxaSOXEC6eUnJs5Ys3vDrj0Cuxg4g=
 github.com/huzhongqing/qelog/qezap v0.0.0-20210113094426-c820ea78a937 h1:D2O1qusb9J765HKCHM/opzT2RkHx0akI+hXNbi+SsGw=
 github.com/huzhongqing/qelog/qezap v0.0.0-20210113094426-c820ea78a937/go.mod h1:GUjYxvGS/euIKV8RgG7sFgh9izBlD1Fmex9K0uylg80=
 github.com/huzhongqing/qelog/qezap v0.0.0-20210113094830-08c8c7990c94 h1:UdhPdMHWGxpTsaxmycdwfLRt8Ep6TSoFbp6LuBznVf0=
 github.com/huzhongqing/qelog/qezap v0.0.0-20210113094830-08c8c7990c94/go.mod h1:GUjYxvGS/euIKV8RgG7sFgh9izBlD1Fmex9K0uylg80=
+github.com/huzhongqing/qelog/qezap v0.10.0 h1:TAo0HU1yJ7aCiI/w3aeVLKr8D1er0HTwaZxDKhZfmac=
 github.com/huzhongqing/qelog/qezap v0.10.0/go.mod h1:zbSHBwy3+/pwxgkUfx9fws5fsReBfn5JeGeSYjH9He0=
 github.com/inconshreveable/mousetrap v1.0.0/go.mod h1:PxqpIevigyE2G7u3NXJIT2ANytuPF1OarO4DADm73n8=
 github.com/jmespath/go-jmespath v0.4.0 h1:BEgLn5cpjn8UN1mAw4NjwDrS35OdebyEtFe+9YPoQUg=

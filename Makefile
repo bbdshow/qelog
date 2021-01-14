@@ -11,7 +11,9 @@ build:
 
 .PHONY: clean
 clean:
-	rm -r ./bin
+	rm -rf ./bin
+	rm -rf ./data
+	rm -rf ./log
 
 # 构建Docker镜像
 .PHONY: buildImage

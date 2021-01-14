@@ -3,124 +3,77 @@ package main
 import (
 	"context"
 	"fmt"
-	"math/rand"
-	"strconv"
-	"sync"
+	"io"
 	"time"
+
+	"go.uber.org/zap/zapcore"
 
 	"github.com/huzhongqing/qelog/qezap"
 
 	"go.uber.org/zap"
 )
 
+var qelog *qezap.Logger
+
+func init() {
+	cfg := qezap.NewConfig([]string{"127.0.0.1:31082"}, "example")
+	// 设置每一次发送远端的包大小
+	cfg.SetMaxPacketSize(64 << 10)
+	// 设置本地日志文件保存最大时间
+	cfg.SetMaxAge(30 * 24 * time.Hour)
+	// config 具体设置可查看响应的方法
+
+	qelog = qezap.New(cfg, zap.DebugLevel)
+	// 测试，等待后台建立好 gRPC 连接
+	time.Sleep(time.Second)
+}
+
 func main() {
-	//loopWriteLogging()
-	writeLogging()
-	//multiModuleLogging()
-}
+	// 普通用法
+	qelog.Info("Info", zap.String("val", "i am string field"))
+	// {"_level":"INFO","_time":1610616377872.952,"_caller":"example/main.go:33","_func":"main.main","_short":"Info","val":"i am string field"}
 
-func loopWriteLogging() {
-	addrs := []string{"127.0.0.1:31082"}
-	cfg := qezap.NewConfig(addrs, "example")
-	cfg.SetFilename("./data/log/example.log")
-	qeLog := qezap.New(cfg, zap.DebugLevel)
-	s := time.Now()
-	count := 0
-	for {
-		time.Sleep(10 * time.Millisecond)
-		count++
-		if count > 10000000 {
-			break
-		}
-		ctx := context.Background()
-		ctx = qeLog.WithTraceID(ctx)
-		val := rand.Int63n(10000000)
-		shrot := strconv.Itoa(rand.Intn(100000))
-		switch val % 4 {
-		case 1:
-			qeLog.Info(shrot, qeLog.TraceIDField(ctx), zap.Int64("val", val))
-			qeLog.Warn(shrot, qeLog.TraceIDField(ctx), zap.Int64("val", val), qeLog.ConditionOne(shrot))
-			qeLog.Error(shrot, qeLog.TraceIDField(ctx), zap.Int64("val", val), qeLog.ConditionOne(shrot), qeLog.ConditionTwo(shrot))
-		case 2:
-			qeLog.Warn(shrot, qeLog.TraceIDField(ctx), zap.Int64("val", val))
-			qeLog.Error(shrot, qeLog.TraceIDField(ctx), zap.Int64("val", val), qeLog.ConditionOne(shrot), qeLog.ConditionTwo(shrot))
-		case 3:
-			qeLog.Error(shrot, qeLog.TraceIDField(ctx), zap.Int64("val", val))
-		default:
-			qeLog.Debug(shrot, qeLog.TraceIDField(ctx), zap.Int64("val", val))
-		}
-	}
-	fmt.Println(time.Now().Sub(s))
-	time.Sleep(30 * time.Minute)
-}
+	// 携带条件查询, 条件必需前置设置，只能 1 或 1,2 不能 2,3 这样后台不会提供查询
+	qelog.Error("condition example", qelog.ConditionOne("userid"), qelog.ConditionTwo("0001"), qelog.ConditionThree("phone"))
+	// {"_level":"ERROR","_time":1610616377872.952,"_caller":"example/main.go:36","_func":"main.main","_short":"condition example","_condition1":"userid","_condition2":"0001","_condition3":"phone"}
 
-func writeLogging() {
-	//addrs := []string{"http://127.0.0.1:31081/v1/receiver/packet"}
-	addrs := []string{"127.0.0.1:31082"}
-	cfg := qezap.NewConfig(addrs, "example")
-	//cfg.SetHTTPTransport()
-	// 如果设置 false，可以 addrs = nil
-	// cfg.SetEnableRemote(false)
-
-	// 如果对默认配置不满足，可直接设置
-	cfg.SetMaxPacketSize(256)
-
-	qeLog := qezap.New(cfg, zap.DebugLevel)
-
-	qeLog.Debug("Debug", zap.String("k", "v"), zap.String("num", "1234567890"))
-	qeLog.Info("Info", zap.String("k", "v"), zap.String("k1", "v1"))
-
-	qeLog.Warn("Warn", zap.String("k", "v"),
-		qeLog.ConditionOne("默认条件查询1"),
-		qeLog.ConditionTwo("默认条件查询2, 当有条件1，在配合条件2，查询更快"),
-		qeLog.ConditionThree("与2同理，我是条件3"))
-
+	// 携带 TraceID 打印到日志
+	// 这是初始上下文
 	ctx := context.Background()
-	ctx = qeLog.WithTraceID(ctx)
-	qeLog.Info("teceid", qeLog.TraceIDField(ctx))
+	// 已经携带好 TraceID
+	ctx = qelog.WithTraceID(ctx)
+	// 会获取 ctx 的 TraceID
+	qelog.WarnWithCtx(ctx, "have trace id field", zap.String("withCtx", "trace_id"))
+	// {"_level":"WARN","_time":1610616377873.9443,"_caller":"qezap/qezap.go:242","_func":"github.com/huzhongqing/qelog/qezap.(*Logger).encoderWithCtx","_short":"have trace id field","withCtx":"trace_id","_traceid":"165a0f0ff09a4f50c8917d31"}
 
-	qeLog.Error("Error", zap.String("k", "v"))
-	qeLog.DPanic("DPanic", zap.String("k", "v"))
+	// 还可以获取 ctx 里面的 TraceID 写入到 Response Header 等
+	tid := qelog.MustGetTraceID(ctx)
+	fmt.Println(tid.Hex())
 
-	// 在这之前，还未到默认发包时间，也不满足缓存容量，所以，这些信息是缓存在本地的。
-	time.Sleep(2 * time.Second)
-	//  满足默认发包时间了，所以日志已经发送走了。
-	qeLog.Error("Alarm", zap.String("info", "测试一条报警信息"))
-	qeLog.Error("Sync", zap.String("结束最后写入", "final"))
-	// sync 执行后，缓存在本地的日志，将全部发送
-	qeLog.Sync()
-	time.Sleep(time.Minute)
-	qeLog.Fatal("Fatal", zap.String("这个Fatal, 也是能写进去的哟", "Fatal"))
-	fmt.Println("never print")
+	// 用于替换需要 io.Writer 接口的其他组件
+	// writer 复用，可以设置作为 io.Writer 输出的 prefix 和 level
+	ginDefaultW := qelog.Clone()
+	ginDefaultW.SetWriteLevel(zapcore.InfoLevel)
+	ginDefaultW.SetWritePrefix("GinDefaultWriter")
+
+	replaceGinLogger(ginDefaultW)
+	// {"_level":"INFO","_time":1610616377873.9443,"_caller":"qezap/qezap.go:154","_func":"github.com/huzhongqing/qelog/qezap.(*Logger).Write","_short":"GinDefaultWriter","val":"gin out writer"}
+
+	ginDefaultErrorW := qelog.Clone()
+	ginDefaultErrorW.SetWriteLevel(zapcore.ErrorLevel)
+	ginDefaultErrorW.SetWritePrefix("GinDefaultErrorWriter")
+
+	replaceGinLogger(ginDefaultErrorW)
+
+	// {"_level":"ERROR","_time":1610616377875.9512,"_caller":"qezap/qezap.go:154","_func":"github.com/huzhongqing/qelog/qezap.(*Logger).Write","_short":"GinDefaultErrorWriter","val":"gin out writer"}
+
+	if err := qelog.Sync(); err != nil {
+		fmt.Println(err)
+	}
 }
 
-func multiModuleLogging() {
-	addrs := []string{"127.0.0.1:31082"}
-
-	exp := qezap.New(qezap.NewConfig(addrs, "example"), zap.DebugLevel)
-	exp2 := qezap.New(qezap.NewConfig(addrs, "example2"), zap.DebugLevel)
-
-	wg := sync.WaitGroup{}
-	wg.Add(2)
-	count := 10
-	go func(c int) {
-		for c > 0 {
-			c--
-			exp.Debug("example", exp.ConditionOne(strconv.Itoa(c)))
-		}
-		wg.Done()
-	}(count)
-	go func(c int) {
-		for c > 0 {
-			c--
-			exp2.Debug("example2", exp.ConditionOne(strconv.Itoa(c)))
-		}
-		wg.Done()
-	}(count)
-	wg.Wait()
-
-	exp.Sync()
-	exp2.Sync()
-
-	//time.Sleep(3 * time.Second)
+func replaceGinLogger(w io.Writer) {
+	// 这里可以替换掉gin默认的输出文件
+	// gin.DefaultWriter = w
+	w.Write([]byte("gin out writer"))
 }
