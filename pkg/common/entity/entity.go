@@ -180,5 +180,7 @@ type DeleteAlarmRuleReq struct {
 	ObjectIDReq
 }
 
-type FindCollectionListReq struct {
+type DropLoggingCollectionReq struct {
+	Host string `json:"host" binding:"required"`
+	Name string `json:"name" binding:"required"`
 }

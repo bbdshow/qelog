@@ -30,12 +30,23 @@ func (srv *Service) MetricsDBStats(ctx context.Context, out *entity.ListResp) er
 	shardingCfg := srv.sharding.ShardingCfg()
 	mainHost := strings.Join(mongo.URIToHosts(mainCfg.URI), ",")
 
-	stats := make([]*model.DBStats, 0)
+	dbStats := make([]entity.DBStats, 0)
 	mainStats, err := srv.readDBStatsAndInsert(ctx, mainCfg.URI, mainHost, mainCfg.DataBase)
 	if err != nil {
 		return httputil.ErrSystemException.MergeError(err)
 	}
-	stats = append(stats, mainStats)
+	dbStats = append(dbStats, entity.DBStats{
+		DBIndex:      []int32{0},
+		Host:         mainStats.Host,
+		DBName:       mainStats.DB,
+		Collections:  mainStats.Collections,
+		DataSize:     mainStats.DataSize,
+		StorageSize:  mainStats.StorageSize,
+		IndexSize:    mainStats.IndexSize,
+		Objects:      mainStats.Objects,
+		Indexs:       mainStats.Indexes,
+		CreatedTsSec: mainStats.CreatedAt.Unix(),
+	})
 	// 去获取 sharding 的DB状态
 	for _, v := range shardingCfg {
 		host := strings.Join(mongo.URIToHosts(v.URI), ",")
@@ -44,23 +55,18 @@ func (srv *Service) MetricsDBStats(ctx context.Context, out *entity.ListResp) er
 			return httputil.ErrSystemException.MergeError(err)
 		}
 
-		stats = append(stats, sStats)
-	}
-
-	dbStats := make([]entity.DBStats, 0)
-	for _, v := range stats {
-		dbCount := entity.DBStats{
-			Host:         v.Host,
-			DBName:       v.DB,
-			Collections:  v.Collections,
-			DataSize:     v.DataSize,
-			StorageSize:  v.StorageSize,
-			IndexSize:    v.IndexSize,
-			Objects:      v.Objects,
-			Indexs:       v.Indexes,
-			CreatedTsSec: v.CreatedAt.Unix(),
-		}
-		dbStats = append(dbStats, dbCount)
+		dbStats = append(dbStats, entity.DBStats{
+			DBIndex:      v.Index,
+			Host:         sStats.Host,
+			DBName:       sStats.DB,
+			Collections:  sStats.Collections,
+			DataSize:     sStats.DataSize,
+			StorageSize:  sStats.StorageSize,
+			IndexSize:    sStats.IndexSize,
+			Objects:      sStats.Objects,
+			Indexs:       sStats.Indexes,
+			CreatedTsSec: sStats.CreatedAt.Unix(),
+		})
 	}
 
 	out.Count = int64(len(dbStats))
@@ -99,6 +105,8 @@ func (srv *Service) MetricsCollStats(ctx context.Context, in *entity.MetricsColl
 	list := make([]*entity.CollStats, 0, len(collStats))
 	for _, v := range collStats {
 		d := &entity.CollStats{
+			Host:           v.Host,
+			DBName:         v.DB,
 			Name:           v.Name,
 			Size:           v.Size,
 			Count:          v.Count,
@@ -284,7 +292,7 @@ func (srv *Service) readDBStatsAndInsert(ctx context.Context, uri, host, databas
 	filter := bson.M{
 		"host":       host,
 		"db":         database,
-		"created_at": time.Now().Local().Add(-10 * time.Minute),
+		"created_at": bson.M{"$gte": time.Now().Add(-10 * time.Minute)},
 	}
 	opt := options.FindOne()
 	opt.SetSort(bson.M{"_id": -1})
@@ -330,7 +338,7 @@ func (srv *Service) readCollStatsAndInsert(ctx context.Context, uri, host, datab
 	filter := bson.M{
 		"host":       host,
 		"db":         database,
-		"created_at": time.Now().Local().Add(-30 * time.Minute),
+		"created_at": bson.M{"$gte": time.Now().Add(-30 * time.Minute)},
 	}
 	opt := options.Find()
 	opt.SetSort(bson.M{"name": -1})

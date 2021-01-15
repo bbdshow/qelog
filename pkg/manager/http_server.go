@@ -84,6 +84,7 @@ func (srv *HTTPService) route(handler *gin.Engine) {
 	// 搜索日志
 	v1.POST("/logging/list", srv.FindLoggingList)
 	v1.POST("/logging/traceid", srv.FindLoggingByTraceID)
+	v1.DELETE("/logging/collection", srv.DropLoggingCollection)
 
 	// 报表
 	v1.GET("/metrics/dbstats", srv.MetricsDBStats)
@@ -321,4 +322,17 @@ func (srv *HTTPService) MetricsModuleTrend(c *gin.Context) {
 		return
 	}
 	httputil.RespData(c, http.StatusOK, out)
+}
+
+func (srv *HTTPService) DropLoggingCollection(c *gin.Context) {
+	in := &entity.DropLoggingCollectionReq{}
+	if err := c.ShouldBind(in); err != nil {
+		httputil.RespError(c, httputil.ErrArgsInvalid.MergeError(err))
+		return
+	}
+	if err := srv.manager.DropLoggingCollection(c.Request.Context(), in); err != nil {
+		httputil.RespError(c, err)
+		return
+	}
+	httputil.RespSuccess(c)
 }

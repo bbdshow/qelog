@@ -2,10 +2,13 @@ package manager
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"sort"
 	"strings"
 	"time"
+
+	"github.com/huzhongqing/qelog/libs/mongo"
 
 	apitypes "github.com/huzhongqing/qelog/api/types"
 
@@ -469,6 +472,64 @@ func (srv *Service) DeleteAlarmRule(ctx context.Context, in *entity.DeleteAlarmR
 		return httputil.ErrArgsInvalid.MergeError(err)
 	}
 	if err := srv.store.DeleteAlarmRule(ctx, id); err != nil {
+		return httputil.ErrSystemException.MergeError(err)
+	}
+	return nil
+}
+
+func (srv *Service) DropLoggingCollection(ctx context.Context, in *entity.DropLoggingCollectionReq) error {
+	//  先检查 collectionName
+	dbColl := strings.Split(in.Name, ".")
+	if len(dbColl) < 2 {
+		return httputil.ErrArgsInvalid.MergeError(errors.New("name"))
+	}
+	database := dbColl[0]
+	collectionName := dbColl[1]
+	if !strings.HasPrefix(collectionName, "logging_") {
+		return httputil.ErrArgsInvalid.MergeError(errors.New("drop only logging_ prefix collection name"))
+	}
+
+	// 根据host找到db
+	uri := ""
+	mainCfg := srv.sharding.MainCfg()
+	shardingCfg := srv.sharding.ShardingCfg()
+
+	mainHost := strings.Join(mongo.URIToHosts(mainCfg.URI), ",")
+	if mainHost == in.Host && database != mainCfg.DataBase {
+		uri = mainCfg.URI
+	}
+	if uri == "" {
+		for _, s := range shardingCfg {
+			host := strings.Join(mongo.URIToHosts(s.URI), ",")
+			if host == in.Host && database != s.DataBase {
+				uri = s.URI
+				break
+			}
+		}
+	}
+
+	if uri == "" {
+		return httputil.ErrNotFound
+	}
+
+	db, err := mongo.NewDatabase(ctx, uri, database)
+	if err != nil {
+		return httputil.ErrSystemException.MergeError(err)
+	}
+	defer db.Client().Disconnect(ctx)
+
+	if err := db.Collection(collectionName).Drop(ctx); err != nil {
+		return httputil.ErrSystemException.MergeError(err)
+	}
+
+	filter := bson.M{
+		"host": in.Host,
+		"db":   database,
+		"name": in.Name,
+	}
+	// 同时删除主库集合统计数据
+	_, err = srv.store.Database().Collection(model.CollectionNameCollStats).DeleteMany(ctx, filter)
+	if err != nil {
 		return httputil.ErrSystemException.MergeError(err)
 	}
 	return nil

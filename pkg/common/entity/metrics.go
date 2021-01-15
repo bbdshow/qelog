@@ -8,15 +8,16 @@ type MetricsDBStatsResp struct {
 
 // 数据库最新统计周期
 type DBStats struct {
-	Host         string `json:"host"`
-	DBName       string `json:"dbName"`
-	Collections  int32  `json:"collections"`
-	DataSize     int64  `json:"dataSize"`
-	StorageSize  int64  `json:"storageSize"`
-	IndexSize    int64  `json:"indexSize"`
-	Objects      int64  `json:"objects"`
-	Indexs       int64  `json:"indexs"`
-	CreatedTsSec int64  `json:"createdTsSec"`
+	DBIndex      []int32 `json:"dbIndex"`
+	Host         string  `json:"host"`
+	DBName       string  `json:"dbName"`
+	Collections  int32   `json:"collections"`
+	DataSize     int64   `json:"dataSize"`
+	StorageSize  int64   `json:"storageSize"`
+	IndexSize    int64   `json:"indexSize"`
+	Objects      int64   `json:"objects"`
+	Indexs       int64   `json:"indexs"`
+	CreatedTsSec int64   `json:"createdTsSec"`
 }
 
 type MetricsCollStatsReq struct {
@@ -25,6 +26,8 @@ type MetricsCollStatsReq struct {
 }
 
 type CollStats struct {
+	Host           string           `json:"host"`
+	DBName         string           `json:"dbName"`
 	Name           string           `json:"name"`
 	Size           int64            `json:"size"`
 	Count          int64            `json:"count"`
