@@ -9,6 +9,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/huzhongqing/qelog/libs/mongo"
+
 	"github.com/huzhongqing/qelog/pkg/mongoutil"
 
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -22,37 +24,96 @@ import (
 	"github.com/huzhongqing/qelog/pkg/common/entity"
 )
 
-func (srv *Service) MetricsCount(ctx context.Context, out *entity.MetricsCountResp) error {
-	// TODO 后面修改，sharding
-	mu := mongoutil.NewMongodbUtil(srv.store.Database())
-	dbStats, err := mu.DBStats(ctx)
+func (srv *Service) MetricsDBStats(ctx context.Context, out *entity.ListResp) error {
+	// 先查看最后一条， 如果超时就去库里查询
+	mainCfg := srv.sharding.MainCfg()
+	shardingCfg := srv.sharding.ShardingCfg()
+	mainHost := strings.Join(mongo.URIToHosts(mainCfg.URI), ",")
+
+	stats := make([]*model.DBStats, 0)
+	mainStats, err := srv.readDBStatsAndInsert(ctx, mainCfg.URI, mainHost, mainCfg.DataBase)
 	if err != nil {
 		return httputil.ErrSystemException.MergeError(err)
 	}
-	//now := time.Now()
-	//today := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, time.Local)
-	//mc, err := srv.store.MetricsModuleCountByDate(ctx, today)
-	//if err != nil {
-	//	return httputil.ErrSystemException.MergeError(err)
-	//}
-	//
-	//mCount := entity.ModuleCount{
-	//	Modules:     mc.Modules,
-	//	Numbers:     mc.Numbers,
-	//	LoggingSize: mc.LoggingSize,
-	//}
-	dbCount := entity.DBCount{
-		DBName:      dbStats.DB,
-		Collections: dbStats.Collections,
-		DataSize:    dbStats.DataSize,
-		StorageSize: dbStats.StorageSize,
-		IndexSize:   dbStats.IndexSize,
-		Objects:     dbStats.Objects,
-		Indexs:      dbStats.Indexes,
+	stats = append(stats, mainStats)
+	// 去获取 sharding 的DB状态
+	for _, v := range shardingCfg {
+		host := strings.Join(mongo.URIToHosts(v.URI), ",")
+		sStats, err := srv.readDBStatsAndInsert(ctx, v.URI, host, v.DataBase)
+		if err != nil {
+			return httputil.ErrSystemException.MergeError(err)
+		}
+
+		stats = append(stats, sStats)
 	}
 
-	//out.ModuleCount = mCount
-	out.DBCount = dbCount
+	dbStats := make([]entity.DBStats, 0)
+	for _, v := range stats {
+		dbCount := entity.DBStats{
+			Host:         v.Host,
+			DBName:       v.DB,
+			Collections:  v.Collections,
+			DataSize:     v.DataSize,
+			StorageSize:  v.StorageSize,
+			IndexSize:    v.IndexSize,
+			Objects:      v.Objects,
+			Indexs:       v.Indexes,
+			CreatedTsSec: v.CreatedAt.Unix(),
+		}
+		dbStats = append(dbStats, dbCount)
+	}
+
+	out.Count = int64(len(dbStats))
+	out.List = dbStats
+
+	return nil
+}
+
+func (srv *Service) MetricsCollStats(ctx context.Context, in *entity.MetricsCollStatsReq, out *entity.ListResp) error {
+	uri := ""
+	mainCfg := srv.sharding.MainCfg()
+	shardingCfg := srv.sharding.ShardingCfg()
+
+	mainHost := strings.Join(mongo.URIToHosts(mainCfg.URI), ",")
+	if mainHost == in.Host {
+		uri = mainCfg.URI
+	}
+	if uri == "" {
+		for _, s := range shardingCfg {
+			host := strings.Join(mongo.URIToHosts(s.URI), ",")
+			if host == in.Host {
+				uri = s.URI
+				break
+			}
+		}
+	}
+
+	if uri == "" {
+		return httputil.ErrNotFound
+	}
+	collStats, err := srv.readCollStatsAndInsert(ctx, uri, in.Host, in.DBName)
+	if err != nil {
+		return err
+	}
+
+	list := make([]*entity.CollStats, 0, len(collStats))
+	for _, v := range collStats {
+		d := &entity.CollStats{
+			Name:           v.Name,
+			Size:           v.Size,
+			Count:          v.Count,
+			AvgObjSize:     v.AvgObjSize,
+			StorageSize:    v.StorageSize,
+			Capped:         v.Capped,
+			TotalIndexSize: v.TotalIndexSize,
+			IndexSizes:     v.IndexSizes,
+			CreatedTsSec:   v.CreatedAt.Unix(),
+		}
+		list = append(list, d)
+	}
+
+	out.Count = int64(len(list))
+	out.List = list
 
 	return nil
 }
@@ -217,4 +278,115 @@ func levelColor(lvl model.Level) string {
 }
 func ipColor() string {
 	return fmt.Sprintf("rgba(%d,%d,%d,1)", rand.Int31n(100)+150, rand.Int31n(80)+100, rand.Int31n(135)+100)
+}
+
+func (srv *Service) readDBStatsAndInsert(ctx context.Context, uri, host, database string) (*model.DBStats, error) {
+	filter := bson.M{
+		"host":       host,
+		"db":         database,
+		"created_at": time.Now().Local().Add(-10 * time.Minute),
+	}
+	opt := options.FindOne()
+	opt.SetSort(bson.M{"_id": -1})
+	latestDBStats := &model.DBStats{}
+	ok, err := srv.store.FindOneDBStats(ctx, filter, latestDBStats, opt)
+	if err != nil {
+		return nil, err
+	}
+	if ok {
+		// 有效
+		return latestDBStats, nil
+	}
+
+	db, err := mongo.NewDatabase(ctx, uri, database)
+	if err != nil {
+		return nil, err
+	}
+	defer db.Client().Disconnect(ctx)
+	util := mongoutil.NewMongodbUtil(db)
+
+	stats, err := util.DBStats(ctx)
+	if err != nil {
+		return nil, err
+	}
+	doc := &model.DBStats{
+		Host:        host,
+		DB:          database,
+		Collections: stats.Collections,
+		Objects:     stats.Objects,
+		DataSize:    stats.DataSize,
+		StorageSize: stats.StorageSize,
+		Indexes:     stats.Indexes,
+		IndexSize:   stats.Indexes,
+		CreatedAt:   time.Now().Local(),
+	}
+
+	srv.store.InsertOneDBStats(ctx, doc)
+
+	return doc, nil
+}
+
+func (srv *Service) readCollStatsAndInsert(ctx context.Context, uri, host, database string) ([]*model.CollStats, error) {
+	filter := bson.M{
+		"host":       host,
+		"db":         database,
+		"created_at": time.Now().Local().Add(-30 * time.Minute),
+	}
+	opt := options.Find()
+	opt.SetSort(bson.M{"name": -1})
+	latestCollStats := make([]*model.CollStats, 0)
+	err := srv.store.FindCollStats(ctx, filter, &latestCollStats, opt)
+	if err != nil {
+		return nil, err
+	}
+
+	db, err := mongo.NewDatabase(ctx, uri, database)
+	if err != nil {
+		return nil, err
+	}
+	defer db.Client().Disconnect(ctx)
+
+	names, err := db.ListAllCollectionNames(ctx)
+	if err != nil {
+		return nil, err
+	}
+	if len(latestCollStats) >= len(names) {
+		return latestCollStats, nil
+	}
+
+	// 去读取最新的结果
+	util := mongoutil.NewMongodbUtil(db)
+
+	collStats, err := util.CollStats(ctx, names)
+	if err != nil {
+		return nil, err
+	}
+
+	latestCollStats = make([]*model.CollStats, 0, len(collStats))
+	insertDocs := make([]interface{}, 0, len(collStats))
+
+	for _, v := range collStats {
+		if v.Ok == 0 {
+			continue
+		}
+		doc := &model.CollStats{
+			Host:           host,
+			DB:             database,
+			Name:           v.Ns,
+			Size:           v.Size,
+			Count:          v.Count,
+			AvgObjSize:     v.AvgObjSize,
+			StorageSize:    v.StorageSize,
+			Capped:         v.Capped,
+			TotalIndexSize: v.TotalIndexSize,
+			IndexSizes:     v.IndexSizes,
+			CreatedAt:      time.Now().Local(),
+		}
+		insertDocs = append(insertDocs, doc)
+		latestCollStats = append(latestCollStats, doc)
+	}
+
+	srv.store.InsertManyCollStats(ctx, insertDocs)
+
+	return latestCollStats, nil
 }

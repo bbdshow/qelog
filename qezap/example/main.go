@@ -43,8 +43,10 @@ func main() {
 	// 已经携带好 TraceID
 	ctx = qelog.WithTraceID(ctx)
 	// 会获取 ctx 的 TraceID
-	qelog.WarnWithCtx(ctx, "have trace id field", zap.String("withCtx", "trace_id"))
-	// {"_level":"WARN","_time":1610616377873.9443,"_caller":"qezap/qezap.go:242","_func":"github.com/huzhongqing/qelog/qezap.(*Logger).encoderWithCtx","_short":"have trace id field","withCtx":"trace_id","_traceid":"165a0f0ff09a4f50c8917d31"}
+	qelog.WarnWithCtx(ctx, "have trace id field", zap.String("withCtx", "warn"))
+	qelog.ErrorWithCtx(ctx, "have trace id field", zap.String("withCtx", "error"))
+	// {"_level":"WARN","_time":1610674696407.182,"_caller":"qezap/qezap.go:242","_func":"github.com/huzhongqing/qelog/qezap.(*Logger).encoderWithCtx","_short":"have trace id field","withCtx":"warn","_traceid":"165a441a480f69e89916bf32"}
+	// {"_level":"ERROR","_time":1610674696407.182,"_caller":"qezap/qezap.go:244","_func":"github.com/huzhongqing/qelog/qezap.(*Logger).encoderWithCtx","_short":"have trace id field","withCtx":"error","_traceid":"165a441a480f69e89916bf32"}
 
 	// 还可以获取 ctx 里面的 TraceID 写入到 Response Header 等
 	tid := qelog.MustGetTraceID(ctx)
@@ -67,6 +69,7 @@ func main() {
 
 	// {"_level":"ERROR","_time":1610616377875.9512,"_caller":"qezap/qezap.go:154","_func":"github.com/huzhongqing/qelog/qezap.(*Logger).Write","_short":"GinDefaultErrorWriter","val":"gin out writer"}
 
+	qelog.DPanic("last message")
 	if err := qelog.Sync(); err != nil {
 		fmt.Println(err)
 	}

@@ -10,6 +10,8 @@ import (
 
 const (
 	CollectionNameModuleMetrics = "module_metrics"
+	CollectionNameDBStats       = "db_stats"
+	CollectionNameCollStats     = "coll_stats"
 )
 
 type ModuleMetrics struct {
@@ -81,6 +83,79 @@ func ModuleMetricsIndexMany() []mongo.Index {
 			},
 			Background:         true,
 			ExpireAfterSeconds: 86400 * 30,
+		},
+	}
+}
+
+type DBStats struct {
+	ID          primitive.ObjectID `bson:"_id,omitempty"`
+	Host        string             `bson:"host"`
+	DB          string             `bson:"db"`
+	Collections int32              `bson:"collections"`
+	Objects     int64              `bson:"objects"`
+	DataSize    int64              `bson:"data_size"`
+	StorageSize int64              `bson:"storage_size"`
+	Indexes     int64              `bson:"indexes"`
+	IndexSize   int64              `bson:"index_size"`
+	CreatedAt   time.Time          `bson:"created_at"`
+}
+
+func (ds DBStats) CollectionName() string {
+	return CollectionNameDBStats
+}
+
+func DBStatsIndexMany() []mongo.Index {
+	return []mongo.Index{
+		{
+			Collection: CollectionNameDBStats,
+			Keys: bson.D{
+				{
+					Key: "host", Value: 1,
+				},
+				{
+					Key: "db", Value: 1,
+				},
+			},
+			Background: true,
+		},
+	}
+}
+
+type CollStats struct {
+	ID             primitive.ObjectID `bson:"_id,omitempty"`
+	Host           string             `bson:"host"`
+	DB             string             `bson:"db"`
+	Name           string             `bson:"name"`
+	Size           int64              `bson:"size"`
+	Count          int64              `bson:"count"`
+	AvgObjSize     int64              `bson:"avg_obj_size"`
+	StorageSize    int64              `bson:"storage_size"`
+	Capped         bool               `bson:"capped"`
+	TotalIndexSize int64              `bson:"total_index_size"`
+	IndexSizes     map[string]int64   `bson:"index_sizes"`
+	CreatedAt      time.Time          `bson:"created_at"`
+}
+
+func (cs CollStats) CollectionName() string {
+	return CollectionNameCollStats
+}
+
+func CollStatsIndexMany() []mongo.Index {
+	return []mongo.Index{
+		{
+			Collection: CollectionNameCollStats,
+			Keys: bson.D{
+				{
+					Key: "host", Value: 1,
+				},
+				{
+					Key: "db", Value: 1,
+				},
+				{
+					Key: "name", Value: 1,
+				},
+			},
+			Background: true,
 		},
 	}
 }

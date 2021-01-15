@@ -11,6 +11,8 @@ import (
 // 存储分片，把不同的 dbIndex 存储到归类的 DB 实例中，以达到存储横向扩展的目的
 // Note: 分片实例一旦设定。如果更改将涉及到数据迁移， 增加不影响
 type Sharding struct {
+	mainCfg       config.MongoDB
+	shardingCfg   []config.MongoDBIndex
 	mainStore     *Store
 	shardingStore map[int32]*Store
 }
@@ -23,6 +25,8 @@ func NewSharding(main config.MongoDB, sharding []config.MongoDBIndex) (*Sharding
 		return nil, err
 	}
 	s := &Sharding{
+		mainCfg:       main,
+		shardingCfg:   sharding,
 		mainStore:     New(mainDB),
 		shardingStore: make(map[int32]*Store, 0),
 	}
@@ -67,4 +71,12 @@ func (s *Sharding) Disconnect() {
 			_ = store.database.Client().Disconnect(ctx)
 		}
 	}
+}
+
+func (s *Sharding) MainCfg() config.MongoDB {
+	return s.mainCfg
+}
+
+func (s *Sharding) ShardingCfg() []config.MongoDBIndex {
+	return s.shardingCfg
 }

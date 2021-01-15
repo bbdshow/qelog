@@ -79,3 +79,23 @@ func (store *Store) FindModuleMetrics(ctx context.Context, filter bson.M, result
 	err := store.database.Find(ctx, store.database.Collection(model.CollectionNameModuleMetrics), filter, result, opt)
 	return handlerError(err)
 }
+
+func (store *Store) InsertOneDBStats(ctx context.Context, doc *model.DBStats) error {
+	_, err := store.database.Collection(doc.CollectionName()).InsertOne(ctx, doc)
+	return handlerError(err)
+}
+
+func (store *Store) FindOneDBStats(ctx context.Context, filter bson.M, doc *model.DBStats, opt *options.FindOneOptions) (bool, error) {
+	ok, err := store.database.FindOne(ctx, store.database.Collection(doc.CollectionName()), filter, doc, opt)
+	return ok, handlerError(err)
+}
+
+func (store *Store) InsertManyCollStats(ctx context.Context, docs []interface{}) error {
+	_, err := store.database.Collection(model.CollectionNameCollStats).InsertMany(ctx, docs)
+	return handlerError(err)
+}
+
+func (store *Store) FindCollStats(ctx context.Context, filter bson.M, doc interface{}, opt *options.FindOptions) error {
+	err := store.database.Find(ctx, store.database.Collection(model.CollectionNameCollStats), filter, doc, opt)
+	return handlerError(err)
+}

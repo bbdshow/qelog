@@ -1,8 +1,7 @@
 package model
 
 import (
-	"bytes"
-	"strconv"
+	"fmt"
 	"time"
 
 	"github.com/huzhongqing/qelog/libs/mongo"
@@ -45,13 +44,7 @@ type Logging struct {
 }
 
 func (l Logging) Key() string {
-	buf := bytes.Buffer{}
-	buf.WriteString(l.Module)
-	buf.WriteString("_")
-	buf.WriteString(l.Short)
-	buf.WriteString("_")
-	buf.WriteString(l.Level.String())
-	return buf.String()
+	return fmt.Sprintf("%s_%s_%s", l.Module, l.Short, l.Level.String())
 }
 
 type Level int32
@@ -81,16 +74,9 @@ func (lvl Level) String() string {
 }
 
 func LoggingCollectionName(dbIndex int32, unix int64) string {
-	buff := bytes.Buffer{}
-	buff.WriteString("logging_")
-	buff.WriteString(strconv.Itoa(int(dbIndex)))
-	buff.WriteString("_")
 	y, m, _ := time.Unix(unix, 0).Date()
-	buff.WriteString(strconv.Itoa(y))
-	buff.WriteString(strconv.Itoa(int(m)))
-	//name := fmt.Sprintf("logging_%d_%s",
-	//	dbIndex, time.Unix(unix, 0).Format(LoggingShardingTime))
-	return buff.String()
+	v := fmt.Sprintf("logging_%d_%d%02d", dbIndex, y, m)
+	return v
 }
 
 // 因为有分片的机制，那么同一collection下面，同一uniqueKey module 占多数情况。

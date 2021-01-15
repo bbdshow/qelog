@@ -86,7 +86,8 @@ func (srv *HTTPService) route(handler *gin.Engine) {
 	v1.POST("/logging/traceid", srv.FindLoggingByTraceID)
 
 	// 报表
-	v1.GET("/metrics/count", srv.MetricsCount)
+	v1.GET("/metrics/dbstats", srv.MetricsDBStats)
+	v1.GET("/metrics/collstats", srv.MetricsCollStats)
 	v1.GET("/metrics/module/list", srv.MetricsModuleList)
 	v1.GET("/metrics/module/trend", srv.MetricsModuleTrend)
 
@@ -268,9 +269,24 @@ func (srv *HTTPService) DeleteAlarmRule(c *gin.Context) {
 	httputil.RespSuccess(c)
 }
 
-func (srv *HTTPService) MetricsCount(c *gin.Context) {
-	out := &entity.MetricsCountResp{}
-	if err := srv.manager.MetricsCount(c.Request.Context(), out); err != nil {
+func (srv *HTTPService) MetricsDBStats(c *gin.Context) {
+	out := &entity.ListResp{}
+	if err := srv.manager.MetricsDBStats(c.Request.Context(), out); err != nil {
+		httputil.RespError(c, err)
+		return
+	}
+	httputil.RespData(c, http.StatusOK, out)
+}
+
+func (srv *HTTPService) MetricsCollStats(c *gin.Context) {
+	in := &entity.MetricsCollStatsReq{}
+	if err := c.ShouldBind(in); err != nil {
+		httputil.RespError(c, httputil.ErrArgsInvalid.MergeError(err))
+		return
+	}
+
+	out := &entity.ListResp{}
+	if err := srv.manager.MetricsCollStats(c.Request.Context(), in, out); err != nil {
 		httputil.RespError(c, err)
 		return
 	}

@@ -142,8 +142,17 @@ func TestUpdateAlarmRule(t *testing.T) {
 	JSONOutput(resp, t)
 }
 
-func TestMetricsCount(t *testing.T) {
-	resp, err := http.Get(fmt.Sprintf("%s/v1/metrics/count", host))
+func TestMetricsDBStats(t *testing.T) {
+	resp, err := http.Get(fmt.Sprintf("%s/v1/metrics/dbstats", host))
+	if err != nil {
+		t.Fatal(err)
+	}
+	JSONOutput(resp, t)
+}
+
+func TestMetricsCollStats(t *testing.T) {
+	resp, err := http.Get(fmt.Sprintf("%s/v1/metrics/collstats?host=%s&dbName=%s", host,
+		"127.0.0.1:27017", "qelog"))
 	if err != nil {
 		t.Fatal(err)
 	}

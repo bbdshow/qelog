@@ -40,6 +40,11 @@ func NewMongoClient(ctx context.Context, opts ...*options.ClientOptions) (*mongo
 	return client, nil
 }
 
+func URIToHosts(uri string) []string {
+	opt := options.Client().ApplyURI(uri)
+	return opt.Hosts
+}
+
 type Database struct {
 	*mongo.Database
 }

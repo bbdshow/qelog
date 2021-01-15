@@ -2,21 +2,38 @@ package entity
 
 import "sort"
 
-type MetricsCountResp struct {
-	// 数据库最新统计周期
-	DBCount DBCount `json:"dbCount"`
-	// 项目最新统计周期
-	//ModuleCount ModuleCount `json:"moduleCount"`
+type MetricsDBStatsResp struct {
+	DBStats []DBStats `json:"dbStats"`
 }
 
-type DBCount struct {
-	DBName      string `json:"dbName"`
-	Collections int32  `json:"collections"`
-	DataSize    int64  `json:"dataSize"`
-	StorageSize int64  `json:"storageSize"`
-	IndexSize   int64  `json:"indexSize"`
-	Objects     int64  `json:"objects"`
-	Indexs      int64  `json:"indexs"`
+// 数据库最新统计周期
+type DBStats struct {
+	Host         string `json:"host"`
+	DBName       string `json:"dbName"`
+	Collections  int32  `json:"collections"`
+	DataSize     int64  `json:"dataSize"`
+	StorageSize  int64  `json:"storageSize"`
+	IndexSize    int64  `json:"indexSize"`
+	Objects      int64  `json:"objects"`
+	Indexs       int64  `json:"indexs"`
+	CreatedTsSec int64  `json:"createdTsSec"`
+}
+
+type MetricsCollStatsReq struct {
+	Host   string `json:"host" form:"host" binding:"required"`
+	DBName string `json:"dbName" form:"dbName" binding:"required"`
+}
+
+type CollStats struct {
+	Name           string           `json:"name"`
+	Size           int64            `json:"size"`
+	Count          int64            `json:"count"`
+	AvgObjSize     int64            `json:"avgObjSize"`
+	StorageSize    int64            `json:"storageSize"`
+	Capped         bool             `json:"capped"`
+	TotalIndexSize int64            `json:"totalIndexSize"`
+	IndexSizes     map[string]int64 `json:"indexSizes"`
+	CreatedTsSec   int64            `json:"createdTsSec"`
 }
 
 type ModuleCount struct {

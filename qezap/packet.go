@@ -1,12 +1,10 @@
 package qezap
 
 import (
-	"fmt"
-	"math/rand"
 	"sync"
-	"time"
 
 	"github.com/huzhongqing/qelog/api/receiverpb"
+	apitypes "github.com/huzhongqing/qelog/api/types"
 )
 
 var (
@@ -52,21 +50,18 @@ func (p *packet) append(b []byte) *packet {
 }
 
 func (p *packet) flush() *packet {
+	p.p.Id = id()
 	p.isFree = true
 	return p
 }
 
 func newPacket() *packet {
 	p := _packetPool.Get().(*packet)
+	p.p.Id = ""
+	p.isFree = false
 	return p
 }
 
-var incNum int64 = 0
-
 func id() string {
-	incNum++
-	if incNum >= 10000 {
-		incNum = 0
-	}
-	return fmt.Sprintf("%d_%02d_%04d", time.Now().UnixNano()/1e6, rand.Int31n(100), incNum)
+	return apitypes.NewTraceID().Hex()
 }
