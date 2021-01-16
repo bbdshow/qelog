@@ -18,6 +18,17 @@ type def struct {
 	MySliceUint   []uint16          `default:"0,2,4"`
 	MyMap         map[string]string `default:"a=1,2"`
 	MyDuration    time.Duration     `default:"30s"` // 30s
+	MyStruct      MyStruct
+	MyStruct2
+}
+
+type MyStruct struct {
+	Key   string `default:"structKey"`
+	Value MyStruct2
+}
+
+type MyStruct2 struct {
+	Value int32 `default:"8"`
 }
 
 func TestParseDefaultVal(t *testing.T) {
@@ -40,6 +51,9 @@ func TestParseDefaultVal(t *testing.T) {
 	}
 	if def.MyFloat != 66.6 {
 		t.Fatal("float")
+	}
+	if def.MyStruct.Value.Value != def.Value {
+		t.Fatal("struct")
 	}
 	fmt.Printf("%#v \n", def)
 }

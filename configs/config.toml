@@ -22,10 +22,9 @@ database = "qelog2"
 uri = "mongodb://127.0.0.1:27017/admin"
 
 
-
-[adminUser]
-username = "admin"
-password = "111111"
+#[adminUser]
+#username = "admin"
+#password = "111111"
 
 [logging]
 module = "qelog"

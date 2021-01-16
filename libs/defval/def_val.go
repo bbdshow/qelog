@@ -11,9 +11,20 @@ import (
 // 提取当前结构的 default tag 作为field的默认值
 func ParseDefaultVal(v interface{}) error {
 	val := reflect.ValueOf(v).Elem()
+	return parse(val)
+}
+
+func parse(val reflect.Value) error {
 
 	for i := 0; i < val.NumField(); i++ {
 		filed := val.Field(i)
+		kind := filed.Kind().String()
+		//fmt.Println(kind)
+		if kind == "struct" {
+			if err := parse(filed); err != nil {
+				return err
+			}
+		}
 
 		defVal, ok := val.Type().Field(i).Tag.Lookup("default")
 		if !ok {
@@ -197,6 +208,7 @@ func ParseDefaultVal(v interface{}) error {
 			filed.Set(reflect.ValueOf(setVal))
 		}
 	}
+
 	return nil
 }
 

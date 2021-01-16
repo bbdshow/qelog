@@ -48,10 +48,6 @@ func InitConfig(filename string) *Config {
 		panic(err)
 	}
 
-	if err := defval.ParseDefaultVal(&cfg.AdminUser); err != nil {
-		panic(err)
-	}
-
 	_, err := toml.DecodeFile(filename, cfg)
 	if err != nil {
 		panic("config init " + err.Error())
