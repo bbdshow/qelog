@@ -3,6 +3,8 @@ package config
 import (
 	"errors"
 
+	"github.com/huzhongqing/qelog/libs/defval"
+
 	"github.com/BurntSushi/toml"
 )
 
@@ -16,18 +18,18 @@ func SetGlobalConfig(cfg *Config) {
 }
 
 type Config struct {
-	Env              string
-	ReceiverAddr     string
-	ReceiverGRPCAddr string
-	ManagerAddr      string
+	Env              string `default:"dev"`
+	ReceiverAddr     string `default:"0.0.0.0:31081"`
+	ReceiverGRPCAddr string `default:":31082"`
+	ManagerAddr      string `default:"0.0.0.0:31080"`
 
-	AuthEnable    bool
-	AlarmEnable   bool
-	MetricsEnable bool
+	AuthEnable    bool `default:"true"`
+	AlarmEnable   bool `default:"true"`
+	MetricsEnable bool `default:"true"`
 
 	// 不同的分片索引，可能存储在不同的数据库与集合里
 	// 索引决定集合的命名
-	MaxShardingIndex int32
+	MaxShardingIndex int32 `default:"8"`
 
 	// 储存管理配置的实例
 	Main MongoDB
@@ -42,6 +44,14 @@ type Config struct {
 
 func InitConfig(filename string) *Config {
 	cfg := &Config{}
+	if err := defval.ParseDefaultVal(cfg); err != nil {
+		panic(err)
+	}
+
+	if err := defval.ParseDefaultVal(&cfg.AdminUser); err != nil {
+		panic(err)
+	}
+
 	_, err := toml.DecodeFile(filename, cfg)
 	if err != nil {
 		panic("config init " + err.Error())
@@ -91,8 +101,8 @@ type MongoDB struct {
 }
 
 type AdminUser struct {
-	Username string
-	Password string
+	Username string `default:"admin"`
+	Password string `default:"111111"`
 }
 
 type Logging struct {

@@ -44,7 +44,7 @@ func main() {
 		panic(fmt.Sprintf("config validate %s", err.Error()))
 		return
 	}
-
+	fmt.Println(cfg)
 	config.SetGlobalConfig(cfg)
 
 	sharding, err := storage.NewSharding(cfg.Main, cfg.Sharding)

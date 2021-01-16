@@ -1,11 +1,11 @@
 env = "dev"
-receiverAddr = "0.0.0.0:31081"
-receiverGRPCAddr = ":31082"
-managerAddr = "0.0.0.0:31080"
-authEnable = false
-alarmEnable = true
-metricsEnable = true
-maxShardingIndex = 8
+#receiverAddr = "0.0.0.0:31081"
+#receiverGRPCAddr = ":31082"
+#managerAddr = "0.0.0.0:31080"
+#authEnable = false
+#alarmEnable = true
+#metricsEnable = true
+#maxShardingIndex = 8
 
 [main]
 database = "qelog"
