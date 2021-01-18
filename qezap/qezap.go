@@ -18,17 +18,17 @@ type Logger struct {
 	WriteLevel  zapcore.Level
 }
 
-func NewOneEncoderMultiWriterCore(enc zapcore.Encoder, enab zapcore.LevelEnabler, multiW []zapcore.WriteSyncer) *oneEncoderMultiWriter {
+func NewOneEncoderMultiWriterCore(enc zapcore.Encoder, level zap.AtomicLevel, multiW []zapcore.WriteSyncer) *oneEncoderMultiWriter {
 	return &oneEncoderMultiWriter{
-		LevelEnabler: enab,
-		enc:          enc,
-		multiW:       multiW,
+		AtomicLevel: level,
+		enc:         enc,
+		multiW:      multiW,
 	}
 }
 
 // 支持动态修改等级，一次编码，多处写入
 type oneEncoderMultiWriter struct {
-	zapcore.LevelEnabler
+	zap.AtomicLevel
 	enc    zapcore.Encoder
 	multiW []zapcore.WriteSyncer
 }
@@ -72,7 +72,7 @@ func (mw *oneEncoderMultiWriter) Write(ent zapcore.Entry, fields []zap.Field) er
 }
 
 func (mw *oneEncoderMultiWriter) SetEnabledLevel(lvl zapcore.Level) *oneEncoderMultiWriter {
-	mw.LevelEnabler = lvl
+	mw.AtomicLevel.SetLevel(lvl)
 	return mw
 }
 
@@ -86,9 +86,9 @@ func (mw *oneEncoderMultiWriter) Sync() error {
 
 func (mw *oneEncoderMultiWriter) clone() *oneEncoderMultiWriter {
 	return &oneEncoderMultiWriter{
-		LevelEnabler: mw.LevelEnabler,
-		enc:          mw.enc.Clone(),
-		multiW:       mw.multiW,
+		AtomicLevel: mw.AtomicLevel,
+		enc:         mw.enc.Clone(),
+		multiW:      mw.multiW,
 	}
 }
 
@@ -96,6 +96,7 @@ func New(cfg *Config, level zapcore.Level) *Logger {
 	if err := cfg.Validate(); err != nil {
 		panic(err)
 	}
+	atomicLevel := zap.NewAtomicLevelAt(level)
 	enc := zapcore.NewJSONEncoder(zapcore.EncoderConfig{
 		MessageKey:       types.EncoderMessageKey,
 		LevelKey:         types.EncoderLevelKey,
@@ -119,7 +120,7 @@ func New(cfg *Config, level zapcore.Level) *Logger {
 		multiW = append(multiW, NewWriteRemote(cfg))
 	}
 
-	core := NewOneEncoderMultiWriterCore(enc, level, multiW)
+	core := NewOneEncoderMultiWriterCore(enc, atomicLevel, multiW)
 
 	return &Logger{core: core, Logger: zap.New(core, zap.AddCaller(), zap.AddStacktrace(zap.DPanicLevel))}
 }
