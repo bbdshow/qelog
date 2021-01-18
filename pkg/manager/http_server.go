@@ -64,33 +64,42 @@ func (srv *HTTPService) route(handler *gin.Engine) {
 
 	handler.POST("/v1/login", srv.Login)
 
-	v1 := handler.Group("/v1", AuthVerify(config.GlobalConfig.AuthEnable))
-
-	v1.GET("/module/list", srv.FindModuleList)
-	//v1.GET("/module")
-	v1.POST("/module", srv.CreateModule)
-	v1.PUT("/module", srv.UpdateModule)
-	v1.DELETE("/module", srv.DeleteModule)
-
+	v1 := handler.Group("/v1", AuthVerify(config.GlobalConfig.AuthEnable), HandlerRegisterTraceID())
+	module := v1.Group("/module", HandlerLogging(true))
+	{
+		module.GET("/list", srv.FindModuleList)
+		module.POST("", srv.CreateModule)
+		module.PUT("", srv.UpdateModule)
+		module.DELETE("", srv.DeleteModule)
+	}
 	// 配置报警规则
-	v1.GET("/alarm-rule/list", srv.FindAlarmRuleList)
-	v1.POST("/alarm-rule", srv.CreateAlarmRule)
-	v1.PUT("/alarm-rule", srv.UpdateAlarmRule)
-	v1.DELETE("/alarm-rule", srv.DeleteAlarmRule)
+	alarmRule := v1.Group("/alarm-rule", HandlerLogging(true))
+	{
+		alarmRule.GET("/list", srv.FindAlarmRuleList)
+		alarmRule.POST("", srv.CreateAlarmRule)
+		alarmRule.PUT("", srv.UpdateAlarmRule)
+		alarmRule.DELETE("", srv.DeleteAlarmRule)
+	}
 
 	// 获取 db 信息
 	v1.GET("/db-index", srv.GetDBIndex)
 
 	// 搜索日志
-	v1.POST("/logging/list", srv.FindLoggingList)
-	v1.POST("/logging/traceid", srv.FindLoggingByTraceID)
-	v1.DELETE("/logging/collection", srv.DropLoggingCollection)
+	logging := v1.Group("/logging")
+	{
+		logging.POST("/list", srv.FindLoggingList)
+		logging.POST("/traceid", srv.FindLoggingByTraceID)
+		logging.DELETE("/collection", srv.DropLoggingCollection)
+	}
 
 	// 报表
-	v1.GET("/metrics/dbstats", srv.MetricsDBStats)
-	v1.GET("/metrics/collstats", srv.MetricsCollStats)
-	v1.GET("/metrics/module/list", srv.MetricsModuleList)
-	v1.GET("/metrics/module/trend", srv.MetricsModuleTrend)
+	metrics := v1.Group("/metrics")
+	{
+		metrics.GET("/dbstats", srv.MetricsDBStats)
+		metrics.GET("/collstats", srv.MetricsCollStats)
+		metrics.GET("/module/list", srv.MetricsModuleList)
+		metrics.GET("/module/trend", srv.MetricsModuleTrend)
+	}
 
 	// 单页应用
 	handler.StaticFile("/favicon.ico", "web/favicon.ico")

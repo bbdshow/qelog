@@ -8,6 +8,9 @@ import (
 	"strings"
 	"time"
 
+	"github.com/huzhongqing/qelog/libs/logs"
+	"go.uber.org/zap"
+
 	"github.com/huzhongqing/qelog/libs/mongo"
 
 	apitypes "github.com/huzhongqing/qelog/api/types"
@@ -214,6 +217,8 @@ func (srv *Service) FindLoggingByTraceID(ctx context.Context, in *entity.FindLog
 
 func (srv *Service) FindLoggingList(ctx context.Context, in *entity.FindLoggingListReq, out *entity.ListResp) error {
 
+	s := time.Now()
+
 	// 如果没有传入时间，则默认设置一个间隔时间
 	b, e := in.InitTimeSection(time.Hour)
 	// 计算查询时间应该在哪个分片
@@ -256,7 +261,6 @@ func (srv *Service) FindLoggingList(ctx context.Context, in *entity.FindLoggingL
 	findOpt := options.Find()
 	in.SetPage(findOpt)
 	findOpt.SetSort(bson.M{"ts": -1})
-	//fmt.Println(collectionName, filter)
 	docs := make([]*model.Logging, 0, in.Limit)
 
 	shardingStore, err := srv.sharding.GetStore(in.DBIndex)
@@ -295,6 +299,11 @@ func (srv *Service) FindLoggingList(ctx context.Context, in *entity.FindLoggingL
 		list = append(list, d)
 	}
 	out.List = list
+
+	logs.Qezap.InfoWithCtx(ctx, "日志查询", zap.String("耗时", time.Now().Sub(s).String()),
+		zap.String("分片", shardingStore.Database().Name()),
+		zap.String("集合", collectionName),
+		zap.Any("条件", filter))
 
 	return nil
 }

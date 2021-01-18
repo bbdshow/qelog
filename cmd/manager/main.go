@@ -3,17 +3,17 @@ package main
 import (
 	"flag"
 	"fmt"
-	"log"
 	"os"
 	"os/signal"
 	"syscall"
 	"time"
 
+	"github.com/huzhongqing/qelog/libs/logs"
+	"go.uber.org/zap"
+
 	"github.com/huzhongqing/qelog/pkg/common/model"
 
 	"github.com/huzhongqing/qelog/pkg/storage"
-
-	"github.com/huzhongqing/qelog/libs/logs"
 
 	"github.com/huzhongqing/qelog/pkg/manager"
 
@@ -44,35 +44,34 @@ func main() {
 		panic(fmt.Sprintf("config validate %s", err.Error()))
 		return
 	}
-	fmt.Println(cfg)
 	config.SetGlobalConfig(cfg)
+
+	logs.InitQezap(cfg.Logging.Addr, cfg.Logging.Module)
 
 	sharding, err := storage.NewSharding(cfg.Main, cfg.Sharding)
 	if err != nil {
-		log.Fatalln("mongo connect failed ", err.Error())
+		logs.Qezap.Fatal("mongo connect failed ", zap.Error(err))
 	}
 
 	if !cfg.Release() {
 		db, err := sharding.MainStore()
 		if err != nil {
-			panic(err)
+			logs.Qezap.Fatal("mongo connect failed ", zap.Error(err))
 		}
 		if err := db.Database().UpsertCollectionIndexMany(
 			model.ModuleIndexMany(),
 			model.AlarmRuleIndexMany()); err != nil {
-			panic("create main db index " + err.Error())
+			logs.Qezap.Fatal("mongo create index ", zap.Error(err))
 		}
 	}
-
-	logs.InitQezap(cfg.Logging.Addr, cfg.Logging.Module)
 
 	httpSrv := manager.NewHTTPService(sharding)
 
 	go func() {
+		logs.Qezap.Info("http server listen", zap.String("addr", cfg.ManagerAddr))
 		if err := httpSrv.Run(cfg.ManagerAddr); err != nil {
-			log.Fatalln("http server listen failed ", err.Error())
+			logs.Qezap.Fatal("http server listen failed", zap.Error(err))
 		}
-		log.Println("http server listen ", cfg.ManagerAddr)
 	}()
 
 	signalAccept()

@@ -3,16 +3,17 @@ package main
 import (
 	"flag"
 	"fmt"
-	"log"
 	"os"
 	"os/signal"
 	"syscall"
 	"time"
 
-	"github.com/huzhongqing/qelog/pkg/common/model"
-	"github.com/huzhongqing/qelog/pkg/storage"
+	"go.uber.org/zap"
 
 	"github.com/huzhongqing/qelog/libs/logs"
+
+	"github.com/huzhongqing/qelog/pkg/common/model"
+	"github.com/huzhongqing/qelog/pkg/storage"
 
 	"github.com/huzhongqing/qelog/pkg/receiver"
 
@@ -46,38 +47,37 @@ func main() {
 
 	config.SetGlobalConfig(cfg)
 
+	logs.InitQezap(nil, "")
 	sharding, err := storage.NewSharding(cfg.Main, cfg.Sharding)
 	if err != nil {
-		log.Fatalln("mongo connect failed ", err.Error())
+		logs.Qezap.Fatal("mongo connect failed", zap.Error(err))
 	}
 
 	if !cfg.Release() {
 		db, err := sharding.MainStore()
 		if err != nil {
-			panic(err)
+			logs.Qezap.Fatal("mongo connect failed", zap.Error(err))
 		}
 		if err := db.Database().UpsertCollectionIndexMany(
 			model.ModuleMetricsIndexMany()); err != nil {
-			panic("create main db index " + err.Error())
+			logs.Qezap.Fatal("mongo create index", zap.Error(err))
 		}
 	}
-
-	logs.InitQezap(nil, "")
 
 	httpSrv := receiver.NewHTTPService(sharding)
 
 	go func() {
-		log.Println("http server listen ", cfg.ReceiverAddr)
+		logs.Qezap.Info("http server listen ", zap.String("addr", cfg.ReceiverAddr))
 		if err := httpSrv.Run(cfg.ReceiverAddr); err != nil {
-			log.Fatalln("http server listen failed ", err.Error())
+			logs.Qezap.Fatal("http server listen failed", zap.Error(err))
 		}
 	}()
 
 	grpcSrv := receiver.NewGRPCService(sharding)
 	go func() {
-		log.Println("grpc server listen ", cfg.ReceiverGRPCAddr)
+		logs.Qezap.Info("gRPC server listen ", zap.String("addr", cfg.ReceiverGRPCAddr))
 		if err := grpcSrv.Run(cfg.ReceiverGRPCAddr); err != nil {
-			log.Fatalln("grpc server listen failed ", err.Error())
+			logs.Qezap.Fatal("gRPC server listen failed", zap.Error(err))
 		}
 	}()
 

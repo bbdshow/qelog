@@ -326,7 +326,7 @@ func (srv *Service) readDBStatsAndInsert(ctx context.Context, uri, host, databas
 		StorageSize: stats.StorageSize,
 		Indexes:     stats.Indexes,
 		IndexSize:   stats.Indexes,
-		CreatedAt:   time.Now().Local(),
+		CreatedAt:   time.Now(),
 	}
 
 	srv.store.InsertOneDBStats(ctx, doc)
@@ -388,7 +388,7 @@ func (srv *Service) readCollStatsAndInsert(ctx context.Context, uri, host, datab
 			Capped:         v.Capped,
 			TotalIndexSize: v.TotalIndexSize,
 			IndexSizes:     v.IndexSizes,
-			CreatedAt:      time.Now().Local(),
+			CreatedAt:      time.Now(),
 		}
 		insertDocs = append(insertDocs, doc)
 		latestCollStats = append(latestCollStats, doc)
