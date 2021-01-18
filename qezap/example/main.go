@@ -30,8 +30,13 @@ func init() {
 
 func main() {
 	// 普通用法
-	qelog.Info("Info", zap.String("val", "i am string field"))
-	// {"_level":"INFO","_time":1610616377872.952,"_caller":"example/main.go:33","_func":"main.main","_short":"Info","val":"i am string field"}
+	qelog.Debug("Debug", zap.String("val", "i am string field"))
+	// {"_level":"DEBUG","_time":1610616377872.952,"_caller":"example/main.go:33","_func":"main.main","_short":"Debug","val":"i am string field"}
+
+	// 动态修改日志等级
+	qelog.SetEnabledLevel(zapcore.InfoLevel)
+
+	qelog.Debug("Debug", zap.String("val", "should not be output"))
 
 	// 携带条件查询, 条件必需前置设置，只能 1 或 1,2 不能 2,3 这样后台不会提供查询
 	qelog.Error("condition example", qelog.ConditionOne("userid"), qelog.ConditionTwo("0001"), qelog.ConditionThree("phone"))
@@ -72,6 +77,7 @@ func main() {
 	qelog.DPanic("last message")
 	if err := qelog.Sync(); err != nil {
 		fmt.Println(err)
+
 	}
 }
 

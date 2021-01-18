@@ -13,11 +13,12 @@ import (
 
 type Logger struct {
 	*zap.Logger
+	core        *oneEncoderMultiWriter
 	WritePrefix string
 	WriteLevel  zapcore.Level
 }
 
-func NewOneEncoderMultiWriterCore(enc zapcore.Encoder, enab zapcore.LevelEnabler, multiW []zapcore.WriteSyncer) zapcore.Core {
+func NewOneEncoderMultiWriterCore(enc zapcore.Encoder, enab zapcore.LevelEnabler, multiW []zapcore.WriteSyncer) *oneEncoderMultiWriter {
 	return &oneEncoderMultiWriter{
 		LevelEnabler: enab,
 		enc:          enc,
@@ -25,6 +26,7 @@ func NewOneEncoderMultiWriterCore(enc zapcore.Encoder, enab zapcore.LevelEnabler
 	}
 }
 
+// 支持动态修改等级，一次编码，多处写入
 type oneEncoderMultiWriter struct {
 	zapcore.LevelEnabler
 	enc    zapcore.Encoder
@@ -67,6 +69,11 @@ func (mw *oneEncoderMultiWriter) Write(ent zapcore.Entry, fields []zap.Field) er
 		mw.Sync()
 	}
 	return err
+}
+
+func (mw *oneEncoderMultiWriter) SetEnabledLevel(lvl zapcore.Level) *oneEncoderMultiWriter {
+	mw.LevelEnabler = lvl
+	return mw
 }
 
 func (mw *oneEncoderMultiWriter) Sync() error {
@@ -113,40 +120,14 @@ func New(cfg *Config, level zapcore.Level) *Logger {
 	}
 
 	core := NewOneEncoderMultiWriterCore(enc, level, multiW)
-	return &Logger{Logger: zap.New(core, zap.AddCaller(), zap.AddStacktrace(zap.DPanicLevel))}
 
-	//prodEncCfg := zap.NewProductionEncoderConfig()
-	//prodEncCfg.EncodeTime = zapcore.ISO8601TimeEncoder
-	//localEnc := zapcore.NewConsoleEncoder(prodEncCfg)
-	//localCore := zapcore.NewCore(localEnc, NewWriteSync(cfg), level)
-	//
-	//var core zapcore.Core
-	//
-	//if cfg.EnableRemote {
-	//	remoteEnc := zapcore.NewJSONEncoder(zapcore.EncoderConfig{
-	//		MessageKey:       types.EncoderMessageKey,
-	//		LevelKey:         types.EncoderLevelKey,
-	//		TimeKey:          types.EncoderTimeKey,
-	//		NameKey:          types.EncoderNameKey,
-	//		CallerKey:        types.EncoderCallerKey,
-	//		FunctionKey:      types.EncoderFunctionKey,
-	//		StacktraceKey:    types.EncoderStacktraceKey,
-	//		LineEnding:       "",
-	//		EncodeLevel:      zapcore.CapitalLevelEncoder,
-	//		EncodeTime:       zapcore.EpochMillisTimeEncoder,
-	//		EncodeDuration:   zapcore.SecondsDurationEncoder,
-	//		EncodeCaller:     zapcore.ShortCallerEncoder,
-	//		ConsoleSeparator: zapcore.DefaultLineEnding,
-	//	})
-	//
-	//	remoteCore := zapcore.NewCore(remoteEnc, NewWriteRemote(cfg), level)
-	//
-	//	core = zapcore.NewTee(localCore, remoteCore)
-	//} else {
-	//	core = localCore
-	//}
+	return &Logger{core: core, Logger: zap.New(core, zap.AddCaller(), zap.AddStacktrace(zap.DPanicLevel))}
+}
 
-	//return &Logger{Logger: zap.New(core, zap.AddCaller(), zap.AddStacktrace(zap.DPanicLevel))}
+// 可动态修改日志等级
+func (log *Logger) SetEnabledLevel(lvl zapcore.Level) *Logger {
+	log.core.SetEnabledLevel(lvl)
+	return log
 }
 
 // 暴露Write方法，用于替换使用  io.Writer 接口的地方
@@ -231,7 +212,9 @@ func (log *Logger) MustGetTraceID(ctx context.Context) types.TraceID {
 func (log *Logger) encoderWithCtx(level zapcore.Level, ctx context.Context, msg string, fields ...zap.Field) {
 	if ctx != nil {
 		id := log.MustGetTraceID(ctx)
-		fields = append(fields, zap.String(types.EncoderTraceIDKey, id.Hex()))
+		if !id.IsZero() {
+			fields = append(fields, zap.String(types.EncoderTraceIDKey, id.Hex()))
+		}
 	}
 	switch level {
 	case zapcore.DebugLevel:
