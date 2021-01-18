@@ -46,10 +46,11 @@ type Config struct {
 
 func NewConfig(addrs []string, moduleName string) *Config {
 	cfg := &Config{
-		Filename:       _logFilename,
-		MaxSize:        500 << 20,
-		MaxAge:         0,
-		GzipCompress:   true,
+		Filename:     _logFilename,
+		MaxSize:      500 << 20,
+		MaxAge:       0,
+		GzipCompress: true,
+
 		EnableRemote:   false,
 		Transport:      "grpc",
 		Addrs:          addrs,
@@ -148,65 +149,3 @@ func (cfg *Config) Validate() error {
 
 	return nil
 }
-
-//type WriteRemoteConfig struct {
-//	Transport  string // 支持 http || grpc 默认grpc
-//	Addrs      []string
-//	ModuleName string
-//
-//	MaxConcurrent      int           // 默认 1 个并发
-//	MaxPacket          int           // 默认不缓冲
-//	WriteTimeout       time.Duration // 默认不超时
-//	RemoteFailedBackup string        // 远程发送失败，备份文件
-//}
-//
-//func (cfg WriteRemoteConfig) Validate() error {
-//	if len(cfg.Addrs) == 0 {
-//		return fmt.Errorf("address required, grpc [ip:port]  http[url]")
-//	}
-//	if cfg.ModuleName == "" {
-//		return fmt.Errorf("moduleName required")
-//	}
-//	return nil
-//}
-//
-//func NewWriteRemoteConfig(addrs []string, moduleName string) WriteRemoteConfig {
-//	return WriteRemoteConfig{
-//		Transport:     "grpc",
-//		Addrs:         addrs,
-//		ModuleName:    moduleName,
-//		MaxConcurrent: 50,
-//		// 包的大小对写入效率有着比较重要的影响。 设置的相对大，有利于减少rpc调用次数，整体写入速度会更快。
-//		// 但是因为使用 sync.Pool 占用内存会更高一点。
-//		// 小对象对于GC与内存占用相对更加友好 (grpc 默认最大4MB一个包)
-//		MaxPacket:          32 << 10,
-//		WriteTimeout:       5 * time.Second,
-//		RemoteFailedBackup: _backupFilename,
-//	}
-//	// 如果超出并发限制，直接写入文件，缓慢背景发送
-//}
-//
-//type WriteSyncConfig struct {
-//	Filename string
-//	MaxSize  int64 // 超过大小 滚动 默认 0 不滚动
-//	// 保留文件时间
-//	TTL time.Duration // 滚动日志文件最大时间， 默认 0 永久
-//	// Gzip 压缩
-//	GzipCompress bool // 滚动日志是否Gzip压缩， 默认 false 不压缩
-//}
-//
-//func (cfg WriteSyncConfig) Validate() error {
-//	if cfg.Filename == "" {
-//		return fmt.Errorf("filename required")
-//	}
-//	return nil
-//}
-//
-//func NewWriteSyncConfig(filename string) WriteSyncConfig {
-//	return WriteSyncConfig{
-//		Filename:     filename,
-//		MaxSize:      500 << 20, // 200MB
-//		TTL:          0,         // 保存永久
-//		GzipCompress: true,
-//	}
-//}
