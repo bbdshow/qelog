@@ -4,6 +4,7 @@ flag="-s -w -X 'main.buildTime=`date`' -X 'main.goVersion=`go version`' -X 'main
 
 .PHONY: build
 build:
+	export GOPROXY="https://goproxy.io,direct"
 	mkdir -p ./bin && rm -r ./bin
 	mkdir -p ./bin/configs && cp -r configs ./bin
 	mkdir -p ./bin/web && cp -r web ./bin
