@@ -1,11 +1,11 @@
 env = "dev"
-#receiverAddr = "0.0.0.0:31081"
-#receiverGRPCAddr = ":31082"
-#managerAddr = "0.0.0.0:31080"
-#authEnable = false
-#alarmEnable = true
-#metricsEnable = true
-#maxShardingIndex = 8
+receiverAddr = "0.0.0.0:31081"
+receiverGRPCAddr = ":31082"
+managerAddr = "0.0.0.0:31080"
+authEnable = false
+alarmEnable = true
+metricsEnable = true
+maxShardingIndex = 8
 
 [main]
 database = "qelog"
@@ -22,9 +22,9 @@ database = "qelog2"
 uri = "mongodb://127.0.0.1:27017/admin"
 
 
-#[adminUser]
-#username = "admin"
-#password = "111111"
+[adminUser]
+username = "admin"
+password = "111111"
 
 [logging]
 module = "qelog"
