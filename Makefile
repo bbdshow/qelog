@@ -5,7 +5,8 @@ flag="-s -w -X 'main.buildTime=`date`' -X 'main.goVersion=`go version`' -X 'main
 .PHONY: build
 build:
 	mkdir -p ./bin && rm -r ./bin
-	# mkdir -p ./bin/configs && cp -r configs ./bin
+	mkdir -p ./bin/configs && cp -r configs ./bin
+	mkdir -p ./bin/web && cp -r web ./bin
 	go build -ldflags ${flag} -o bin/receiver cmd/receiver/main.go
 	go build -ldflags ${flag} -o bin/manager cmd/manager/main.go
 
