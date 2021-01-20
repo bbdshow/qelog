@@ -73,6 +73,7 @@ func main() {
 	replaceGinLogger(ginDefaultErrorW)
 
 	// {"_level":"ERROR","_time":1610616377875.9512,"_caller":"qezap/qezap.go:154","_func":"github.com/huzhongqing/qelog/qezap.(*Logger).Write","_short":"GinDefaultErrorWriter","val":"gin out writer"}
+	qelog.Logger.Warn("zap.Logger")
 
 	qelog.DPanic("last message")
 	if err := qelog.Sync(); err != nil {

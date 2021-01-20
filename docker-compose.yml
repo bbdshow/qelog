@@ -6,7 +6,7 @@ services:
       - '31081:31081'
       - '31082:31082'
      volumes:
-      - './data/log/receiver:/app/log'
+      - '/data/log/receiver:/app/log'
      entrypoint:
       - /app/receiver
       - -f=configs/config.docker.toml
