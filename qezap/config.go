@@ -78,6 +78,16 @@ func (cfg *Config) SetEnableRemote(enable bool) *Config {
 	return cfg
 }
 
+func (cfg *Config) SetAddr(addr []string) *Config {
+	cfg.Addrs = addr
+	return cfg
+}
+
+func (cfg *Config) SetModule(module string) *Config {
+	cfg.ModuleName = module
+	return cfg
+}
+
 func (cfg *Config) SetHTTPTransport() *Config {
 	cfg.Transport = "http"
 	return cfg

@@ -2,6 +2,7 @@ package qezap
 
 import (
 	"context"
+	"sync/atomic"
 
 	"go.uber.org/multierr"
 
@@ -13,6 +14,7 @@ import (
 
 type Logger struct {
 	*zap.Logger
+	cfg         *Config
 	core        *oneEncoderMultiWriter
 	WritePrefix string
 	WriteLevel  zapcore.Level
@@ -31,6 +33,9 @@ type oneEncoderMultiWriter struct {
 	zap.AtomicLevel
 	enc    zapcore.Encoder
 	multiW []zapcore.WriteSyncer
+
+	// 追加 write
+	appendW int32
 }
 
 func (mw *oneEncoderMultiWriter) With(fields []zap.Field) zapcore.Core {
@@ -54,6 +59,8 @@ func (mw *oneEncoderMultiWriter) Write(ent zapcore.Entry, fields []zap.Field) er
 		return err
 	}
 
+	mw.lock()
+
 	for _, w := range mw.multiW {
 		_, err = w.Write(buf.Bytes())
 		if err != nil {
@@ -76,7 +83,23 @@ func (mw *oneEncoderMultiWriter) SetEnabledLevel(lvl zapcore.Level) *oneEncoderM
 	return mw
 }
 
+func (mw *oneEncoderMultiWriter) AppendWriter(w zapcore.WriteSyncer) {
+	atomic.StoreInt32(&mw.appendW, 1)
+	mw.multiW = append(mw.multiW, w)
+	atomic.StoreInt32(&mw.appendW, 0)
+}
+func (mw *oneEncoderMultiWriter) lock() {
+	// 如果正在追加 write 则一直等待
+	for {
+		if atomic.SwapInt32(&mw.appendW, 0) == 1 {
+			continue
+		}
+		break
+	}
+}
 func (mw *oneEncoderMultiWriter) Sync() error {
+	mw.lock()
+
 	var err error
 	for i := range mw.multiW {
 		err = multierr.Append(err, mw.multiW[i].Sync())
@@ -122,7 +145,7 @@ func New(cfg *Config, level zapcore.Level) *Logger {
 
 	core := NewOneEncoderMultiWriterCore(enc, atomicLevel, multiW)
 
-	return &Logger{core: core, Logger: zap.New(core, zap.AddCaller(), zap.AddStacktrace(zap.DPanicLevel))}
+	return &Logger{cfg: cfg, core: core, Logger: zap.New(core, zap.AddCaller(), zap.AddStacktrace(zap.DPanicLevel))}
 }
 
 // 可动态修改日志等级
@@ -233,4 +256,12 @@ func (log *Logger) encoderWithCtx(level zapcore.Level, ctx context.Context, msg 
 	case zapcore.FatalLevel:
 		log.Fatal(msg, fields...)
 	}
+}
+
+func (log *Logger) AppendWriter(w zapcore.WriteSyncer) {
+	log.core.AppendWriter(w)
+}
+
+func (log *Logger) Config() *Config {
+	return log.cfg
 }
