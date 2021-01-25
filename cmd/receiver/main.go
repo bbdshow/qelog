@@ -48,7 +48,7 @@ func main() {
 	config.SetGlobalConfig(cfg)
 
 	logs.InitQezap(nil, "")
-	sharding, err := storage.NewSharding(cfg.Main, cfg.Sharding)
+	sharding, err := storage.NewSharding(cfg.Main, cfg.Sharding, cfg.MaxShardingIndex)
 	if err != nil {
 		logs.Qezap.Fatal("mongo connect failed", zap.Error(err))
 	}

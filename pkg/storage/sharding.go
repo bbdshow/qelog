@@ -4,6 +4,8 @@ import (
 	"context"
 	"time"
 
+	"github.com/huzhongqing/qelog/pkg/common/model"
+
 	"github.com/huzhongqing/qelog/libs/mongo"
 	"github.com/huzhongqing/qelog/pkg/config"
 )
@@ -18,7 +20,8 @@ type Sharding struct {
 }
 
 // Sharding Store Lib
-func NewSharding(main config.MongoDB, sharding []config.MongoDBIndex) (*Sharding, error) {
+func NewSharding(main config.MongoDB, sharding []config.MongoDBIndex, index int32) (*Sharding, error) {
+	model.SetMaxDBShardingIndex(index)
 	ctx, _ := context.WithTimeout(context.Background(), 30*time.Second)
 	mainDB, err := mongo.NewDatabase(ctx, main.URI, main.DataBase)
 	if err != nil {
