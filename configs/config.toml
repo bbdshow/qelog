@@ -1,4 +1,4 @@
-env = "dev"
+env = "release"
 receiverAddr = "0.0.0.0:31081"
 receiverGRPCAddr = ":31082"
 managerAddr = "0.0.0.0:31080"

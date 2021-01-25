@@ -4,6 +4,9 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/huzhongqing/qelog/libs/logs"
+	"go.uber.org/zap"
+
 	"github.com/gin-gonic/gin"
 	"github.com/huzhongqing/qelog/api"
 	"github.com/huzhongqing/qelog/pkg/config"
@@ -24,11 +27,13 @@ func NewHTTPService(sharding *storage.Sharding) *HTTPService {
 }
 
 func (srv *HTTPService) Run(addr string) error {
-	handler := gin.Default()
+	handler := gin.New()
 	if config.GlobalConfig.Release() {
 		gin.SetMode(gin.ReleaseMode)
-		handler = gin.New()
-		handler.Use(gin.Recovery())
+		gin.DefaultErrorWriter = logs.Qezap.Clone().SetWritePrefix("[GIN-Recovery]").SetWriteLevel(zap.ErrorLevel)
+		handler.Use(httputil.GinLogger([]string{"/"}), gin.Recovery())
+	} else {
+		handler.Use(gin.Logger(), gin.Recovery())
 	}
 
 	srv.route(handler)

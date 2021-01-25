@@ -33,12 +33,13 @@ func NewHTTPService(sharding *storage.Sharding) *HTTPService {
 }
 
 func (srv *HTTPService) Run(addr string) error {
-
-	handler := gin.Default()
+	handler := gin.New()
 	if config.GlobalConfig.Release() {
 		gin.SetMode(gin.ReleaseMode)
-		gin.DefaultErrorWriter = logs.Qezap.Clone().SetWritePrefix("ginError").SetWriteLevel(zap.ErrorLevel)
-		gin.DefaultWriter = logs.Qezap.Clone().SetWritePrefix("ginDebug").SetWriteLevel(zap.DebugLevel)
+		gin.DefaultErrorWriter = logs.Qezap.Clone().SetWritePrefix("[GIN-Recovery]").SetWriteLevel(zap.ErrorLevel)
+		handler.Use(httputil.GinLogger([]string{"/"}), gin.Recovery())
+	} else {
+		handler.Use(gin.Logger(), gin.Recovery())
 	}
 
 	srv.route(handler)
@@ -64,8 +65,8 @@ func (srv *HTTPService) route(handler *gin.Engine) {
 
 	handler.POST("/v1/login", srv.Login)
 
-	v1 := handler.Group("/v1", AuthVerify(config.GlobalConfig.AuthEnable), HandlerRegisterTraceID())
-	module := v1.Group("/module", HandlerLogging(true))
+	v1 := handler.Group("/v1", AuthVerify(config.GlobalConfig.AuthEnable), httputil.HandlerRegisterTraceID())
+	module := v1.Group("/module", httputil.HandlerLogging(true))
 	{
 		module.GET("/list", srv.FindModuleList)
 		module.POST("", srv.CreateModule)
@@ -73,7 +74,7 @@ func (srv *HTTPService) route(handler *gin.Engine) {
 		module.DELETE("", srv.DeleteModule)
 	}
 	// 配置报警规则
-	alarmRule := v1.Group("/alarm-rule", HandlerLogging(true))
+	alarmRule := v1.Group("/alarm-rule", httputil.HandlerLogging(true))
 	{
 		alarmRule.GET("/list", srv.FindAlarmRuleList)
 		alarmRule.POST("", srv.CreateAlarmRule)
