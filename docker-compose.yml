@@ -1,6 +1,6 @@
 version: '3'
 services:
-  receiver:
+  qelog_receiver:
      image: qelog:latest
      ports:
       - '31081:31081'
@@ -8,17 +8,17 @@ services:
      volumes:
       - '/data/log/receiver:/app/log'
      entrypoint:
-      - /app/receiver
+      - /app/qelog_receiver
       - -f=configs/config.docker.toml
      restart: always
 
-  manager:
+  qelog_manager:
     image: qelog:latest
     ports:
       - '31080:31080'
     volumes:
       - '/data/log/manager:/app/log'
     entrypoint:
-      - /app/manager
+      - /app/qelog_manager
       - -f=configs/config.docker.toml
     restart: always
