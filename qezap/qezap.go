@@ -91,7 +91,7 @@ func (mw *oneEncoderMultiWriter) AppendWriter(w zapcore.WriteSyncer) {
 func (mw *oneEncoderMultiWriter) lock() {
 	// 如果正在追加 write 则一直等待
 	for {
-		if atomic.SwapInt32(&mw.appendW, 0) == 1 {
+		if atomic.LoadInt32(&mw.appendW) == 1 {
 			continue
 		}
 		break
