@@ -10,12 +10,14 @@ import (
 	jsoniterator "github.com/json-iterator/go"
 )
 
-type Decoder struct {
-	Val map[string]interface{}
-}
+//type Decoder struct {
+//	Val map[string]interface{}
+//}
+
+type Decoder map[string]interface{}
 
 func (dec Decoder) Level() model.Level {
-	interfaceV, ok := dec.Val[apitypes.EncoderLevelKey]
+	interfaceV, ok := dec[apitypes.EncoderLevelKey]
 	if ok {
 		val, ok1 := interfaceV.(string)
 		if ok1 {
@@ -25,7 +27,7 @@ func (dec Decoder) Level() model.Level {
 	return 0
 }
 func (dec Decoder) TimeMill() int64 {
-	interfaceV, ok := dec.Val[apitypes.EncoderTimeKey]
+	interfaceV, ok := dec[apitypes.EncoderTimeKey]
 	if ok {
 		val, ok1 := interfaceV.(float64)
 		if ok1 {
@@ -36,7 +38,7 @@ func (dec Decoder) TimeMill() int64 {
 }
 
 func (dec Decoder) Short() string {
-	interfaceV, ok := dec.Val[apitypes.EncoderMessageKey]
+	interfaceV, ok := dec[apitypes.EncoderMessageKey]
 	if ok {
 		val, ok1 := interfaceV.(string)
 		if ok1 {
@@ -56,7 +58,7 @@ func (dec Decoder) Condition(num int) string {
 	case 3:
 		key = apitypes.EncoderConditionThreeKey
 	}
-	interfaceV, ok := dec.Val[key]
+	interfaceV, ok := dec[key]
 	if ok {
 		val, ok1 := interfaceV.(string)
 		if ok1 {
@@ -67,7 +69,7 @@ func (dec Decoder) Condition(num int) string {
 }
 
 func (dec Decoder) TraceIDHex() string {
-	interfaceV, ok := dec.Val[apitypes.EncoderTraceIDKey]
+	interfaceV, ok := dec[apitypes.EncoderTraceIDKey]
 	if ok {
 		val, ok1 := interfaceV.(string)
 		if ok1 {
@@ -82,10 +84,10 @@ func (dec Decoder) Full() string {
 	delFields := []string{apitypes.EncoderLevelKey, apitypes.EncoderTimeKey, apitypes.EncoderMessageKey,
 		apitypes.EncoderConditionOneKey, apitypes.EncoderConditionTwoKey, apitypes.EncoderConditionThreeKey, apitypes.EncoderTraceIDKey}
 	for _, v := range delFields {
-		delete(dec.Val, v)
+		delete(dec, v)
 	}
-	b, _ := Marshal(dec.Val)
-	return string(b)
+	str, _ := MarshalToString(dec)
+	return str
 }
 
 func LevelStr2Int(lvl string) model.Level {
@@ -115,4 +117,8 @@ func Unmarshal(data []byte, v interface{}) error {
 
 func Marshal(v interface{}) ([]byte, error) {
 	return jsoniterator.Marshal(v)
+}
+
+func MarshalToString(v interface{}) (string, error) {
+	return jsoniterator.MarshalToString(v)
 }

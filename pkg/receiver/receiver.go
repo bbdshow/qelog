@@ -181,9 +181,8 @@ func (srv *Service) decodePacket(ip string, in *receiverpb.Packet) []*model.Logg
 			TimeSec:   time.Now().Unix(),
 			Size:      len(v),
 		}
-		val := make(map[string]interface{})
-		if err := types.Unmarshal(v, &val); err == nil {
-			dec := types.Decoder{Val: val}
+		dec := types.Decoder{}
+		if err := types.Unmarshal(v, &dec); err == nil {
 			r.Short = dec.Short()
 			r.Level = dec.Level()
 			r.Condition1 = dec.Condition(1)
@@ -215,9 +214,8 @@ func (srv *Service) decodeJSONPacket(ip string, in *api.JSONPacket) []*model.Log
 			TimeSec:   time.Now().Unix(),
 			Size:      len(v),
 		}
-		val := make(map[string]interface{})
-		if err := types.Unmarshal([]byte(v), &val); err == nil {
-			dec := types.Decoder{Val: val}
+		dec := types.Decoder{}
+		if err := types.Unmarshal([]byte(v), &dec); err == nil {
 			r.Short = dec.Short()
 			r.Level = dec.Level()
 			r.Condition1 = dec.Condition(1)
