@@ -1,6 +1,8 @@
 package logs
 
 import (
+	"time"
+
 	"github.com/huzhongqing/qelog/qezap"
 	"go.uber.org/zap"
 )
@@ -9,7 +11,7 @@ var Qezap *qezap.Logger
 
 func init() {
 	// 注册一个本地的 Log
-	cfg := qezap.NewConfig(nil, "")
+	cfg := qezap.NewConfig(nil, "").SetMaxAge(6 * 30 * 24 * time.Hour)
 	Qezap = qezap.New(cfg, zap.DebugLevel)
 }
 
