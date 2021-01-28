@@ -25,6 +25,7 @@ var (
 type Pusher interface {
 	PushPacket(ctx context.Context, in *receiverpb.Packet) error
 	Concurrent() int
+	Close() error
 }
 
 type GRRCPush struct {

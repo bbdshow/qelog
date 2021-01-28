@@ -21,7 +21,8 @@ func InitQezap(addrs []string, moduleName string) {
 		// 则追加远程模块
 		if len(addrs) > 0 && moduleName != "" {
 			cfg := Qezap.Config().SetEnableRemote(true).SetAddr(addrs).SetModule(moduleName)
-			Qezap.AppendWriter(qezap.NewWriteRemote(cfg))
+			cfg.SetMaxSize(100 << 20)
+			Qezap = qezap.New(cfg, zap.DebugLevel)
 		}
 		return
 	}

@@ -8,6 +8,8 @@ import (
 	"sync"
 	"time"
 
+	"go.uber.org/multierr"
+
 	"github.com/huzhongqing/qelog/api/receiverpb"
 )
 
@@ -221,4 +223,13 @@ func (w *WriteRemote) Sync() error {
 	}
 
 	return w.bw.Close()
+}
+
+func (w *WriteRemote) Close() error {
+	var err error
+	err = multierr.Append(err, w.Sync())
+	if w.pusher != nil {
+		err = multierr.Append(err, w.pusher.Close())
+	}
+	return err
 }

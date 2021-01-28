@@ -27,6 +27,9 @@ type Logger struct {
 	cfg         *Config
 	atomicLevel *zap.AtomicLevel
 
+	localW  *WriteSync
+	remoteW *WriteRemote
+
 	WritePrefix string
 	WriteLevel  zapcore.Level
 }
@@ -106,31 +109,49 @@ func New(cfg *Config, level zapcore.Level) *Logger {
 	}
 	atomicLevel := zap.NewAtomicLevelAt(level)
 
+	log := &Logger{
+		cfg:         cfg,
+		atomicLevel: &atomicLevel,
+		localW:      nil,
+		remoteW:     nil,
+		WritePrefix: "",
+		WriteLevel:  zap.DebugLevel,
+	}
+
 	var core zapcore.Core
 	if mode == Release {
 		// 一次编码 多次写入
 		multiW := make([]zapcore.WriteSyncer, 0)
-		multiW = append(multiW, NewWriteSync(cfg))
+		localW := NewWriteSync(cfg)
+		log.localW = localW
+
+		multiW = append(multiW, localW)
 
 		if cfg.EnableRemote {
-			multiW = append(multiW, NewWriteRemote(cfg))
+			remoteW := NewWriteRemote(cfg)
+			log.remoteW = remoteW
+			multiW = append(multiW, remoteW)
 		}
 		core = NewOneEncoderMultiWriterCore(jsonEncoder(), &atomicLevel, multiW)
 	} else {
 		localW := NewWriteSync(cfg)
+		log.localW = localW
 		localCore := zapcore.NewCore(consoleEncoder(), localW, &atomicLevel)
 		cores := []zapcore.Core{localCore}
 		if cfg.EnableRemote {
-			cores = append(cores, zapcore.NewCore(jsonEncoder(), NewWriteRemote(cfg), &atomicLevel))
+			remoteW := NewWriteRemote(cfg)
+			log.remoteW = remoteW
+			cores = append(cores, zapcore.NewCore(jsonEncoder(), remoteW, &atomicLevel))
 		}
 		core = zapcore.NewTee(cores...)
 	}
 
-	return &Logger{cfg: cfg, atomicLevel: &atomicLevel,
-		Logger: zap.New(core,
-			zap.AddCaller(),
-			zap.AddCallerSkip(2),
-			zap.AddStacktrace(zap.DPanicLevel))}
+	log.Logger = zap.New(core,
+		zap.AddCaller(),
+		zap.AddCallerSkip(2),
+		zap.AddStacktrace(zap.DPanicLevel))
+
+	return log
 }
 
 // 可动态修改日志等级
@@ -273,4 +294,15 @@ func (log *Logger) encoderWithCtx(level zapcore.Level, ctx context.Context, msg 
 
 func (log *Logger) Config() *Config {
 	return log.cfg
+}
+
+func (log *Logger) Close() error {
+	var err error
+	if log.localW != nil {
+		err = multierr.Append(err, log.localW.Close())
+	}
+	if log.remoteW != nil {
+		err = multierr.Append(err, log.remoteW.Close())
+	}
+	return err
 }
