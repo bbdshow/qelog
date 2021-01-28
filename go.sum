@@ -81,6 +81,8 @@ github.com/huzhongqing/qelog/api v0.11.1 h1:yNxfT+7WWNXu7Wxj7xcp5tMchWTHUazhEYTM
 github.com/huzhongqing/qelog/api v0.11.1/go.mod h1:TExt7hcq9L1IYIjxaSOXEC6eUnJs5Ys3vDrj0Cuxg4g=
 github.com/huzhongqing/qelog/qezap v0.14.0 h1:/TOUT7b4WBsTEH5MJFlsOnlagF0BRQu89eBHhEEF+ck=
 github.com/huzhongqing/qelog/qezap v0.14.0/go.mod h1:9DULO7hA8QZoyDqutd2/8R+3CYxfNIiFTkpaQV7pi+8=
+github.com/huzhongqing/qelog/qezap v0.14.1 h1:5io7IgCGtQRtYnsVw7juYNKFy3T5olgTZoKbkHC8+f4=
+github.com/huzhongqing/qelog/qezap v0.14.1/go.mod h1:9DULO7hA8QZoyDqutd2/8R+3CYxfNIiFTkpaQV7pi+8=
 github.com/inconshreveable/mousetrap v1.0.0/go.mod h1:PxqpIevigyE2G7u3NXJIT2ANytuPF1OarO4DADm73n8=
 github.com/jmespath/go-jmespath v0.4.0 h1:BEgLn5cpjn8UN1mAw4NjwDrS35OdebyEtFe+9YPoQUg=
 github.com/jmespath/go-jmespath v0.4.0/go.mod h1:T8mJZnbsbmF+m6zOOFylbeCJqk5+pHWvzYPziyZiYoo=

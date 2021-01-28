@@ -15,20 +15,22 @@ func init() {
 	Qezap = qezap.New(cfg, zap.DebugLevel)
 }
 
-func InitQezap(addrs []string, moduleName string) {
+func InitQezap(addrs []string, moduleName string, filename ...string) {
 	// 默认注册的
 	if Qezap != nil {
 		// 则追加远程模块
 		if len(addrs) > 0 && moduleName != "" {
 			cfg := Qezap.Config().SetEnableRemote(true).SetAddr(addrs).SetModule(moduleName)
-			cfg.SetMaxSize(100 << 20)
+			if len(filename) > 0 {
+				cfg.SetFilename(filename[0])
+			}
 			Qezap = qezap.New(cfg, zap.DebugLevel)
 		}
 		return
 	}
 	cfg := qezap.NewConfig(addrs, moduleName)
-	if len(addrs) == 0 {
-		cfg.SetEnableRemote(false)
+	if len(filename) > 0 {
+		cfg.SetFilename(filename[0])
 	}
 
 	Qezap = qezap.New(cfg, zap.DebugLevel)
