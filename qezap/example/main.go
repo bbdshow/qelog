@@ -31,7 +31,6 @@ func init() {
 func main() {
 	// 普通用法
 	qelog.Debug("Debug", zap.String("val", "i am string field"))
-	// {"_level":"DEBUG","_time":1610616377872.952,"_caller":"example/main.go:33","_func":"main.main","_short":"Debug","val":"i am string field"}
 
 	// 动态修改日志等级
 	qelog.SetEnabledLevel(zapcore.InfoLevel)
@@ -40,7 +39,6 @@ func main() {
 
 	// 携带条件查询, 条件必需前置设置，只能 1 或 1,2 不能 2,3 这样后台不会提供查询
 	qelog.Error("condition example", qelog.ConditionOne("userid"), qelog.ConditionTwo("0001"), qelog.ConditionThree("phone"))
-	// {"_level":"ERROR","_time":1610616377872.952,"_caller":"example/main.go:36","_func":"main.main","_short":"condition example","_condition1":"userid","_condition2":"0001","_condition3":"phone"}
 
 	// 携带 TraceID 打印到日志
 	// 这是初始上下文
@@ -50,8 +48,6 @@ func main() {
 	// 会获取 ctx 的 TraceID
 	qelog.WarnWithCtx(ctx, "have trace id field", zap.String("withCtx", "warn"))
 	qelog.ErrorWithCtx(ctx, "have trace id field", zap.String("withCtx", "error"))
-	// {"_level":"WARN","_time":1610674696407.182,"_caller":"qezap/qezap.go:242","_func":"github.com/huzhongqing/qelog/qezap.(*Logger).encoderWithCtx","_short":"have trace id field","withCtx":"warn","_traceid":"165a441a480f69e89916bf32"}
-	// {"_level":"ERROR","_time":1610674696407.182,"_caller":"qezap/qezap.go:244","_func":"github.com/huzhongqing/qelog/qezap.(*Logger).encoderWithCtx","_short":"have trace id field","withCtx":"error","_traceid":"165a441a480f69e89916bf32"}
 
 	// 还可以获取 ctx 里面的 TraceID 写入到 Response Header 等
 	tid := qelog.MustGetTraceID(ctx)
@@ -64,7 +60,6 @@ func main() {
 	ginDefaultW.SetWritePrefix("GinDefaultWriter")
 
 	replaceGinLogger(ginDefaultW)
-	// {"_level":"INFO","_time":1610616377873.9443,"_caller":"qezap/qezap.go:154","_func":"github.com/huzhongqing/qelog/qezap.(*Logger).Write","_short":"GinDefaultWriter","val":"gin out writer"}
 
 	ginDefaultErrorW := qelog.Clone()
 	ginDefaultErrorW.SetWriteLevel(zapcore.ErrorLevel)
@@ -72,8 +67,7 @@ func main() {
 
 	replaceGinLogger(ginDefaultErrorW)
 
-	// {"_level":"ERROR","_time":1610616377875.9512,"_caller":"qezap/qezap.go:154","_func":"github.com/huzhongqing/qelog/qezap.(*Logger).Write","_short":"GinDefaultErrorWriter","val":"gin out writer"}
-	qelog.Logger.Warn("zap.Logger")
+	qelog.Warn("zap.Logger")
 
 	qelog.DPanic("last message")
 	if err := qelog.Sync(); err != nil {

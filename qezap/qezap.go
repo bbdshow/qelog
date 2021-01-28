@@ -116,6 +116,7 @@ func (mw *oneEncoderMultiWriter) clone() *oneEncoderMultiWriter {
 }
 
 func New(cfg *Config, level zapcore.Level) *Logger {
+
 	if err := cfg.Validate(); err != nil {
 		panic(err)
 	}
@@ -145,7 +146,10 @@ func New(cfg *Config, level zapcore.Level) *Logger {
 
 	core := NewOneEncoderMultiWriterCore(enc, atomicLevel, multiW)
 
-	return &Logger{cfg: cfg, core: core, Logger: zap.New(core, zap.AddCaller(), zap.AddStacktrace(zap.DPanicLevel))}
+	return &Logger{cfg: cfg, core: core, Logger: zap.New(core,
+		zap.AddCaller(),
+		zap.AddCallerSkip(2),
+		zap.AddStacktrace(zap.DPanicLevel))}
 }
 
 // 可动态修改日志等级
@@ -195,6 +199,34 @@ func (log *Logger) WithTraceID(ctx context.Context) context.Context {
 	return context.WithValue(ctx, types.EncoderTraceIDKey, types.NewTraceID())
 }
 
+func (log *Logger) Debug(msg string, fields ...zap.Field) {
+	log.encoderWithCtx(zapcore.DebugLevel, nil, msg, fields...)
+}
+
+func (log *Logger) Info(msg string, fields ...zap.Field) {
+	log.encoderWithCtx(zapcore.InfoLevel, nil, msg, fields...)
+}
+
+func (log *Logger) Warn(msg string, fields ...zap.Field) {
+	log.encoderWithCtx(zapcore.WarnLevel, nil, msg, fields...)
+}
+
+func (log *Logger) Error(msg string, fields ...zap.Field) {
+	log.encoderWithCtx(zapcore.ErrorLevel, nil, msg, fields...)
+}
+
+func (log *Logger) DPanic(msg string, fields ...zap.Field) {
+	log.encoderWithCtx(zapcore.DPanicLevel, nil, msg, fields...)
+}
+
+func (log *Logger) Panic(msg string, fields ...zap.Field) {
+	log.encoderWithCtx(zapcore.PanicLevel, nil, msg, fields...)
+}
+
+func (log *Logger) Fatal(msg string, fields ...zap.Field) {
+	log.encoderWithCtx(zapcore.FatalLevel, nil, msg, fields...)
+}
+
 // 用于把上下文的一些信息打入日志
 func (log *Logger) DebugWithCtx(ctx context.Context, msg string, fields ...zap.Field) {
 	log.encoderWithCtx(zapcore.DebugLevel, ctx, msg, fields...)
@@ -242,19 +274,19 @@ func (log *Logger) encoderWithCtx(level zapcore.Level, ctx context.Context, msg 
 	}
 	switch level {
 	case zapcore.DebugLevel:
-		log.Debug(msg, fields...)
+		log.Logger.Debug(msg, fields...)
 	case zapcore.InfoLevel:
-		log.Info(msg, fields...)
+		log.Logger.Info(msg, fields...)
 	case zapcore.WarnLevel:
-		log.Warn(msg, fields...)
+		log.Logger.Warn(msg, fields...)
 	case zapcore.ErrorLevel:
-		log.Error(msg, fields...)
+		log.Logger.Error(msg, fields...)
 	case zapcore.DPanicLevel:
-		log.DPanic(msg, fields...)
+		log.Logger.DPanic(msg, fields...)
 	case zapcore.PanicLevel:
-		log.Panic(msg, fields...)
+		log.Logger.Panic(msg, fields...)
 	case zapcore.FatalLevel:
-		log.Fatal(msg, fields...)
+		log.Logger.Fatal(msg, fields...)
 	}
 }
 
