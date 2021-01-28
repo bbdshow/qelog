@@ -2,7 +2,6 @@ package qezap
 
 import (
 	"context"
-	"sync/atomic"
 
 	"go.uber.org/multierr"
 
@@ -12,15 +11,27 @@ import (
 	"go.uber.org/zap/zapcore"
 )
 
+var mode = Debug
+
+const (
+	Debug = iota
+	Release
+)
+
+func EnableRelease() {
+	mode = Release
+}
+
 type Logger struct {
 	*zap.Logger
 	cfg         *Config
-	core        *oneEncoderMultiWriter
+	atomicLevel *zap.AtomicLevel
+
 	WritePrefix string
 	WriteLevel  zapcore.Level
 }
 
-func NewOneEncoderMultiWriterCore(enc zapcore.Encoder, level zap.AtomicLevel, multiW []zapcore.WriteSyncer) *oneEncoderMultiWriter {
+func NewOneEncoderMultiWriterCore(enc zapcore.Encoder, level *zap.AtomicLevel, multiW []zapcore.WriteSyncer) *oneEncoderMultiWriter {
 	return &oneEncoderMultiWriter{
 		AtomicLevel: level,
 		enc:         enc,
@@ -30,12 +41,9 @@ func NewOneEncoderMultiWriterCore(enc zapcore.Encoder, level zap.AtomicLevel, mu
 
 // 支持动态修改等级，一次编码，多处写入
 type oneEncoderMultiWriter struct {
-	zap.AtomicLevel
+	*zap.AtomicLevel
 	enc    zapcore.Encoder
 	multiW []zapcore.WriteSyncer
-
-	// 追加 write
-	appendW int32
 }
 
 func (mw *oneEncoderMultiWriter) With(fields []zap.Field) zapcore.Core {
@@ -59,8 +67,6 @@ func (mw *oneEncoderMultiWriter) Write(ent zapcore.Entry, fields []zap.Field) er
 		return err
 	}
 
-	mw.lock()
-
 	for _, w := range mw.multiW {
 		_, err = w.Write(buf.Bytes())
 		if err != nil {
@@ -78,28 +84,7 @@ func (mw *oneEncoderMultiWriter) Write(ent zapcore.Entry, fields []zap.Field) er
 	return err
 }
 
-func (mw *oneEncoderMultiWriter) SetEnabledLevel(lvl zapcore.Level) *oneEncoderMultiWriter {
-	mw.AtomicLevel.SetLevel(lvl)
-	return mw
-}
-
-func (mw *oneEncoderMultiWriter) AppendWriter(w zapcore.WriteSyncer) {
-	atomic.StoreInt32(&mw.appendW, 1)
-	mw.multiW = append(mw.multiW, w)
-	atomic.StoreInt32(&mw.appendW, 0)
-}
-func (mw *oneEncoderMultiWriter) lock() {
-	// 如果正在追加 write 则一直等待
-	for {
-		if atomic.LoadInt32(&mw.appendW) == 1 {
-			continue
-		}
-		break
-	}
-}
 func (mw *oneEncoderMultiWriter) Sync() error {
-	mw.lock()
-
 	var err error
 	for i := range mw.multiW {
 		err = multierr.Append(err, mw.multiW[i].Sync())
@@ -116,45 +101,41 @@ func (mw *oneEncoderMultiWriter) clone() *oneEncoderMultiWriter {
 }
 
 func New(cfg *Config, level zapcore.Level) *Logger {
-
 	if err := cfg.Validate(); err != nil {
 		panic(err)
 	}
 	atomicLevel := zap.NewAtomicLevelAt(level)
-	enc := zapcore.NewJSONEncoder(zapcore.EncoderConfig{
-		MessageKey:       types.EncoderMessageKey,
-		LevelKey:         types.EncoderLevelKey,
-		TimeKey:          types.EncoderTimeKey,
-		NameKey:          types.EncoderNameKey,
-		CallerKey:        types.EncoderCallerKey,
-		FunctionKey:      types.EncoderFunctionKey,
-		StacktraceKey:    types.EncoderStacktraceKey,
-		LineEnding:       "",
-		EncodeLevel:      zapcore.CapitalLevelEncoder,
-		EncodeTime:       zapcore.EpochMillisTimeEncoder,
-		EncodeDuration:   zapcore.SecondsDurationEncoder,
-		EncodeCaller:     zapcore.ShortCallerEncoder,
-		ConsoleSeparator: zapcore.DefaultLineEnding,
-	})
 
-	multiW := make([]zapcore.WriteSyncer, 0)
-	multiW = append(multiW, NewWriteSync(cfg))
+	var core zapcore.Core
+	if mode == Release {
+		// 一次编码 多次写入
+		multiW := make([]zapcore.WriteSyncer, 0)
+		multiW = append(multiW, NewWriteSync(cfg))
 
-	if cfg.EnableRemote {
-		multiW = append(multiW, NewWriteRemote(cfg))
+		if cfg.EnableRemote {
+			multiW = append(multiW, NewWriteRemote(cfg))
+		}
+		core = NewOneEncoderMultiWriterCore(jsonEncoder(), &atomicLevel, multiW)
+	} else {
+		localW := NewWriteSync(cfg)
+		localCore := zapcore.NewCore(consoleEncoder(), localW, &atomicLevel)
+		cores := []zapcore.Core{localCore}
+		if cfg.EnableRemote {
+			cores = append(cores, zapcore.NewCore(jsonEncoder(), NewWriteRemote(cfg), &atomicLevel))
+		}
+		core = zapcore.NewTee(cores...)
 	}
 
-	core := NewOneEncoderMultiWriterCore(enc, atomicLevel, multiW)
-
-	return &Logger{cfg: cfg, core: core, Logger: zap.New(core,
-		zap.AddCaller(),
-		zap.AddCallerSkip(2),
-		zap.AddStacktrace(zap.DPanicLevel))}
+	return &Logger{cfg: cfg, atomicLevel: &atomicLevel,
+		Logger: zap.New(core,
+			zap.AddCaller(),
+			zap.AddCallerSkip(2),
+			zap.AddStacktrace(zap.DPanicLevel))}
 }
 
 // 可动态修改日志等级
 func (log *Logger) SetEnabledLevel(lvl zapcore.Level) *Logger {
-	log.core.SetEnabledLevel(lvl)
+	log.atomicLevel.SetLevel(lvl)
 	return log
 }
 
@@ -288,10 +269,6 @@ func (log *Logger) encoderWithCtx(level zapcore.Level, ctx context.Context, msg 
 	case zapcore.FatalLevel:
 		log.Logger.Fatal(msg, fields...)
 	}
-}
-
-func (log *Logger) AppendWriter(w zapcore.WriteSyncer) {
-	log.core.AppendWriter(w)
 }
 
 func (log *Logger) Config() *Config {
