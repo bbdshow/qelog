@@ -67,7 +67,7 @@ github.com/google/gofuzz v1.0.0/go.mod h1:dBl0BpW6vV/+mYPU4Po3pmUjxk6FQPldtuIdl/
 github.com/google/renameio v0.1.0/go.mod h1:KWCgfxg9yswjAJkECMjeO8J8rahYeXnNhOm40UhjYkI=
 github.com/google/uuid v1.1.2/go.mod h1:TIyPZe4MgqvfeYDBFedMoGGpEw/LqOeaOT+nhxU+yHo=
 github.com/huzhongqing/qelog/api v0.11.1/go.mod h1:TExt7hcq9L1IYIjxaSOXEC6eUnJs5Ys3vDrj0Cuxg4g=
-github.com/huzhongqing/qelog/qezap v0.13.2/go.mod h1:9DULO7hA8QZoyDqutd2/8R+3CYxfNIiFTkpaQV7pi+8=
+github.com/huzhongqing/qelog/qezap v0.14.1/go.mod h1:9DULO7hA8QZoyDqutd2/8R+3CYxfNIiFTkpaQV7pi+8=
 github.com/inconshreveable/mousetrap v1.0.0/go.mod h1:PxqpIevigyE2G7u3NXJIT2ANytuPF1OarO4DADm73n8=
 github.com/jmespath/go-jmespath v0.4.0/go.mod h1:T8mJZnbsbmF+m6zOOFylbeCJqk5+pHWvzYPziyZiYoo=
 github.com/jmespath/go-jmespath/internal/testify v1.5.1/go.mod h1:L3OGu8Wl2/fWfCI6z80xFu9LTZmf1ZRjMHUOPmWr69U=

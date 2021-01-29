@@ -16,6 +16,7 @@ import (
 func BenchmarkQezapRpc(b *testing.B) {
 	addrs := []string{"127.0.0.1:31082"}
 	//addrs := []string{"192.168.10.114:31082"}
+	//qezap.EnableRelease()
 	cfg := qezap.NewConfig(addrs, "benchmark")
 	qeLog := qezap.New(cfg, zap.DebugLevel)
 

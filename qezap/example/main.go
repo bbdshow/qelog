@@ -72,7 +72,9 @@ func main() {
 	qelog.DPanic("last message")
 	if err := qelog.Sync(); err != nil {
 		fmt.Println(err)
-
+	}
+	if err := qelog.Close(); err != nil {
+		fmt.Println(err)
 	}
 }
 

@@ -7,24 +7,21 @@ import (
 	"go.uber.org/zap"
 )
 
-func TestLogger_AppendWriter(t *testing.T) {
-	cfg := NewConfig(nil, "")
-	w := New(cfg, zap.DebugLevel)
-	g := 5
-	for g > 0 {
-		g--
-		go func() {
-			for {
-				w.Debug("debug", zap.Int64("nsec", time.Now().UnixNano()))
-			}
-		}()
-	}
-	time.Sleep(50 * time.Millisecond)
+func TestReNew(t *testing.T) {
+	localCfg := NewConfig(nil, "")
+	log := New(localCfg, zap.DebugLevel)
+	go func() {
+		for {
+			log.Info("info")
+		}
+	}()
 
-	w.Config().SetEnableRemote(true).
-		SetModule("example").SetAddr([]string{"127.0.0.1:31082"})
+	time.Sleep(time.Second)
+	remoteCfg := localCfg.SetEnableRemote(true).
+		SetAddr([]string{"127.0.0.1:31082"}).
+		SetModule("example").
+		SetMaxSize(100 << 20)
+	log = New(remoteCfg, zap.DebugLevel)
 
-	w.AppendWriter(NewWriteRemote(w.Config()))
-
-	time.Sleep(5 * time.Second)
+	time.Sleep(time.Minute)
 }
