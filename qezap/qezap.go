@@ -103,7 +103,7 @@ func (mw *oneEncoderMultiWriter) clone() *oneEncoderMultiWriter {
 	}
 }
 
-func New(cfg *Config, level zapcore.Level) *Logger {
+func New(cfg *Config, level zapcore.Level, options ...zap.Option) *Logger {
 	if err := cfg.Validate(); err != nil {
 		panic(err)
 	}
@@ -146,10 +146,15 @@ func New(cfg *Config, level zapcore.Level) *Logger {
 		core = zapcore.NewTee(cores...)
 	}
 
-	log.Logger = zap.New(core,
-		zap.AddCaller(),
-		zap.AddCallerSkip(2),
-		zap.AddStacktrace(zap.DPanicLevel))
+	// 设置默认的 options, caller 设置最前面
+	opts := make([]zap.Option, 0)
+	opts = append(opts, zap.AddCallerSkip(2))
+	opts = append(opts, zap.AddCaller())
+	opts = append(opts, zap.AddStacktrace(zap.DPanicLevel))
+
+	opts = append(opts, options...)
+
+	log.Logger = zap.New(core, options...)
 
 	return log
 }
