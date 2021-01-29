@@ -23,7 +23,7 @@ func init() {
 	cfg.SetMaxAge(30 * 24 * time.Hour)
 	// config 具体设置可查看响应的方法
 
-	qelog = qezap.New(cfg, zap.DebugLevel)
+	qelog = qezap.New(cfg, zap.DebugLevel, zap.AddStacktrace(zap.ErrorLevel))
 	// 测试，等待后台建立好 gRPC 连接
 	time.Sleep(time.Second)
 }

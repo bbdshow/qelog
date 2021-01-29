@@ -154,7 +154,7 @@ func New(cfg *Config, level zapcore.Level, options ...zap.Option) *Logger {
 
 	opts = append(opts, options...)
 
-	log.Logger = zap.New(core, options...)
+	log.Logger = zap.New(core, opts...)
 
 	return log
 }
