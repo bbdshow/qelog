@@ -104,7 +104,12 @@ func (rs *RuleState) Send(v *model.Logging) {
 			logs.Qezap.Error("AlarmSend", zap.String(rs.method.Method(), err.Error()))
 		} else {
 			atomic.StoreInt32(&rs.count, 0)
-			atomic.StoreInt64(&rs.latestSendTime, time.Now().Unix())
+			// 如果间隔时间 <= 0  那么每次都直接发送
+			latestSendTime := int64(0)
+			if rs.rule.RateSec > 0 {
+				latestSendTime = time.Now().Unix()
+			}
+			atomic.StoreInt64(&rs.latestSendTime, latestSendTime)
 		}
 	} else {
 		atomic.AddInt32(&rs.count, 1)
