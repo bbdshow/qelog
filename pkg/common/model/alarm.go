@@ -30,7 +30,6 @@ type AlarmRule struct {
 	RateSec    int64              `bson:"rate_sec"`     // 多少s之内，只发送一次
 	Method     Method             `bson:"method"`       // 支持方式  1-钉钉
 	HookID     string             `bson:"hook_id"`
-	HookURL    string             `bson:"hook_url"` // 发送链接
 	UpdatedAt  time.Time          `bson:"updated_at"`
 }
 
