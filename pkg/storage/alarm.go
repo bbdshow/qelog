@@ -3,11 +3,10 @@ package storage
 import (
 	"context"
 
-	"go.mongodb.org/mongo-driver/bson/primitive"
-	"go.mongodb.org/mongo-driver/mongo/options"
-
 	"github.com/huzhongqing/qelog/pkg/common/model"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 // 当报警规则超过上千的规则，可优化语句

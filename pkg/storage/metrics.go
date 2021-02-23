@@ -4,12 +4,10 @@ import (
 	"context"
 	"time"
 
-	"go.mongodb.org/mongo-driver/mongo"
-
 	"github.com/huzhongqing/qelog/pkg/common/entity"
 	"github.com/huzhongqing/qelog/pkg/common/model"
-
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
