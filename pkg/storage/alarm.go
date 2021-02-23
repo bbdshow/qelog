@@ -43,10 +43,51 @@ func (store *Store) UpdateAlarmRule(ctx context.Context, filter, update bson.M) 
 	return nil
 }
 
+func (store *Store) UpdateManyAlarmRule(ctx context.Context, filter, update bson.M) error {
+	_, err := store.database.Collection(model.CollectionNameAlarmRule).UpdateMany(ctx, filter, update)
+	if err != nil {
+		return handlerError(err)
+	}
+	return nil
+}
+
 func (store *Store) DeleteAlarmRule(ctx context.Context, id primitive.ObjectID) error {
 	filter := bson.M{
 		"_id": id,
 	}
 	_, err := store.database.Collection(model.CollectionNameAlarmRule).DeleteOne(ctx, filter)
+	return handlerError(err)
+}
+
+func (store *Store) FindHookURL(ctx context.Context, filter bson.M, result interface{}, opt *options.FindOptions) (int64, error) {
+	c, err := store.database.FindAndCount(ctx, store.database.Collection(model.CollectionNameHookURL), filter, result, opt)
+	return c, handlerError(err)
+}
+
+func (store *Store) FindOneHookURL(ctx context.Context, filter bson.M, doc *model.HookURL) (bool, error) {
+	return store.database.FindOne(ctx, store.database.Collection(doc.CollectionName()), filter, doc)
+}
+
+func (store *Store) InsertHookURL(ctx context.Context, doc *model.HookURL) error {
+	_, err := store.database.Collection(doc.CollectionName()).InsertOne(ctx, doc)
+	return handlerError(err)
+}
+
+func (store *Store) UpdateHookURL(ctx context.Context, filter, update bson.M) error {
+	uRet, err := store.database.Collection(model.CollectionNameHookURL).UpdateOne(ctx, filter, update)
+	if err != nil {
+		return handlerError(err)
+	}
+	if uRet.MatchedCount <= 0 {
+		return ErrNotMatched
+	}
+	return nil
+}
+
+func (store *Store) DelHookURL(ctx context.Context, id primitive.ObjectID) error {
+	filter := bson.M{
+		"_id": id,
+	}
+	_, err := store.database.Collection(model.CollectionNameHookURL).DeleteOne(ctx, filter)
 	return handlerError(err)
 }

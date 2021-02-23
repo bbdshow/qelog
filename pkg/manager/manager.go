@@ -8,6 +8,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/huzhongqing/qelog/pkg/common/kit"
+
 	"github.com/huzhongqing/qelog/libs/logs"
 	"go.uber.org/zap"
 
@@ -388,7 +390,7 @@ func (srv *Service) FindAlarmRuleList(ctx context.Context, in *entity.FindAlarmR
 			Tag:          v.Tag,
 			RateSec:      v.RateSec,
 			Method:       v.Method.Int32(),
-			HookURL:      v.HookURL,
+			HookID:       v.HookID,
 			UpdatedTsSec: v.UpdatedAt.Unix(),
 		}
 		list = append(list, d)
@@ -399,7 +401,6 @@ func (srv *Service) FindAlarmRuleList(ctx context.Context, in *entity.FindAlarmR
 }
 
 func (srv *Service) CreateAlarmRule(ctx context.Context, in *entity.CreateAlarmRuleReq) error {
-
 	doc := &model.AlarmRule{
 		Enable:     true,
 		ModuleName: in.ModuleName,
@@ -408,7 +409,7 @@ func (srv *Service) CreateAlarmRule(ctx context.Context, in *entity.CreateAlarmR
 		Tag:        in.Tag,
 		RateSec:    in.RateSec,
 		Method:     model.Method(in.Method),
-		HookURL:    in.HookURL,
+		HookID:     in.HookID,
 		UpdatedAt:  time.Now().Local(),
 	}
 
@@ -451,8 +452,8 @@ func (srv *Service) UpdateAlarmRule(ctx context.Context, in *entity.UpdateAlarmR
 	if in.Method != doc.Method.Int32() {
 		fields["method"] = in.Method
 	}
-	if in.HookURL != doc.HookURL {
-		fields["hook_url"] = in.HookURL
+	if in.HookID != doc.HookID {
+		fields["hook_id"] = in.HookID
 	}
 
 	if len(fields) > 0 {
@@ -541,5 +542,169 @@ func (srv *Service) DropLoggingCollection(ctx context.Context, in *entity.DropLo
 	if err != nil {
 		return httputil.ErrSystemException.MergeError(err)
 	}
+	return nil
+}
+
+// hook报警地址管理
+func (srv *Service) FindHookURLList(ctx context.Context, in *entity.FindHookURLListReq, out *entity.ListResp) error {
+	filter := bson.M{}
+	if in.ID != "" {
+		id, err := in.ObjectID()
+		if err != nil {
+			return httputil.ErrArgsInvalid.MergeError(err)
+		}
+		filter["_id"] = id
+	}
+	if in.Name != "" {
+		filter["name"] = in.Name
+	}
+	if in.KeyWord != "" {
+		filter["key_word"] = in.KeyWord
+	}
+	if in.Method > 0 {
+		filter["method"] = in.Method
+	}
+	opt := options.Find()
+	in.SetPage(opt)
+	opt.SetSort(bson.M{"_id": -1})
+	docs := make([]*model.HookURL, 0, in.Limit)
+	c, err := srv.store.FindHookURL(ctx, filter, &docs, opt)
+	if err != nil {
+		return httputil.ErrSystemException.MergeError(err)
+	}
+
+	out.Count = c
+	list := make([]*entity.FindHookURLList, 0, len(docs))
+	for _, v := range docs {
+		d := &entity.FindHookURLList{
+			ID:           v.ID.Hex(),
+			Name:         v.Name,
+			URL:          v.URL,
+			Method:       v.Method.Int32(),
+			KeyWord:      v.KeyWord,
+			UpdatedTsSec: v.UpdatedAt.Unix(),
+		}
+		list = append(list, d)
+	}
+	out.List = list
+
+	return nil
+}
+
+func (srv *Service) CreateHookURL(ctx context.Context, in *entity.CreateHookURLReq) error {
+	doc := &model.HookURL{
+		Name:      in.Name,
+		URL:       in.URL,
+		Method:    model.Method(in.Method),
+		KeyWord:   in.KeyWord,
+		UpdatedAt: time.Now().Local(),
+	}
+
+	if err := srv.store.InsertHookURL(ctx, doc); err != nil {
+		return httputil.ErrSystemException.MergeError(err)
+	}
+	return nil
+}
+
+func (srv *Service) UpdateHookURL(ctx context.Context, in *entity.UpdateHookURLReq) error {
+	id, err := in.ObjectID()
+	if err != nil {
+		return httputil.ErrArgsInvalid.MergeError(err)
+	}
+
+	doc := &model.HookURL{}
+	if ok, err := srv.store.FindOneHookURL(ctx, bson.M{"_id": id}, doc); err != nil {
+		return httputil.ErrSystemException.MergeError(err)
+	} else if !ok {
+		return httputil.ErrNotFound
+	}
+	update := bson.M{}
+	fields := bson.M{}
+	if in.Name != doc.Name {
+		fields["name"] = in.Name
+	}
+
+	if in.Method != doc.Method.Int32() {
+		fields["method"] = in.Method
+	}
+	if in.URL != doc.URL {
+		fields["url"] = in.URL
+	}
+
+	if in.KeyWord != doc.KeyWord {
+		fields["key_word"] = in.KeyWord
+	}
+
+	if len(fields) > 0 {
+		fields["updated_at"] = time.Now().Local()
+		update["$set"] = fields
+	}
+	if len(update) == 0 {
+		return nil
+	}
+
+	filter := bson.M{
+		"_id":        id,
+		"updated_at": doc.UpdatedAt,
+	}
+	// 更新已经引用的
+	if err := srv.store.UpdateManyAlarmRule(ctx, bson.M{"hook_id": id},
+		bson.M{"$set": bson.M{"updated_at": time.Now().Local()}}); err != nil {
+		return err
+	}
+
+	if err := srv.store.UpdateHookURL(ctx, filter, update); err != nil {
+		return httputil.ErrSystemException.MergeError(err)
+	}
+
+	return nil
+}
+
+func (srv *Service) DelHookURL(ctx context.Context, in *entity.DelHookURLReq) error {
+	id, err := in.ObjectID()
+	if err != nil {
+		return httputil.ErrArgsInvalid.MergeError(err)
+	}
+	// 是否存在绑定
+	rules := make([]*model.AlarmRule, 0)
+	opt := options.Find()
+	opt.SetLimit(1)
+	c, err := srv.store.FindAlarmRuleList(ctx, bson.M{"hook_id": in.ID}, &rules, opt)
+	if err != nil {
+		return httputil.ErrSystemException.MergeError(err)
+	}
+	if c != 0 {
+		return httputil.ErrOpException.MergeString("hook URL cited")
+	}
+
+	if err := srv.store.DelHookURL(ctx, id); err != nil {
+		return httputil.ErrSystemException.MergeError(err)
+	}
+	return nil
+}
+
+func (srv *Service) PingHookURL(ctx context.Context, in *entity.PingHookURLReq) error {
+	hook := &model.HookURL{}
+	id, err := in.ObjectID()
+	if err != nil {
+		return httputil.ErrArgsInvalid.MergeError(err)
+	}
+	ok, err := srv.store.FindOneHookURL(ctx, bson.M{"_id": id}, hook)
+	if err != nil {
+		return httputil.ErrSystemException.MergeError(err)
+	}
+	if !ok {
+		return httputil.ErrNotFound
+	}
+
+	switch hook.Method {
+	case model.MethodDingDing:
+		ding := kit.NewDingDingMethod()
+		ding.SetHookURL(hook.URL)
+		if err := ding.Send(ctx, fmt.Sprintf("%s %s Ping hook Success", hook.KeyWord, hook.Name)); err != nil {
+			return httputil.ErrOpException.MergeError(err)
+		}
+	}
+
 	return nil
 }

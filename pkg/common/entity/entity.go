@@ -20,6 +20,13 @@ func (v PageReq) SetPage(opt *options.FindOptions) {
 type ObjectIDReq struct {
 	ID string `json:"id" form:"id" binding:"required,len=24"`
 }
+type OmitObjectIDReq struct {
+	ID string `json:"id" form:"id" binding:"omitempty,len=24"`
+}
+
+func (v OmitObjectIDReq) ObjectID() (primitive.ObjectID, error) {
+	return primitive.ObjectIDFromHex(v.ID)
+}
 
 func (v ObjectIDReq) ObjectID() (primitive.ObjectID, error) {
 	return primitive.ObjectIDFromHex(v.ID)
@@ -155,18 +162,18 @@ type FindAlarmRuleList struct {
 	Tag          string `json:"tag"`
 	RateSec      int64  `json:"rateSec"`
 	Method       int32  `json:"method"`
-	HookURL      string `json:"hookUrl"`
+	HookID       string `json:"hookId"`
 	UpdatedTsSec int64  `json:"updatedTsSec"`
 }
 
 type CreateAlarmRuleReq struct {
 	ModuleName string `json:"moduleName" binding:"required"`
 	Short      string `json:"short" binding:"required"`
-	Level      int32  `json:"level" binding:"min=0,max=8"`
+	Level      int32  `json:"level" binding:"min=-1,max=8"`
 	Tag        string `json:"tag" binding:"omitempty,gte=1,lte=128"`
-	RateSec    int64  `json:"rateSec" binding:"required,min=1"`
+	RateSec    int64  `json:"rateSec" binding:"min=0"`
 	Method     int32  `json:"method" binding:"required,min=1"`
-	HookURL    string `json:"hookUrl" binding:"required"`
+	HookID     string `json:"hookId" binding:"required,len=24"`
 }
 
 type UpdateAlarmRuleReq struct {
@@ -183,4 +190,40 @@ type DeleteAlarmRuleReq struct {
 type DropLoggingCollectionReq struct {
 	Host string `json:"host" binding:"required"`
 	Name string `json:"name" binding:"required"`
+}
+
+type FindHookURLListReq struct {
+	OmitObjectIDReq
+	Name    string `json:"name" form:"name"`
+	KeyWord string `json:"keyWord" form:"keyWord"`
+	Method  int32  `json:"method" form:"method"`
+	PageReq
+}
+type FindHookURLList struct {
+	ID           string `json:"id"`
+	Name         string `json:"name"`
+	URL          string `json:"url"`
+	Method       int32  `json:"method"`
+	KeyWord      string `json:"keyWord"`
+	UpdatedTsSec int64  `json:"updatedTsSec"`
+}
+
+type CreateHookURLReq struct {
+	Name    string `json:"name" binding:"required"`
+	URL     string `json:"url" binding:"required"`
+	Method  int32  `json:"method" binding:"required"`
+	KeyWord string `json:"keyWord" binding:"omitempty,lte=24"`
+}
+
+type UpdateHookURLReq struct {
+	ObjectIDReq
+	CreateHookURLReq
+}
+
+type DelHookURLReq struct {
+	ObjectIDReq
+}
+
+type PingHookURLReq struct {
+	ObjectIDReq
 }

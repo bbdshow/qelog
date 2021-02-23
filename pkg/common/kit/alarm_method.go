@@ -1,4 +1,4 @@
-package alarm
+package kit
 
 import (
 	"bytes"
@@ -9,7 +9,7 @@ import (
 	"net/http"
 )
 
-type Methoder interface {
+type AlarmMethod interface {
 	SetHookURL(string)
 	Send(ctx context.Context, content string) error
 	Method() string

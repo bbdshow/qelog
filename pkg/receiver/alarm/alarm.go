@@ -23,6 +23,7 @@ var (
 type Alarm struct {
 	mutex     sync.RWMutex
 	ruleState map[string]*RuleState
+	hooks     map[string]*model.HookURL
 	modules   map[string]bool
 }
 
@@ -30,6 +31,7 @@ func NewAlarm() *Alarm {
 	a := &Alarm{
 		mutex:     sync.RWMutex{},
 		ruleState: make(map[string]*RuleState, 0),
+		hooks:     make(map[string]*model.HookURL, 0),
 		modules:   make(map[string]bool),
 	}
 	return a
@@ -54,18 +56,22 @@ func (a *Alarm) AlarmIfHitRule(docs []*model.Logging) {
 	}
 }
 
-func (a *Alarm) InitRuleState(rules []*model.AlarmRule) {
+func (a *Alarm) InitRuleState(rules []*model.AlarmRule, hooks []*model.HookURL) {
 	modules := make(map[string]bool)
 	ruleState := make(map[string]*RuleState, len(rules))
+	hooksMap := make(map[string]*model.HookURL, len(hooks))
+	for _, v := range hooks {
+		hooksMap[v.ID.Hex()] = v
+	}
 	for _, rule := range rules {
-		ruleState[rule.Key()] = new(RuleState).UpsertRule(rule)
+		ruleState[rule.Key()] = new(RuleState).UpsertRule(rule, hooksMap[rule.HookID])
 		modules[rule.ModuleName] = true
 	}
 	a.mutex.RLock()
 	for _, state := range a.ruleState {
 		v, ok := ruleState[state.Key()]
 		if ok {
-			ruleState[state.Key()] = state.UpsertRule(v.rule)
+			ruleState[state.Key()] = state.UpsertRule(v.rule, state.hook)
 		}
 	}
 	a.mutex.RUnlock()
@@ -73,15 +79,17 @@ func (a *Alarm) InitRuleState(rules []*model.AlarmRule) {
 	a.mutex.Lock()
 	a.ruleState = ruleState
 	a.modules = modules
+	a.hooks = hooksMap
 	a.mutex.Unlock()
 }
 
 type RuleState struct {
 	key            string
+	hook           *model.HookURL
 	rule           *model.AlarmRule
 	count          int32
 	latestSendTime int64
-	method         Methoder
+	method         kit.AlarmMethod
 }
 
 func (rs *RuleState) Send(v *model.Logging) {
@@ -126,7 +134,7 @@ IP: %s
 短消息: %s
 详情: %s
 频次: %d/%ds
-报警节点: %s`, ContentPrefix, rs.rule.Tag, v.IP, time.Unix(v.TimeSec, 0), v.Level.String(),
+报警节点: %s`, rs.KeyWord(), rs.rule.Tag, v.IP, time.Unix(v.TimeSec, 0), v.Level.String(),
 		v.Short, v.Full, atomic.LoadInt32(&rs.count), rs.rule.RateSec, machineIP)
 }
 
@@ -136,16 +144,25 @@ func (rs *RuleState) Key() string {
 func (rs *RuleState) Rule() *model.AlarmRule {
 	return rs.rule
 }
+func (rs *RuleState) KeyWord() string {
+	if rs.hook != nil && rs.hook.KeyWord != "" {
+		return rs.hook.KeyWord
+	}
+	return ContentPrefix
+}
 
-func (rs *RuleState) UpsertRule(new *model.AlarmRule) *RuleState {
+func (rs *RuleState) UpsertRule(new *model.AlarmRule, hook *model.HookURL) *RuleState {
 	if rs.rule == nil || rs.rule.UpdatedAt != new.UpdatedAt {
 		rs.rule = new
+		rs.hook = hook
 		rs.key = new.Key()
 		rs.latestSendTime = 0
 		switch rs.rule.Method {
 		case model.MethodDingDing:
-			rs.method = NewDingDingMethod()
-			rs.method.SetHookURL(rs.rule.HookURL)
+			rs.method = kit.NewDingDingMethod()
+			if rs.hook != nil {
+				rs.method.SetHookURL(rs.hook.URL)
+			}
 		}
 	}
 	return rs

@@ -39,6 +39,7 @@ func HandlerLogging(enable bool) gin.HandlerFunc {
 		// 记录请求
 		ip := c.ClientIP()
 		path := c.Request.URL.Path
+		method := c.Request.Method
 		uri := c.Request.URL.RequestURI()
 		request := ""
 		if c.Request.Body != nil {
@@ -54,7 +55,11 @@ func HandlerLogging(enable bool) gin.HandlerFunc {
 			request = body.String()
 			c.Request.Body = ioutil.NopCloser(body)
 		}
-		logs.Qezap.InfoWithCtx(c.Request.Context(), "Request", zap.String("reqBody", request), logs.Qezap.ConditionOne(ip), logs.Qezap.ConditionTwo(path), logs.Qezap.ConditionThree(uri))
+		logs.Qezap.InfoWithCtx(c.Request.Context(), "Request", zap.String("reqBody", request),
+			zap.String("path", path),
+			logs.Qezap.ConditionOne(method),
+			logs.Qezap.ConditionTwo(uri),
+			logs.Qezap.ConditionThree(ip))
 
 		lrw := &loggingRespWriter{body: bytes.NewBuffer([]byte{}), ResponseWriter: c.Writer}
 		c.Writer = lrw
@@ -116,7 +121,7 @@ func GinLogger(skipPaths []string) gin.HandlerFunc {
 				param.Latency = param.Latency - param.Latency%time.Second
 			}
 
-			logs.Qezap.Debug("[GIN]", zap.String("latency", param.Latency.String()),
+			logs.Qezap.Debug("GIN", zap.String("latency", param.Latency.String()),
 				zap.String("method", param.Method),
 				zap.String("path", param.Path),
 				zap.String("error", param.ErrorMessage),

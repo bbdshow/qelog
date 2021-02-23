@@ -80,6 +80,11 @@ func (srv *HTTPService) route(handler *gin.Engine) {
 		alarmRule.POST("", srv.CreateAlarmRule)
 		alarmRule.PUT("", srv.UpdateAlarmRule)
 		alarmRule.DELETE("", srv.DeleteAlarmRule)
+		alarmRule.GET("/hook/list", srv.FindHookURLList)
+		alarmRule.POST("/hook", srv.CreateHookURL)
+		alarmRule.PUT("/hook", srv.UpdateHookURL)
+		alarmRule.DELETE("/hook", srv.DelHookURL)
+		alarmRule.GET("/hook/ping", srv.PingHookURL)
 	}
 
 	// 获取 db 信息
@@ -341,6 +346,73 @@ func (srv *HTTPService) DropLoggingCollection(c *gin.Context) {
 		return
 	}
 	if err := srv.manager.DropLoggingCollection(c.Request.Context(), in); err != nil {
+		httputil.RespError(c, err)
+		return
+	}
+	httputil.RespSuccess(c)
+}
+
+func (srv *HTTPService) FindHookURLList(c *gin.Context) {
+	in := &entity.FindHookURLListReq{}
+	if err := c.ShouldBind(in); err != nil {
+		httputil.RespError(c, httputil.ErrArgsInvalid.MergeError(err))
+		return
+	}
+	out := &entity.ListResp{}
+
+	if err := srv.manager.FindHookURLList(c.Request.Context(), in, out); err != nil {
+		httputil.RespError(c, err)
+		return
+	}
+	httputil.RespData(c, http.StatusOK, out)
+}
+
+func (srv *HTTPService) CreateHookURL(c *gin.Context) {
+	in := &entity.CreateHookURLReq{}
+	if err := c.ShouldBind(in); err != nil {
+		httputil.RespError(c, httputil.ErrArgsInvalid.MergeError(err))
+		return
+	}
+	if err := srv.manager.CreateHookURL(c.Request.Context(), in); err != nil {
+		httputil.RespError(c, err)
+		return
+	}
+	httputil.RespSuccess(c)
+}
+
+func (srv *HTTPService) UpdateHookURL(c *gin.Context) {
+	in := &entity.UpdateHookURLReq{}
+	if err := c.ShouldBind(in); err != nil {
+		httputil.RespError(c, httputil.ErrArgsInvalid.MergeError(err))
+		return
+	}
+	if err := srv.manager.UpdateHookURL(c.Request.Context(), in); err != nil {
+		httputil.RespError(c, err)
+		return
+	}
+	httputil.RespSuccess(c)
+}
+
+func (srv *HTTPService) DelHookURL(c *gin.Context) {
+	in := &entity.DelHookURLReq{}
+	if err := c.ShouldBind(in); err != nil {
+		httputil.RespError(c, httputil.ErrArgsInvalid.MergeError(err))
+		return
+	}
+	if err := srv.manager.DelHookURL(c.Request.Context(), in); err != nil {
+		httputil.RespError(c, err)
+		return
+	}
+	httputil.RespSuccess(c)
+}
+
+func (srv *HTTPService) PingHookURL(c *gin.Context) {
+	in := &entity.PingHookURLReq{}
+	if err := c.ShouldBind(in); err != nil {
+		httputil.RespError(c, httputil.ErrArgsInvalid.MergeError(err))
+		return
+	}
+	if err := srv.manager.PingHookURL(c.Request.Context(), in); err != nil {
 		httputil.RespError(c, err)
 		return
 	}

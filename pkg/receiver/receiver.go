@@ -7,6 +7,8 @@ import (
 	"sync"
 	"time"
 
+	"go.mongodb.org/mongo-driver/bson"
+
 	"github.com/huzhongqing/qelog/api"
 	"github.com/huzhongqing/qelog/api/receiverpb"
 	"github.com/huzhongqing/qelog/libs/logs"
@@ -337,7 +339,11 @@ func (srv *Service) syncAlarmRule() error {
 	if err != nil {
 		return err
 	}
-	srv.alarm.InitRuleState(docs)
+	hooks := make([]*model.HookURL, 0)
+	if _, err := srv.store.FindHookURL(ctx, bson.M{}, &hooks, nil); err != nil {
+		return err
+	}
+	srv.alarm.InitRuleState(docs, hooks)
 	return nil
 }
 

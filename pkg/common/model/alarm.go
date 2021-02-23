@@ -13,6 +13,7 @@ import (
 
 const (
 	CollectionNameAlarmRule = "alarm_rule"
+	CollectionNameHookURL   = "hook_url"
 )
 
 const (
@@ -28,7 +29,8 @@ type AlarmRule struct {
 	Tag        string             `bson:"tag"`          // 报警Tag
 	RateSec    int64              `bson:"rate_sec"`     // 多少s之内，只发送一次
 	Method     Method             `bson:"method"`       // 支持方式  1-钉钉
-	HookURL    string             `bson:"hook_url"`     // 发送链接
+	HookID     string             `bson:"hook_id"`
+	HookURL    string             `bson:"hook_url"` // 发送链接
 	UpdatedAt  time.Time          `bson:"updated_at"`
 }
 
@@ -44,6 +46,19 @@ func (am AlarmRule) Key() string {
 	buf.WriteString("_")
 	buf.WriteString(am.Level.String())
 	return buf.String()
+}
+
+type HookURL struct {
+	ID        primitive.ObjectID `bson:"_id,omitempty"`
+	Name      string             `bson:"name"`
+	URL       string             `bson:"url"`
+	Method    Method             `bson:"method"`
+	KeyWord   string             `bson:"key_word"`
+	UpdatedAt time.Time          `bson:"updated_at"`
+}
+
+func (HookURL) CollectionName() string {
+	return CollectionNameHookURL
 }
 
 type Method int32
@@ -72,6 +87,15 @@ func AlarmRuleIndexMany() []mongo.Index {
 			},
 			{
 				Key: "level", Value: 1,
+			},
+		},
+		Unique:     true,
+		Background: true,
+	}, {
+		Collection: CollectionNameHookURL,
+		Keys: bson.D{
+			{
+				Key: "name", Value: 1,
 			},
 		},
 		Unique:     true,
