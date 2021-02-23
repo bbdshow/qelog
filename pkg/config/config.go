@@ -3,18 +3,18 @@ package config
 import (
 	"errors"
 
-	"github.com/huzhongqing/qelog/libs/defval"
+	"github.com/huzhongqing/qelog/infra/defval"
 
 	"github.com/BurntSushi/toml"
 )
 
-var GlobalConfig *Config
+var Global *Config
 
 func SetGlobalConfig(cfg *Config) {
 	if cfg == nil {
 		panic("config required")
 	}
-	GlobalConfig = cfg
+	Global = cfg
 }
 
 type Config struct {
@@ -84,16 +84,26 @@ func (c *Config) Validate() error {
 	return nil
 }
 
+func (c *Config) Print() Config {
+	cfg := *c
+	// 脱敏
+	if c.Release() {
+		cfg.Main = MongoDB{}
+		cfg.Sharding = []MongoDBIndex{}
+	}
+	return cfg
+}
+
 type MongoDBIndex struct {
 	// 这个库需负责的存储序列
-	Index    []int32
-	DataBase string
-	URI      string
+	Index    []int32 `default:"1,2,3,4,5,6,7,8"`
+	DataBase string  `default:"sharding_qelog_db"`
+	URI      string  `default:"mongodb://127.0.0.1:27017/admin"`
 }
 
 type MongoDB struct {
-	DataBase string
-	URI      string
+	DataBase string `default:"qelog"`
+	URI      string `default:"mongodb://127.0.0.1:27017/admin"`
 }
 
 type AdminUser struct {
@@ -102,41 +112,7 @@ type AdminUser struct {
 }
 
 type Logging struct {
-	Module string
-	Addr   []string
-}
-
-func MockDevConfig() *Config {
-	return &Config{
-		Env:              "dev",
-		ReceiverAddr:     "0.0.0.0:31081",
-		ReceiverGRPCAddr: ":31082",
-		ManagerAddr:      "0.0.0.0:31080",
-
-		AuthEnable:    false,
-		AlarmEnable:   true,
-		MetricsEnable: true,
-
-		MaxShardingIndex: 8,
-
-		Main: MongoDB{
-			DataBase: "qelog",
-			URI:      "mongodb://127.0.0.1:27017/admin",
-		},
-		Sharding: []MongoDBIndex{
-			{
-				Index:    []int32{1, 2, 3, 4},
-				DataBase: "qelog",
-				URI:      "mongodb://127.0.0.1:27017/admin",
-			},
-			{
-				Index:    []int32{5, 6, 7, 8},
-				DataBase: "qelog2",
-				URI:      "mongodb://127.0.0.1:27017/admin",
-			}},
-		AdminUser: AdminUser{
-			Username: "admin",
-			Password: "111111",
-		},
-	}
+	Module   string   `default:"qelog"`
+	Addr     []string `default:"127.0.0.1:31082"`
+	Filename string   `default:"./log/logger.log"`
 }

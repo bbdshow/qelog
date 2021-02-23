@@ -9,7 +9,7 @@ import (
 
 	"github.com/huzhongqing/qelog/pkg/storage"
 
-	"github.com/huzhongqing/qelog/libs/mongo"
+	"github.com/huzhongqing/qelog/infra/mongo"
 	"github.com/huzhongqing/qelog/pkg/config"
 )
 

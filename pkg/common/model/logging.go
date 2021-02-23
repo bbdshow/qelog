@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/huzhongqing/qelog/libs/mongo"
+	"github.com/huzhongqing/qelog/infra/mongo"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )

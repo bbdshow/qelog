@@ -7,12 +7,11 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/huzhongqing/qelog/infra/alert"
+	"github.com/huzhongqing/qelog/infra/logs"
 	"github.com/huzhongqing/qelog/pkg/common/kit"
-
-	"github.com/huzhongqing/qelog/libs/logs"
-	"go.uber.org/zap"
-
 	"github.com/huzhongqing/qelog/pkg/common/model"
+	"go.uber.org/zap"
 )
 
 var (
@@ -89,7 +88,7 @@ type RuleState struct {
 	rule           *model.AlarmRule
 	count          int32
 	latestSendTime int64
-	method         kit.AlarmMethod
+	method         alert.Alarm
 }
 
 func (rs *RuleState) Send(v *model.Logging) {
@@ -159,7 +158,7 @@ func (rs *RuleState) UpsertRule(new *model.AlarmRule, hook *model.HookURL) *Rule
 		rs.latestSendTime = 0
 		switch rs.rule.Method {
 		case model.MethodDingDing:
-			rs.method = kit.NewDingDingMethod()
+			rs.method = alert.NewDingDing()
 			if rs.hook != nil {
 				rs.method.SetHookURL(rs.hook.URL)
 			}

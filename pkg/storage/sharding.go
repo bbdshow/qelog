@@ -2,13 +2,23 @@ package storage
 
 import (
 	"context"
+	"fmt"
 	"time"
 
+	"github.com/huzhongqing/qelog/infra/mongo"
 	"github.com/huzhongqing/qelog/pkg/common/model"
-
-	"github.com/huzhongqing/qelog/libs/mongo"
 	"github.com/huzhongqing/qelog/pkg/config"
 )
+
+var ShardingDB *Sharding
+
+func SetGlobalShardingDB(db *Sharding) error {
+	if db == nil {
+		return fmt.Errorf("db nil pointer")
+	}
+	ShardingDB = db
+	return nil
+}
 
 // 存储分片，把不同的 dbIndex 存储到归类的 DB 实例中，以达到存储横向扩展的目的
 // Note: 分片实例一旦设定。如果更改将涉及到数据迁移， 增加不影响

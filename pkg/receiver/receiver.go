@@ -11,10 +11,10 @@ import (
 
 	"github.com/huzhongqing/qelog/api"
 	"github.com/huzhongqing/qelog/api/receiverpb"
-	"github.com/huzhongqing/qelog/libs/logs"
+	"github.com/huzhongqing/qelog/infra/httputil"
+	"github.com/huzhongqing/qelog/infra/logs"
 	"github.com/huzhongqing/qelog/pkg/common/model"
 	"github.com/huzhongqing/qelog/pkg/config"
-	"github.com/huzhongqing/qelog/pkg/httputil"
 	"github.com/huzhongqing/qelog/pkg/receiver/alarm"
 	"github.com/huzhongqing/qelog/pkg/receiver/metrics"
 	"github.com/huzhongqing/qelog/pkg/storage"
@@ -52,7 +52,7 @@ func NewService(sharding *storage.Sharding) *Service {
 
 	go srv.intervalSyncModule()
 
-	if config.GlobalConfig.AlarmEnable {
+	if config.Global.AlarmEnable {
 		srv.alarm = alarm.NewAlarm()
 
 		if err := srv.syncAlarmRule(); err != nil {
@@ -61,7 +61,7 @@ func NewService(sharding *storage.Sharding) *Service {
 		go srv.intervalSyncAlarmRule()
 	}
 
-	if config.GlobalConfig.MetricsEnable {
+	if config.Global.MetricsEnable {
 		srv.metrics = metrics.NewMetrics(srv.store)
 		metrics.SetIncIntervalSec(10)
 	}
@@ -83,12 +83,12 @@ func (srv *Service) InsertJSONPacket(ctx context.Context, ip string, in *api.JSO
 
 	docs := srv.decodeJSONPacket(ip, in)
 
-	if config.GlobalConfig.AlarmEnable && srv.alarm.ModuleIsEnable(in.Module) {
+	if config.Global.AlarmEnable && srv.alarm.ModuleIsEnable(in.Module) {
 		// 异步执行报警逻辑
 		go srv.alarm.AlarmIfHitRule(docs)
 	}
 
-	if config.GlobalConfig.MetricsEnable {
+	if config.Global.MetricsEnable {
 		go srv.metrics.Statistics(in.Module, ip, docs)
 	}
 
@@ -109,12 +109,12 @@ func (srv *Service) InsertPacket(ctx context.Context, ip string, in *receiverpb.
 
 	docs := srv.decodePacket(ip, in)
 
-	if config.GlobalConfig.AlarmEnable && srv.alarm.ModuleIsEnable(in.Module) {
+	if config.Global.AlarmEnable && srv.alarm.ModuleIsEnable(in.Module) {
 		// 异步执行报警逻辑
 		go srv.alarm.AlarmIfHitRule(docs)
 	}
 
-	if config.GlobalConfig.MetricsEnable {
+	if config.Global.MetricsEnable {
 		go srv.metrics.Statistics(in.Module, ip, docs)
 	}
 

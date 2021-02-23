@@ -4,51 +4,37 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/huzhongqing/qelog/libs/logs"
-	"go.uber.org/zap"
-
-	"github.com/huzhongqing/qelog/libs/jwt"
-
+	"github.com/huzhongqing/qelog/infra/httputil"
 	"github.com/huzhongqing/qelog/pkg/config"
-
-	"github.com/huzhongqing/qelog/pkg/common/entity"
-
-	"github.com/huzhongqing/qelog/pkg/httputil"
-
-	"github.com/huzhongqing/qelog/pkg/storage"
 
 	"github.com/gin-gonic/gin"
 )
 
 type HTTPService struct {
-	server  *http.Server
-	manager *Service
+	server *http.Server
 }
 
-func NewHTTPService(sharding *storage.Sharding) *HTTPService {
-	srv := &HTTPService{
-		manager: NewService(sharding),
-	}
+func NewHTTPService() *HTTPService {
+	srv := &HTTPService{}
 	return srv
 }
 
 func (srv *HTTPService) Run(addr string) error {
 	handler := gin.New()
-	if config.GlobalConfig.Release() {
+	if config.Global.Release() {
 		gin.SetMode(gin.ReleaseMode)
-		gin.DefaultErrorWriter = logs.Qezap.Clone().SetWritePrefix("[GIN-Recovery]").SetWriteLevel(zap.ErrorLevel)
-		handler.Use(httputil.GinLogger([]string{"/"}), gin.Recovery())
+		handler.Use(httputil.GinLogger([]string{"/health"}), httputil.GinRecoveryWithLogger())
 	} else {
-		handler.Use(gin.Logger(), gin.Recovery())
+		handler.Use(gin.Logger(), httputil.GinRecoveryWithLogger())
 	}
 
-	srv.route(handler)
+	RegisterRouter(handler)
 
 	srv.server = &http.Server{
 		Addr:         addr,
 		Handler:      handler,
-		ReadTimeout:  90 * time.Second,
-		WriteTimeout: 120 * time.Second,
+		ReadTimeout:  120 * time.Second,
+		WriteTimeout: 90 * time.Second,
 	}
 	return srv.server.ListenAndServe()
 }
@@ -60,361 +46,58 @@ func (srv *HTTPService) Close() error {
 	return nil
 }
 
-func (srv *HTTPService) route(handler *gin.Engine) {
-	handler.HEAD("/", func(c *gin.Context) { c.Status(200) })
+func RegisterRouter(route *gin.Engine, midd ...gin.HandlerFunc) {
+	h := NewHandler()
 
-	handler.POST("/v1/login", srv.Login)
+	route.HEAD("/", func(c *gin.Context) { c.Status(200) })
 
-	v1 := handler.Group("/v1", AuthVerify(config.GlobalConfig.AuthEnable), httputil.HandlerRegisterTraceID())
+	route.POST("/v1/login", h.Login)
+
+	v1 := route.Group("/v1", httputil.AuthAdmin(config.Global.AuthEnable), httputil.HandlerRegisterTraceID())
 	module := v1.Group("/module", httputil.HandlerLogging(true))
 	{
-		module.GET("/list", srv.FindModuleList)
-		module.POST("", srv.CreateModule)
-		module.PUT("", srv.UpdateModule)
-		module.DELETE("", srv.DeleteModule)
+		module.GET("/list", h.FindModuleList)
+		module.POST("", h.CreateModule)
+		module.PUT("", h.UpdateModule)
+		module.DELETE("", h.DeleteModule)
 	}
 	// 配置报警规则
-	alarmRule := v1.Group("/alarm-rule", httputil.HandlerLogging(true))
+	alarmRule := v1.Group("/alarmRule", httputil.HandlerLogging(true))
 	{
-		alarmRule.GET("/list", srv.FindAlarmRuleList)
-		alarmRule.POST("", srv.CreateAlarmRule)
-		alarmRule.PUT("", srv.UpdateAlarmRule)
-		alarmRule.DELETE("", srv.DeleteAlarmRule)
-		alarmRule.GET("/hook/list", srv.FindHookURLList)
-		alarmRule.POST("/hook", srv.CreateHookURL)
-		alarmRule.PUT("/hook", srv.UpdateHookURL)
-		alarmRule.DELETE("/hook", srv.DelHookURL)
-		alarmRule.GET("/hook/ping", srv.PingHookURL)
+		alarmRule.GET("/list", h.FindAlarmRuleList)
+		alarmRule.POST("", h.CreateAlarmRule)
+		alarmRule.PUT("", h.UpdateAlarmRule)
+		alarmRule.DELETE("", h.DeleteAlarmRule)
+		alarmRule.GET("/hook/list", h.FindHookURLList)
+		alarmRule.POST("/hook", h.CreateHookURL)
+		alarmRule.PUT("/hook", h.UpdateHookURL)
+		alarmRule.DELETE("/hook", h.DelHookURL)
+		alarmRule.GET("/hook/ping", h.PingHookURL)
 	}
 
 	// 获取 db 信息
-	v1.GET("/db-index", srv.GetDBIndex)
+	v1.GET("/dbIndex", h.GetDBIndex)
 
 	// 搜索日志
 	logging := v1.Group("/logging")
 	{
-		logging.POST("/list", srv.FindLoggingList)
-		logging.POST("/traceid", srv.FindLoggingByTraceID)
-		logging.DELETE("/collection", srv.DropLoggingCollection)
+		logging.POST("/list", h.FindLoggingList)
+		logging.POST("/traceid", h.FindLoggingByTraceID)
+		logging.DELETE("/collection", h.DropLoggingCollection)
 	}
 
 	// 报表
 	metrics := v1.Group("/metrics")
 	{
-		metrics.GET("/dbstats", srv.MetricsDBStats)
-		metrics.GET("/collstats", srv.MetricsCollStats)
-		metrics.GET("/module/list", srv.MetricsModuleList)
-		metrics.GET("/module/trend", srv.MetricsModuleTrend)
+		metrics.GET("/dbStats", h.MetricsDBStats)
+		metrics.GET("/collStats", h.MetricsCollStats)
+		metrics.GET("/module/list", h.MetricsModuleList)
+		metrics.GET("/module/trend", h.MetricsModuleTrend)
 	}
 
 	// 单页应用
-	handler.StaticFile("/favicon.ico", "web/favicon.ico")
-	handler.Static("/static", "web/static")
-	handler.Static("/admin", "web")
-}
+	route.StaticFile("/favicon.ico", "web/favicon.ico")
+	route.Static("/static", "web/static")
+	route.Static("/admin", "web")
 
-func (srv *HTTPService) Login(c *gin.Context) {
-	in := &entity.LoginReq{}
-	if err := c.ShouldBind(in); err != nil {
-		httputil.RespError(c, httputil.ErrArgsInvalid.MergeError(err))
-		return
-	}
-	if in.Username != config.GlobalConfig.AdminUser.Username ||
-		in.Password != config.GlobalConfig.AdminUser.Password {
-		httputil.RespError(c, httputil.NewError(httputil.ErrCodeUnauthorized, "账户或密码错误"))
-		return
-	}
-
-	claims := jwt.NewCustomClaims(nil, 72*time.Hour)
-	token, err := jwt.GenerateJWTToken(claims)
-	if err != nil {
-		httputil.RespError(c, httputil.NewError(httputil.ErrCodeUnauthorized, "系统异常，联系管理员"))
-		return
-	}
-
-	out := &entity.LoginResp{
-		Token: token,
-	}
-	httputil.RespData(c, http.StatusOK, out)
-}
-
-func (srv *HTTPService) FindModuleList(c *gin.Context) {
-	in := &entity.FindModuleListReq{}
-	if err := c.ShouldBind(in); err != nil {
-		httputil.RespError(c, httputil.ErrArgsInvalid.MergeError(err))
-		return
-	}
-
-	out := &entity.ListResp{}
-	if err := srv.manager.FindModuleList(c.Request.Context(), in, out); err != nil {
-		httputil.RespError(c, err)
-		return
-	}
-	httputil.RespData(c, http.StatusOK, out)
-}
-
-func (srv *HTTPService) CreateModule(c *gin.Context) {
-	in := &entity.CreateModuleReq{}
-	if err := c.ShouldBind(in); err != nil {
-		httputil.RespError(c, httputil.ErrArgsInvalid.MergeError(err))
-		return
-	}
-	if err := srv.manager.CreateModule(c.Request.Context(), in); err != nil {
-		httputil.RespError(c, err)
-		return
-	}
-	httputil.RespSuccess(c)
-}
-
-func (srv *HTTPService) UpdateModule(c *gin.Context) {
-	in := &entity.UpdateModuleReq{}
-	if err := c.ShouldBind(in); err != nil {
-		httputil.RespError(c, httputil.ErrArgsInvalid.MergeError(err))
-		return
-	}
-	if err := srv.manager.UpdateModule(c.Request.Context(), in); err != nil {
-		httputil.RespError(c, err)
-		return
-	}
-	httputil.RespSuccess(c)
-}
-
-func (srv *HTTPService) DeleteModule(c *gin.Context) {
-	in := &entity.DeleteModuleReq{}
-	if err := c.ShouldBind(in); err != nil {
-		httputil.RespError(c, httputil.ErrArgsInvalid.MergeError(err))
-		return
-	}
-	if err := srv.manager.DeleteModule(c.Request.Context(), in); err != nil {
-		httputil.RespError(c, err)
-		return
-	}
-	httputil.RespSuccess(c)
-}
-
-func (srv *HTTPService) FindLoggingList(c *gin.Context) {
-	in := &entity.FindLoggingListReq{}
-	if err := c.ShouldBind(in); err != nil {
-		httputil.RespError(c, httputil.ErrArgsInvalid.MergeError(err))
-		return
-	}
-	out := &entity.ListResp{}
-	if err := srv.manager.FindLoggingList(c.Request.Context(), in, out); err != nil {
-		httputil.RespError(c, err)
-		return
-	}
-
-	httputil.RespData(c, http.StatusOK, out)
-}
-
-func (srv *HTTPService) FindLoggingByTraceID(c *gin.Context) {
-	in := &entity.FindLoggingByTraceIDReq{}
-	if err := c.ShouldBind(in); err != nil {
-		httputil.RespError(c, httputil.ErrArgsInvalid.MergeError(err))
-		return
-	}
-	out := &entity.ListResp{}
-	if err := srv.manager.FindLoggingByTraceID(c.Request.Context(), in, out); err != nil {
-		httputil.RespError(c, err)
-		return
-	}
-
-	httputil.RespData(c, http.StatusOK, out)
-}
-
-func (srv *HTTPService) GetDBIndex(c *gin.Context) {
-	out := &entity.GetDBIndexResp{}
-	if err := srv.manager.GetDBIndex(c.Request.Context(), out); err != nil {
-		httputil.RespError(c, err)
-		return
-	}
-	httputil.RespData(c, http.StatusOK, out)
-}
-
-func (srv *HTTPService) FindAlarmRuleList(c *gin.Context) {
-	in := &entity.FindAlarmRuleListReq{}
-	if err := c.ShouldBind(in); err != nil {
-		httputil.RespError(c, httputil.ErrArgsInvalid.MergeError(err))
-		return
-	}
-
-	out := &entity.ListResp{}
-	if err := srv.manager.FindAlarmRuleList(c.Request.Context(), in, out); err != nil {
-		httputil.RespError(c, err)
-		return
-	}
-	httputil.RespData(c, http.StatusOK, out)
-}
-
-func (srv *HTTPService) CreateAlarmRule(c *gin.Context) {
-	in := &entity.CreateAlarmRuleReq{}
-	if err := c.ShouldBind(in); err != nil {
-		httputil.RespError(c, httputil.ErrArgsInvalid.MergeError(err))
-		return
-	}
-	if err := srv.manager.CreateAlarmRule(c.Request.Context(), in); err != nil {
-		httputil.RespError(c, err)
-		return
-	}
-	httputil.RespSuccess(c)
-}
-
-func (srv *HTTPService) UpdateAlarmRule(c *gin.Context) {
-	in := &entity.UpdateAlarmRuleReq{}
-	if err := c.ShouldBind(in); err != nil {
-		httputil.RespError(c, httputil.ErrArgsInvalid.MergeError(err))
-		return
-	}
-	if err := srv.manager.UpdateAlarmRule(c.Request.Context(), in); err != nil {
-		httputil.RespError(c, err)
-		return
-	}
-	httputil.RespSuccess(c)
-}
-
-func (srv *HTTPService) DeleteAlarmRule(c *gin.Context) {
-	in := &entity.DeleteAlarmRuleReq{}
-	if err := c.ShouldBind(in); err != nil {
-		httputil.RespError(c, httputil.ErrArgsInvalid.MergeError(err))
-		return
-	}
-	if err := srv.manager.DeleteAlarmRule(c.Request.Context(), in); err != nil {
-		httputil.RespError(c, err)
-		return
-	}
-	httputil.RespSuccess(c)
-}
-
-func (srv *HTTPService) MetricsDBStats(c *gin.Context) {
-	out := &entity.ListResp{}
-	if err := srv.manager.MetricsDBStats(c.Request.Context(), out); err != nil {
-		httputil.RespError(c, err)
-		return
-	}
-	httputil.RespData(c, http.StatusOK, out)
-}
-
-func (srv *HTTPService) MetricsCollStats(c *gin.Context) {
-	in := &entity.MetricsCollStatsReq{}
-	if err := c.ShouldBind(in); err != nil {
-		httputil.RespError(c, httputil.ErrArgsInvalid.MergeError(err))
-		return
-	}
-
-	out := &entity.ListResp{}
-	if err := srv.manager.MetricsCollStats(c.Request.Context(), in, out); err != nil {
-		httputil.RespError(c, err)
-		return
-	}
-	httputil.RespData(c, http.StatusOK, out)
-}
-
-func (srv *HTTPService) MetricsModuleList(c *gin.Context) {
-	in := &entity.MetricsModuleListReq{}
-	if err := c.ShouldBind(in); err != nil {
-		httputil.RespError(c, httputil.ErrArgsInvalid.MergeError(err))
-		return
-	}
-	out := &entity.ListResp{}
-
-	if err := srv.manager.MetricsModuleList(c.Request.Context(), in, out); err != nil {
-		httputil.RespError(c, err)
-		return
-	}
-	httputil.RespData(c, http.StatusOK, out)
-}
-
-func (srv *HTTPService) MetricsModuleTrend(c *gin.Context) {
-	in := &entity.MetricsModuleTrendReq{}
-	if err := c.ShouldBind(in); err != nil {
-		httputil.RespError(c, httputil.ErrArgsInvalid.MergeError(err))
-		return
-	}
-	out := &entity.MetricsModuleTrendResp{}
-
-	if err := srv.manager.MetricsModuleTrend(c.Request.Context(), in, out); err != nil {
-		httputil.RespError(c, err)
-		return
-	}
-	httputil.RespData(c, http.StatusOK, out)
-}
-
-func (srv *HTTPService) DropLoggingCollection(c *gin.Context) {
-	in := &entity.DropLoggingCollectionReq{}
-	if err := c.ShouldBind(in); err != nil {
-		httputil.RespError(c, httputil.ErrArgsInvalid.MergeError(err))
-		return
-	}
-	if err := srv.manager.DropLoggingCollection(c.Request.Context(), in); err != nil {
-		httputil.RespError(c, err)
-		return
-	}
-	httputil.RespSuccess(c)
-}
-
-func (srv *HTTPService) FindHookURLList(c *gin.Context) {
-	in := &entity.FindHookURLListReq{}
-	if err := c.ShouldBind(in); err != nil {
-		httputil.RespError(c, httputil.ErrArgsInvalid.MergeError(err))
-		return
-	}
-	out := &entity.ListResp{}
-
-	if err := srv.manager.FindHookURLList(c.Request.Context(), in, out); err != nil {
-		httputil.RespError(c, err)
-		return
-	}
-	httputil.RespData(c, http.StatusOK, out)
-}
-
-func (srv *HTTPService) CreateHookURL(c *gin.Context) {
-	in := &entity.CreateHookURLReq{}
-	if err := c.ShouldBind(in); err != nil {
-		httputil.RespError(c, httputil.ErrArgsInvalid.MergeError(err))
-		return
-	}
-	if err := srv.manager.CreateHookURL(c.Request.Context(), in); err != nil {
-		httputil.RespError(c, err)
-		return
-	}
-	httputil.RespSuccess(c)
-}
-
-func (srv *HTTPService) UpdateHookURL(c *gin.Context) {
-	in := &entity.UpdateHookURLReq{}
-	if err := c.ShouldBind(in); err != nil {
-		httputil.RespError(c, httputil.ErrArgsInvalid.MergeError(err))
-		return
-	}
-	if err := srv.manager.UpdateHookURL(c.Request.Context(), in); err != nil {
-		httputil.RespError(c, err)
-		return
-	}
-	httputil.RespSuccess(c)
-}
-
-func (srv *HTTPService) DelHookURL(c *gin.Context) {
-	in := &entity.DelHookURLReq{}
-	if err := c.ShouldBind(in); err != nil {
-		httputil.RespError(c, httputil.ErrArgsInvalid.MergeError(err))
-		return
-	}
-	if err := srv.manager.DelHookURL(c.Request.Context(), in); err != nil {
-		httputil.RespError(c, err)
-		return
-	}
-	httputil.RespSuccess(c)
-}
-
-func (srv *HTTPService) PingHookURL(c *gin.Context) {
-	in := &entity.PingHookURLReq{}
-	if err := c.ShouldBind(in); err != nil {
-		httputil.RespError(c, httputil.ErrArgsInvalid.MergeError(err))
-		return
-	}
-	if err := srv.manager.PingHookURL(c.Request.Context(), in); err != nil {
-		httputil.RespError(c, err)
-		return
-	}
-	httputil.RespSuccess(c)
 }

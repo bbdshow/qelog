@@ -4,13 +4,11 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/huzhongqing/qelog/libs/logs"
-	"go.uber.org/zap"
+	"github.com/huzhongqing/qelog/api"
 
 	"github.com/gin-gonic/gin"
-	"github.com/huzhongqing/qelog/api"
+	"github.com/huzhongqing/qelog/infra/httputil"
 	"github.com/huzhongqing/qelog/pkg/config"
-	"github.com/huzhongqing/qelog/pkg/httputil"
 	"github.com/huzhongqing/qelog/pkg/storage"
 )
 
@@ -19,29 +17,27 @@ type HTTPService struct {
 	receiver *Service
 }
 
-func NewHTTPService(sharding *storage.Sharding) *HTTPService {
+func NewHTTPService() *HTTPService {
 	srv := &HTTPService{
-		receiver: NewService(sharding),
+		receiver: NewService(storage.ShardingDB),
 	}
 	return srv
 }
 
 func (srv *HTTPService) Run(addr string) error {
 	handler := gin.New()
-	if config.GlobalConfig.Release() {
+	if config.Global.Release() {
 		gin.SetMode(gin.ReleaseMode)
-		gin.DefaultErrorWriter = logs.Qezap.Clone().SetWritePrefix("[GIN-Recovery]").SetWriteLevel(zap.ErrorLevel)
-		handler.Use(httputil.GinLogger([]string{"/"}), gin.Recovery())
-	} else {
-		handler.Use(gin.Logger(), gin.Recovery())
 	}
+	handler.Use(gin.Recovery())
 
-	srv.route(handler)
+	handler.HEAD("/", func(c *gin.Context) { c.Status(200) })
+	handler.POST("/v1/receiver/packet", srv.ReceivePacket)
 
 	srv.server = &http.Server{
 		Addr:         addr,
 		Handler:      handler,
-		ReadTimeout:  90 * time.Second,
+		ReadTimeout:  120 * time.Second,
 		WriteTimeout: 120 * time.Second,
 	}
 
@@ -56,11 +52,6 @@ func (srv *HTTPService) Close() error {
 	return nil
 }
 
-func (srv *HTTPService) route(handler *gin.Engine) {
-	handler.HEAD("/", func(c *gin.Context) { c.Status(200) })
-	handler.POST("/v1/receiver/packet", srv.ReceivePacket)
-}
-
 func (srv *HTTPService) ReceivePacket(c *gin.Context) {
 	in := &api.JSONPacket{}
 	if err := c.ShouldBind(in); err != nil {
@@ -69,7 +60,7 @@ func (srv *HTTPService) ReceivePacket(c *gin.Context) {
 	}
 
 	if err := srv.receiver.InsertJSONPacket(c.Request.Context(), c.ClientIP(), in); err != nil {
-		httputil.RespStatusCodeWithError(c, http.StatusBadRequest, err)
+		httputil.RespDataWithError(c, http.StatusBadRequest, nil, err)
 		return
 	}
 	httputil.RespSuccess(c)

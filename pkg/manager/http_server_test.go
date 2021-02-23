@@ -105,7 +105,6 @@ func TestCreateAlarmRule(t *testing.T) {
 		Tag:        "[test]",
 		RateSec:    30,
 		Method:     1,
-		HookURL:    "http://",
 	}
 
 	resp, err := http.Post(fmt.Sprintf("%s/v1/alarm-rule", host), ContentTypeJSON, JSONReader(in))
@@ -126,7 +125,6 @@ func TestUpdateAlarmRule(t *testing.T) {
 			Tag:        "[test_ding]",
 			RateSec:    30,
 			Method:     1,
-			HookURL:    "https://oapi.dingtalk.com/robot/send?access_token=00eca7373a1472267cc2a2a75ebab1ac476d3be37f3b7397d1f605b8d8e277b4",
 		},
 	}
 	cli := &http.Client{}

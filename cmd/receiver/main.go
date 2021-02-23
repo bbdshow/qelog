@@ -10,7 +10,7 @@ import (
 
 	"go.uber.org/zap"
 
-	"github.com/huzhongqing/qelog/libs/logs"
+	"github.com/huzhongqing/qelog/infra/logs"
 
 	"github.com/huzhongqing/qelog/pkg/common/model"
 	"github.com/huzhongqing/qelog/pkg/storage"
@@ -48,9 +48,14 @@ func main() {
 	config.SetGlobalConfig(cfg)
 
 	logs.InitQezap(nil, "")
+
 	sharding, err := storage.NewSharding(cfg.Main, cfg.Sharding, cfg.MaxShardingIndex)
 	if err != nil {
-		logs.Qezap.Fatal("mongo connect failed", zap.Error(err))
+		logs.Qezap.Fatal("mongo connect failed ", zap.Error(err))
+	}
+
+	if err := storage.SetGlobalShardingDB(sharding); err != nil {
+		logs.Qezap.Fatal("SetGlobalShardingDB", zap.Error(err))
 	}
 
 	if !cfg.Release() {
@@ -64,18 +69,16 @@ func main() {
 		}
 	}
 
-	httpSrv := receiver.NewHTTPService(sharding)
+	httpSrv := receiver.NewHTTPService()
 
 	go func() {
-		logs.Qezap.Info("http server listen ", zap.String("addr", cfg.ReceiverAddr))
 		if err := httpSrv.Run(cfg.ReceiverAddr); err != nil {
 			logs.Qezap.Fatal("http server listen failed", zap.Error(err))
 		}
 	}()
 
-	grpcSrv := receiver.NewGRPCService(sharding)
+	grpcSrv := receiver.NewGRPCService()
 	go func() {
-		logs.Qezap.Info("gRPC server listen ", zap.String("addr", cfg.ReceiverGRPCAddr))
 		if err := grpcSrv.Run(cfg.ReceiverGRPCAddr); err != nil {
 			logs.Qezap.Fatal("gRPC server listen failed", zap.Error(err))
 		}

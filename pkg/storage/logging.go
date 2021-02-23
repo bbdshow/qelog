@@ -3,11 +3,10 @@ package storage
 import (
 	"context"
 
-	"github.com/huzhongqing/qelog/libs/logs"
-	"go.uber.org/zap"
-
+	"github.com/huzhongqing/qelog/infra/logs"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo/options"
+	"go.uber.org/zap"
 )
 
 func (store *Store) InsertManyLogging(ctx context.Context, name string, docs []interface{}) error {

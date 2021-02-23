@@ -2,14 +2,15 @@ package httputil
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"net/http"
 	"net/url"
 
-	apitypes "github.com/huzhongqing/qelog/api/types"
+	"go.uber.org/zap"
 
 	"github.com/gin-gonic/gin"
+	apitypes "github.com/huzhongqing/qelog/api/types"
+	"github.com/huzhongqing/qelog/infra/logs"
 )
 
 func WithTraceID(c *gin.Context) {
@@ -62,33 +63,24 @@ func NewDataResp(code int, msg string, data interface{}) *DataResp {
 
 func RespError(c *gin.Context, err error) {
 	// 请求算成功，取业务Code码
-	RespStatusCodeWithError(c, http.StatusOK, err)
+	RespDataWithError(c, http.StatusOK, nil, err)
 }
 
 type ResponseErr struct {
-	Method   string     `json:"method"`
-	Path     string     `json:"path"`
-	Form     url.Values `json:"form"`
-	PostForm url.Values `json:"postForm"`
-	Func     string     `json:"func"`
-	Error    string     `json:"error"`
+	Method   string
+	Path     string
+	Form     url.Values
+	PostForm url.Values
+	Func     string
+	Error    string
 }
 
-func (err ResponseErr) Marshal() ([]byte, error) {
-	return json.Marshal(err)
-}
-
-func (err ResponseErr) String() string {
-	byt, _ := err.Marshal()
-	return string(byt)
-}
-
-func RespStatusCodeWithError(c *gin.Context, statusCode int, err error) {
+func RespDataWithError(c *gin.Context, httpCode int, data interface{}, err error) {
 	if err == nil {
 		err = errors.New("nil error")
 	}
 	code := CodeFailed
-	message := ""
+	message := err.Error()
 	if e, ok := err.(Error); ok {
 		// 如果是自定义错误，就重写 code
 		code = e.Code
@@ -97,21 +89,23 @@ func RespStatusCodeWithError(c *gin.Context, statusCode int, err error) {
 	switch code {
 	case ErrCodeSystemException:
 		// 拦截响应中间件已经打日志
-		//if gin.DefaultErrorWriter != nil {
-		//	respErr := ResponseErr{
-		//		Method:   c.Request.Method,
-		//		Path:     c.Request.URL.RequestURI(),
-		//		Form:     c.Request.Form,
-		//		PostForm: c.Request.PostForm,
-		//		Func:     c.HandlerName(),
-		//		Error:    err.Error(),
-		//	}
-		//	byt, _ := respErr.Marshal()
-		//	_, _ = gin.DefaultErrorWriter.Write(byt)
-		//}
+		respErr := &ResponseErr{
+			Method:   c.Request.Method,
+			Path:     c.Request.URL.RequestURI(),
+			Form:     c.Request.Form,
+			PostForm: c.Request.PostForm,
+			Func:     c.HandlerName(),
+			Error:    message,
+		}
+		logs.Qezap.ErrorWithCtx(c.Request.Context(), "系统错误", zap.Any("resp", respErr), logs.Qezap.ConditionOne(respErr.Path))
+		// 屏蔽掉系统错误
+		message = CodeMessage[ErrCodeSystemException]
 	}
-
-	c.JSON(statusCode, NewBaseResp(code, message).WriteTraceID(c))
+	out := DataResp{
+		BaseResp: NewBaseResp(code, message).WriteTraceID(c),
+		Data:     data,
+	}
+	c.JSON(httpCode, out)
 }
 
 func RespData(c *gin.Context, httpCode int, ret interface{}) {

@@ -5,7 +5,7 @@ import (
 
 	"go.mongodb.org/mongo-driver/bson"
 
-	"github.com/huzhongqing/qelog/libs/mongo"
+	"github.com/huzhongqing/qelog/infra/mongo"
 
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )

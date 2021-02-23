@@ -5,10 +5,12 @@ import (
 	"encoding/json"
 	"io/ioutil"
 	"strconv"
+	"strings"
 	"time"
 
+	"github.com/huzhongqing/qelog/infra/logs"
+
 	"github.com/gin-gonic/gin"
-	"github.com/huzhongqing/qelog/libs/logs"
 	"go.uber.org/zap"
 )
 
@@ -29,7 +31,7 @@ func (lrw *loggingRespWriter) Write(b []byte) (int, error) {
 	return lrw.ResponseWriter.Write(b)
 }
 
-func HandlerLogging(enable bool) gin.HandlerFunc {
+func HandlerLogging(enable bool, skipPrefixPaths ...string) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		if !enable {
 			c.Next()
@@ -37,10 +39,17 @@ func HandlerLogging(enable bool) gin.HandlerFunc {
 		}
 
 		// 记录请求
-		ip := c.ClientIP()
 		path := c.Request.URL.Path
-		method := c.Request.Method
+		for _, v := range skipPrefixPaths {
+			if strings.HasPrefix(path, v) {
+				c.Next()
+				return
+			}
+		}
+		ip := c.ClientIP()
 		uri := c.Request.URL.RequestURI()
+		method := c.Request.Method
+		headers := c.Request.Header.Clone()
 		request := ""
 		if c.Request.Body != nil {
 			b, err := ioutil.ReadAll(c.Request.Body)
@@ -55,7 +64,7 @@ func HandlerLogging(enable bool) gin.HandlerFunc {
 			request = body.String()
 			c.Request.Body = ioutil.NopCloser(body)
 		}
-		logs.Qezap.InfoWithCtx(c.Request.Context(), "Request", zap.String("reqBody", request),
+		logs.Qezap.InfoWithCtx(c.Request.Context(), "Request", zap.Any("headers", headers), zap.String("reqBody", request),
 			zap.String("path", path),
 			logs.Qezap.ConditionOne(method),
 			logs.Qezap.ConditionTwo(uri),
@@ -67,7 +76,8 @@ func HandlerLogging(enable bool) gin.HandlerFunc {
 		c.Next()
 		baseResp := BaseResp{}
 		if err := json.Unmarshal(lrw.body.Bytes(), &baseResp); err != nil || baseResp.Code != 0 {
-			logs.Qezap.ErrorWithCtx(c.Request.Context(), "Response", zap.String("respBody", lrw.body.String()), logs.Qezap.ConditionOne(ip), logs.Qezap.ConditionTwo(path), logs.Qezap.ConditionThree(uri))
+			logs.Qezap.ErrorWithCtx(c.Request.Context(), "Response", zap.String("respBody", lrw.body.String()),
+				logs.Qezap.ConditionOne(path), logs.Qezap.ConditionTwo(uri), logs.Qezap.ConditionThree(ip))
 		}
 	}
 }
@@ -130,4 +140,12 @@ func GinLogger(skipPaths []string) gin.HandlerFunc {
 				logs.Qezap.ConditionThree(param.ClientIP))
 		}
 	}
+}
+
+func GinRecoveryWithLogger() gin.HandlerFunc {
+	if logs.Qezap != nil {
+		w := logs.Qezap.Clone().SetWriteLevel(zap.ErrorLevel).SetWritePrefix("GIN-ERROR")
+		return gin.RecoveryWithWriter(w)
+	}
+	return gin.Recovery()
 }

@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/huzhongqing/qelog/libs/mongo"
+	"github.com/huzhongqing/qelog/infra/mongo"
 )
 
 var (

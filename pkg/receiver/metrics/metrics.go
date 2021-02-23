@@ -8,16 +8,12 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/huzhongqing/qelog/libs/logs"
-	"go.uber.org/zap"
-
-	"go.mongodb.org/mongo-driver/mongo/options"
-
-	"go.mongodb.org/mongo-driver/bson"
-
-	"github.com/huzhongqing/qelog/pkg/storage"
-
+	"github.com/huzhongqing/qelog/infra/logs"
 	"github.com/huzhongqing/qelog/pkg/common/model"
+	"github.com/huzhongqing/qelog/pkg/storage"
+	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/mongo/options"
+	"go.uber.org/zap"
 )
 
 // 粗略的统计日志的写入情况， 因为当receiver异常推出的时候，可能不能及时入库

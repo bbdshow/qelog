@@ -1,4 +1,4 @@
-package kit
+package alert
 
 import (
 	"bytes"
@@ -9,28 +9,28 @@ import (
 	"net/http"
 )
 
-type AlarmMethod interface {
+type Alarm interface {
 	SetHookURL(string)
 	Send(ctx context.Context, content string) error
 	Method() string
 }
 
-type DingDingMethod struct {
+type DingDing struct {
 	hookURL string
 	client  *http.Client
 }
 
-func NewDingDingMethod() *DingDingMethod {
-	return &DingDingMethod{
+func NewDingDing() *DingDing {
+	return &DingDing{
 		client: &http.Client{},
 	}
 }
 
-func (ddm *DingDingMethod) SetHookURL(url string) {
-	ddm.hookURL = url
+func (dd *DingDing) SetHookURL(url string) {
+	dd.hookURL = url
 }
 
-func (ddm *DingDingMethod) Send(ctx context.Context, content string) error {
+func (dd *DingDing) Send(ctx context.Context, content string) error {
 	reqBody := struct {
 		MsgType string `json:"msgtype"`
 		Text    struct {
@@ -48,12 +48,12 @@ func (ddm *DingDingMethod) Send(ctx context.Context, content string) error {
 		return err
 	}
 
-	req, err := http.NewRequestWithContext(ctx, "POST", ddm.hookURL, bytes.NewReader(byt))
+	req, err := http.NewRequestWithContext(ctx, "POST", dd.hookURL, bytes.NewReader(byt))
 	if err != nil {
 		return err
 	}
 	req.Header.Set("Content-Type", "application/json")
-	resp, err := ddm.client.Do(req)
+	resp, err := dd.client.Do(req)
 	if err != nil {
 		return err
 	}
@@ -67,11 +67,11 @@ func (ddm *DingDingMethod) Send(ctx context.Context, content string) error {
 	}
 
 	if respBody.ErrCode != 0 {
-		return fmt.Errorf("%s method error %d %s", ddm.Method(), respBody.ErrCode, respBody.ErrMsg)
+		return fmt.Errorf("%s method error %d %s", dd.Method(), respBody.ErrCode, respBody.ErrMsg)
 	}
 	return nil
 }
 
-func (ddm *DingDingMethod) Method() string {
+func (dd *DingDing) Method() string {
 	return "DingDing"
 }

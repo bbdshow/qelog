@@ -5,14 +5,11 @@ import (
 	"net"
 
 	"github.com/huzhongqing/qelog/api/receiverpb"
-
+	"github.com/huzhongqing/qelog/infra/httputil"
 	"github.com/huzhongqing/qelog/pkg/common/kit"
-	"google.golang.org/grpc/peer"
-
-	"github.com/huzhongqing/qelog/pkg/httputil"
-
 	"github.com/huzhongqing/qelog/pkg/storage"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/peer"
 )
 
 type GRPCService struct {
@@ -20,10 +17,10 @@ type GRPCService struct {
 	receiver *Service
 }
 
-func NewGRPCService(sharding *storage.Sharding) *GRPCService {
+func NewGRPCService() *GRPCService {
 	srv := &GRPCService{
 		server:   nil,
-		receiver: NewService(sharding),
+		receiver: NewService(storage.ShardingDB),
 	}
 
 	return srv
@@ -39,8 +36,6 @@ func (srv *GRPCService) Run(addr string) error {
 	srv.server = server
 
 	receiverpb.RegisterReceiverServer(srv.server, srv)
-
-	//reflection.Register(srv.server)
 
 	if err := server.Serve(listen); err != nil {
 		return err

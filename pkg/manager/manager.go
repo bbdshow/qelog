@@ -8,12 +8,13 @@ import (
 	"strings"
 	"time"
 
-	"github.com/huzhongqing/qelog/pkg/common/kit"
+	"github.com/huzhongqing/qelog/infra/alert"
+	"github.com/huzhongqing/qelog/infra/httputil"
 
-	"github.com/huzhongqing/qelog/libs/logs"
+	"github.com/huzhongqing/qelog/infra/logs"
 	"go.uber.org/zap"
 
-	"github.com/huzhongqing/qelog/libs/mongo"
+	"github.com/huzhongqing/qelog/infra/mongo"
 
 	apitypes "github.com/huzhongqing/qelog/api/types"
 
@@ -21,8 +22,6 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 
 	"go.mongodb.org/mongo-driver/bson"
-
-	"github.com/huzhongqing/qelog/pkg/httputil"
 
 	"github.com/huzhongqing/qelog/pkg/common/entity"
 	"github.com/huzhongqing/qelog/pkg/common/model"
@@ -699,7 +698,7 @@ func (srv *Service) PingHookURL(ctx context.Context, in *entity.PingHookURLReq) 
 
 	switch hook.Method {
 	case model.MethodDingDing:
-		ding := kit.NewDingDingMethod()
+		ding := alert.NewDingDing()
 		ding.SetHookURL(hook.URL)
 		if err := ding.Send(ctx, fmt.Sprintf("%s %s Ping hook Success", hook.KeyWord, hook.Name)); err != nil {
 			return httputil.ErrOpException.MergeError(err)

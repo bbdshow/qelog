@@ -8,7 +8,9 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/huzhongqing/qelog/libs/logs"
+	"go.uber.org/multierr"
+
+	"github.com/huzhongqing/qelog/infra/logs"
 	"go.uber.org/zap"
 
 	"github.com/huzhongqing/qelog/pkg/common/model"
@@ -53,6 +55,10 @@ func main() {
 		logs.Qezap.Fatal("mongo connect failed ", zap.Error(err))
 	}
 
+	if err := storage.SetGlobalShardingDB(sharding); err != nil {
+		logs.Qezap.Fatal("SetGlobalShardingDB", zap.Error(err))
+	}
+
 	if !cfg.Release() {
 		db, err := sharding.MainStore()
 		if err != nil {
@@ -65,7 +71,7 @@ func main() {
 		}
 	}
 
-	httpSrv := manager.NewHTTPService(sharding)
+	httpSrv := manager.NewHTTPService()
 
 	go func() {
 		logs.Qezap.Info("http server listen", zap.String("addr", cfg.ManagerAddr))
@@ -74,9 +80,18 @@ func main() {
 		}
 	}()
 
+	logs.Qezap.Info("init", zap.Any("config", cfg.Print()), zap.Strings("buildInfo", []string{
+		goVersion,
+		gitHash,
+		buildTime,
+	}))
+
 	signalAccept()
 
-	_ = sharding.Disconnect
+	sharding.Disconnect()
+	err = multierr.Combine(err, httpSrv.Close())
+	logs.Qezap.Debug("exit", zap.Error(err))
+	_ = logs.Qezap.Close()
 }
 
 func signalAccept() {

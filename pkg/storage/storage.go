@@ -4,8 +4,8 @@ import (
 	"context"
 	"errors"
 
-	"github.com/huzhongqing/qelog/libs/logs"
-	"github.com/huzhongqing/qelog/libs/mongo"
+	"github.com/huzhongqing/qelog/infra/logs"
+	"github.com/huzhongqing/qelog/infra/mongo"
 	"go.uber.org/zap"
 )
 

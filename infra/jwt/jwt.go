@@ -17,10 +17,6 @@ var (
 	ErrCustomClaimsInValid = errors.New("custom claims invalid")
 )
 
-func SetSigningKey(key string) {
-	SigningKey = []byte(key)
-}
-
 func SetIssuer(issuer string) {
 	Issuer = issuer
 }
@@ -29,17 +25,15 @@ func SetSigningMethod(method jwt.SigningMethod) {
 	SigningMethod = method
 }
 
-type Token struct {
-	jwt.Token
-}
-
 type CustomClaims struct {
+	SigningKey []byte
 	CustomData interface{} `json:"custom_data"`
 	jwt.StandardClaims
 }
 
-func NewCustomClaims(data interface{}, ttl time.Duration) *CustomClaims {
-	return &CustomClaims{
+func NewCustomClaims(data interface{}, ttl time.Duration, signingKey ...string) *CustomClaims {
+	cc := &CustomClaims{
+		SigningKey: SigningKey,
 		CustomData: data,
 		StandardClaims: jwt.StandardClaims{
 			NotBefore: time.Now().Add(-1 * time.Second).Unix(),
@@ -47,27 +41,42 @@ func NewCustomClaims(data interface{}, ttl time.Duration) *CustomClaims {
 			Issuer:    Issuer,
 		},
 	}
+	if len(signingKey) > 0 {
+		cc.SigningKey = []byte(signingKey[0])
+	}
+	return cc
 }
 
 func GenerateJWTToken(customClaims *CustomClaims) (string, error) {
 	token := jwt.NewWithClaims(SigningMethod, customClaims)
-	str, err := token.SignedString(SigningKey)
+	if customClaims.SigningKey == nil {
+		customClaims.SigningKey = SigningKey
+	}
+	str, err := token.SignedString(customClaims.SigningKey)
 	if err != nil {
 		return "", err
 	}
 	return str, nil
 }
 
-func VerifyJWTToken(tokenStr string) (bool, error) {
-	token, err := parseJWTToken(tokenStr)
+func VerifyJWTToken(tokenStr string, signingKey ...string) (bool, error) {
+	key := SigningKey
+	if len(signingKey) > 0 {
+		key = []byte(signingKey[0])
+	}
+	token, err := parseJWTToken(tokenStr, key)
 	if err != nil {
 		return false, err
 	}
 	return token.Valid, nil
 }
 
-func GetCustomData(tokenStr string, data interface{}) error {
-	token, err := parseJWTToken(tokenStr)
+func GetCustomData(tokenStr string, data interface{}, signingKey ...string) error {
+	key := SigningKey
+	if len(signingKey) > 0 {
+		key = []byte(signingKey[0])
+	}
+	token, err := parseJWTToken(tokenStr, key)
 	if err != nil {
 		return err
 	}
@@ -90,12 +99,12 @@ func GetCustomData(tokenStr string, data interface{}) error {
 	}
 }
 
-func parseJWTToken(tokenStr string) (*jwt.Token, error) {
+func parseJWTToken(tokenStr string, signingKey []byte) (*jwt.Token, error) {
 	token, err := jwt.ParseWithClaims(tokenStr, &CustomClaims{}, func(t *jwt.Token) (interface{}, error) {
 		if t.Method.Alg() != SigningMethod.Alg() {
 			return nil, fmt.Errorf("unexpected signing method: %v", t.Method.Alg())
 		}
-		return SigningKey, nil
+		return signingKey, nil
 	})
 	if err != nil {
 		return nil, err
