@@ -119,6 +119,5 @@ func (lcn LoggingCollectionName) ScopeNames(index int, beginUnix, endUnix int64)
 			names = append(names, name)
 		}
 	}
-	fmt.Println("集合", names)
 	return names
 }

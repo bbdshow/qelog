@@ -238,7 +238,7 @@ func (srv *Service) FindLoggingList(ctx context.Context, in *entity.FindLoggingL
 		if len(names) >= 2 {
 			format := "2006-01-02 15:04:05"
 			suggestTime, _ := srv.lcn.SuggestTime(names[0])
-			return httputil.NewError(httputil.ErrCodeOpException, fmt.Sprintf("查询时间已跨表, %d 天为一个查询区间, 建议查询时间: %s - %s 或者 %s = %s",
+			return httputil.NewError(httputil.ErrCodeOpException, fmt.Sprintf("查询时间已跨表, %d 天为一个查询区间, 建议查询时间: %s -- %s 或者 %s -- %s",
 				config.Global.DaySpan, b.Format(format), suggestTime.Format(format), suggestTime.Format(format), e.Format(format)))
 		}
 		if len(names) > 0 {
