@@ -27,6 +27,12 @@ type Config struct {
 	AlarmEnable   bool `default:"true"`
 	MetricsEnable bool `default:"true"`
 
+	// 不同的分片索引，可能存储在不同的数据库与集合里
+	// 索引决定集合的命名
+	MaxShardingIndex int32 `default:"8"`
+	// 分片时间(天)跨度
+	DaySpan int `default:"7"`
+
 	AdminUser AdminUser
 	// 日志配置，管理端产生的日志，也可以存储到远端
 	Logging Logging
@@ -35,12 +41,6 @@ type Config struct {
 	Main MongoDB
 	// 存储日志内容的实例
 	Sharding []MongoDBIndex
-
-	// 不同的分片索引，可能存储在不同的数据库与集合里
-	// 索引决定集合的命名
-	MaxShardingIndex int32 `default:"8"`
-	// 分片时间(天)跨度
-	DaySpan int `default:"7"`
 }
 
 func InitConfig(filename string) *Config {

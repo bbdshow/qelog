@@ -6,6 +6,7 @@ authEnable = false
 alarmEnable = true
 metricsEnable = true
 maxShardingIndex = 8
+daySpan = 7
 
 [main]
 database = "qelog"

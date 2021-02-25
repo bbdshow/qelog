@@ -5,6 +5,8 @@ managerAddr = "0.0.0.0:31080"
 authEnable = true
 alarmEnable = true
 metricsEnable = true
+maxShardingIndex = 8
+daySpan = 7
 
 [main]
 database = "qelog"
