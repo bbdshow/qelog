@@ -69,14 +69,14 @@ func initState(moduleName string) *state {
 	}
 }
 
-func (s *state) IncNumber(n int32) {
+func (s *state) IncrNumber(n int32) {
 	atomic.AddInt32(&s.Number, n)
 }
-func (s *state) IncSize(n int32) {
+func (s *state) IncrSize(n int32) {
 	atomic.AddInt32(&s.Size, n)
 }
 
-func (s *state) IncLevel(lvl model.Level, n int32) {
+func (s *state) IncrLevel(lvl model.Level, n int32) {
 	v, ok := s.Levels[lvl]
 	if ok {
 		s.Levels[lvl] = v + n
@@ -85,7 +85,7 @@ func (s *state) IncLevel(lvl model.Level, n int32) {
 	s.Levels[lvl] = n
 }
 
-func (s *state) IncIP(ip string, n int32) {
+func (s *state) IncrIP(ip string, n int32) {
 	if ip == "" {
 		return
 	}
@@ -105,7 +105,7 @@ func (s *state) IncIP(ip string, n int32) {
 	s.IPs[ip] = n
 }
 
-func (s *state) IsInc() bool {
+func (s *state) isIncr() bool {
 	// 超过一定时间，就可以写入了
 	return time.Now().Unix()-s.section >= incIntervalSec
 }
@@ -118,27 +118,28 @@ func (m *Metrics) Statistics(moduleName, ip string, docs []*model.Logging) {
 
 	m.mutex.Lock()
 	defer m.mutex.Unlock()
+
 	state, ok := m.states[moduleName]
 	if !ok {
 		state = initState(moduleName)
 		m.states[moduleName] = state
-	} else if state.IsInc() {
+	} else if state.isIncr() {
 		// 先检查是否超过周期
-		m.inc(state)
+		m.incr(state)
 		state = initState(moduleName)
 		m.states[moduleName] = state
 	}
 
-	state.IncNumber(num)
-	state.IncIP(ip, num)
+	state.IncrNumber(num)
+	state.IncrIP(ip, num)
 	for _, v := range docs {
-		state.IncSize(int32(v.Size))
-		state.IncLevel(v.Level, 1)
+		state.IncrSize(int32(v.Size))
+		state.IncrLevel(v.Level, 1)
 	}
 }
 
 // ignore update inc error
-func (m *Metrics) inc(s *state) {
+func (m *Metrics) incr(s *state) {
 	filter := bson.M{
 		"module_name":  s.ModuleName,
 		"created_date": s.date,
@@ -178,8 +179,9 @@ loop:
 
 func (m *Metrics) Sync() {
 	m.mutex.Lock()
-	for _, state := range m.states {
-		m.inc(state)
+	for moduleName, state := range m.states {
+		m.incr(state)
+		m.states[moduleName] = initState(moduleName)
 	}
 	m.mutex.Unlock()
 }

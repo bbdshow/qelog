@@ -65,7 +65,7 @@ func NewService(sharding *storage.Sharding) *Service {
 
 	if config.Global.MetricsEnable {
 		srv.metrics = metrics.NewMetrics(srv.store)
-		metrics.SetIncIntervalSec(10)
+		metrics.SetIncIntervalSec(30)
 	}
 
 	return srv
