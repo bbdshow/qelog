@@ -29,6 +29,7 @@ func JSONOutput(resp *http.Response, t *testing.T) {
 	byt, _ := ioutil.ReadAll(resp.Body)
 	val := make(map[string]interface{})
 	if err := json.Unmarshal(byt, &val); err != nil {
+		fmt.Println(string(byt))
 		t.Fatal(err)
 	}
 	fmt.Println(string(byt))
@@ -59,13 +60,17 @@ func TestFindLoggingList(t *testing.T) {
 		DBIndex:        1,
 		ModuleName:     "example",
 		Short:          "",
-		Level:          -1,
+		Level:          0,
 		IP:             "",
 		ConditionOne:   "",
 		ConditionTwo:   "",
 		ConditionThree: "",
-		TimeReq:        entity.TimeReq{BeginTsSec: time.Now().Add(-48 * time.Hour).Unix()},
-		PageReq:        entity.PageReq{},
+		TimeReq:        entity.TimeReq{BeginTsSec: time.Now().AddDate(0, 0, -13).Unix()},
+		PageReq: entity.PageReq{
+			Page:  1,
+			Limit: 20,
+		},
+		ForceCollectionName: "logging_1_202102_03",
 	}
 	resp, err := http.Post(fmt.Sprintf("%s/v1/logging/list", host), ContentTypeJSON, JSONReader(in))
 	if err != nil {
@@ -77,16 +82,15 @@ func TestFindLoggingList(t *testing.T) {
 
 func TestFindLoggingByTraceID(t *testing.T) {
 	in := entity.FindLoggingByTraceIDReq{
-		DBIndex:    7,
+		DBIndex:    1,
 		ModuleName: "example",
-		TraceID:    "1610201334536326300111441",
+		TraceID:    "1666dcdd45c308587d4933fe",
 	}
 	resp, err := http.Post(fmt.Sprintf("%s/v1/logging/traceid", host), ContentTypeJSON, JSONReader(in))
 	if err != nil {
 		t.Fatal(err)
 	}
 	JSONOutput(resp, t)
-
 }
 
 func TestGetDBIndex(t *testing.T) {

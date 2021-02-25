@@ -123,6 +123,8 @@ type FindLoggingListReq struct {
 	ConditionOne   string `json:"conditionOne"`
 	ConditionTwo   string `json:"conditionTwo"`
 	ConditionThree string `json:"conditionThree"`
+	// 指定查询集合
+	ForceCollectionName string `json:"forceCollectionName"`
 	TimeReq
 	PageReq
 }
@@ -131,6 +133,8 @@ type FindLoggingByTraceIDReq struct {
 	DBIndex    int32  `json:"dbIndex" binding:"required,min=0"`
 	ModuleName string `json:"moduleName" binding:"required"`
 	TraceID    string `json:"traceId" binding:"required,gte=19"`
+	// 指定查询集合
+	ForceCollectionName string `json:"forceCollectionName"`
 }
 
 type FindLoggingList struct {

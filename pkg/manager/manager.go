@@ -4,6 +4,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/huzhongqing/qelog/pkg/config"
+	"github.com/huzhongqing/qelog/pkg/types"
 	"sort"
 	"strings"
 	"time"
@@ -31,6 +33,7 @@ import (
 type Service struct {
 	store    *storage.Store
 	sharding *storage.Sharding
+	lcn      types.LoggingCollectionName
 }
 
 func NewService(sharding *storage.Sharding) *Service {
@@ -41,6 +44,7 @@ func NewService(sharding *storage.Sharding) *Service {
 	srv := &Service{
 		store:    mainStore,
 		sharding: sharding,
+		lcn:      types.NewLoggingCollectionName(config.Global.DaySpan),
 	}
 	return srv
 }
@@ -156,16 +160,17 @@ func (srv *Service) FindLoggingByTraceID(ctx context.Context, in *entity.FindLog
 	tidTime := tid.Time()
 	b := tidTime.Add(-2 * time.Hour)
 	e := tidTime.Add(2 * time.Hour)
-	collections := make([]string, 0, 2)
-	beginColl := model.LoggingCollectionName(in.DBIndex, b.Unix())
-	collections = append(collections, beginColl)
-	endColl := model.LoggingCollectionName(in.DBIndex, e.Unix())
-	if endColl != beginColl {
-		collections = append(collections, endColl)
+	collectionNames := make([]string, 0, 2)
+	if in.ForceCollectionName != "" {
+		if strings.HasPrefix(in.ForceCollectionName, "logging") {
+			collectionNames = append(collectionNames, in.ForceCollectionName)
+		}
+	} else {
+		collectionNames = append(collectionNames, srv.lcn.ScopeNames(int(in.DBIndex), b.Unix(), e.Unix())...)
 	}
 	count := int64(0)
 	list := make([]*entity.FindLoggingList, 0)
-	for _, coll := range collections {
+	for _, coll := range collectionNames {
 		filter := bson.M{
 			"m":  in.ModuleName,
 			"ti": in.TraceID,
@@ -219,13 +224,26 @@ func (srv *Service) FindLoggingByTraceID(ctx context.Context, in *entity.FindLog
 func (srv *Service) FindLoggingList(ctx context.Context, in *entity.FindLoggingListReq, out *entity.ListResp) error {
 
 	s := time.Now()
-
 	// 如果没有传入时间，则默认设置一个间隔时间
 	b, e := in.InitTimeSection(time.Hour)
 	// 计算查询时间应该在哪个分片
-	collectionName := model.LoggingCollectionName(in.DBIndex, b.Unix())
-	if collectionName != model.LoggingCollectionName(in.DBIndex, e.Unix()) {
-		return httputil.ErrArgsInvalid.MergeError(fmt.Errorf("查询时间跨度不能超过时间分片设置 (分片粒度 %s)", model.LoggingShardingTime))
+	collectionName := ""
+	if in.ForceCollectionName != "" {
+		if strings.HasPrefix(in.ForceCollectionName, "logging") {
+			collectionName = in.ForceCollectionName
+		}
+	} else {
+		// 计算集合名
+		names := srv.lcn.ScopeNames(int(in.DBIndex), b.Unix(), e.Unix())
+		if len(names) >= 2 {
+			format := "2006-01-02 15:04:05"
+			suggestTime, _ := srv.lcn.SuggestTime(names[0])
+			return httputil.NewError(httputil.ErrCodeOpException, fmt.Sprintf("查询时间已跨表, %d 天为一个查询区间, 建议查询时间: %s - %s 或者 %s = %s",
+				config.Global.DaySpan, b.Format(format), suggestTime.Format(format), suggestTime.Format(format), e.Format(format)))
+		}
+		if len(names) > 0 {
+			collectionName = names[0]
+		}
 	}
 
 	filter := bson.M{
@@ -262,17 +280,16 @@ func (srv *Service) FindLoggingList(ctx context.Context, in *entity.FindLoggingL
 	findOpt := options.Find()
 	in.SetPage(findOpt)
 	findOpt.SetSort(bson.M{"ts": -1})
-	docs := make([]*model.Logging, 0, in.Limit)
 
 	shardingStore, err := srv.sharding.GetStore(in.DBIndex)
 	if err != nil {
 		return httputil.ErrArgsInvalid.MergeError(err)
 	}
+	docs := make([]*model.Logging, 0, in.Limit)
 	c, err := shardingStore.FindLoggingList(ctx, collectionName, filter, &docs, findOpt)
 	if err != nil {
 		return httputil.ErrSystemException.MergeError(err)
 	}
-
 	out.Count = c
 
 	// 去除极低可能重复写入的日志信息
@@ -303,7 +320,7 @@ func (srv *Service) FindLoggingList(ctx context.Context, in *entity.FindLoggingL
 
 	logs.Qezap.InfoWithCtx(ctx, "日志查询", zap.String("耗时", time.Now().Sub(s).String()),
 		zap.String("分片", shardingStore.Database().Name()),
-		zap.String("集合", collectionName),
+		zap.Any("集合", collectionName),
 		zap.Any("条件", filter))
 
 	return nil

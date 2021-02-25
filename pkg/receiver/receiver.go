@@ -29,6 +29,7 @@ type Service struct {
 	mutex       sync.RWMutex
 	modules     map[string]*model.Module
 	collections map[string]struct{}
+	lcn         types.LoggingCollectionName
 
 	alarm   *alarm.Alarm
 	metrics *metrics.Metrics
@@ -44,6 +45,7 @@ func NewService(sharding *storage.Sharding) *Service {
 		sharding:    sharding,
 		modules:     make(map[string]*model.Module, 0),
 		collections: make(map[string]struct{}, 0),
+		lcn:         types.NewLoggingCollectionName(config.Global.DaySpan),
 	}
 
 	if err := srv.syncModule(); err != nil {
@@ -289,7 +291,7 @@ func (srv *Service) loggingShardingByTimestamp(dbIndex int32, docs []*model.Logg
 	currentName := ""
 	a = initDocuments()
 	for _, v := range docs {
-		name := model.LoggingCollectionName(dbIndex, v.TimeSec)
+		name := srv.lcn.FormatName(int(dbIndex), v.TimeSec)
 		if currentName == "" {
 			currentName = name
 			a.CollectionName = name

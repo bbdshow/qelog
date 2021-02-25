@@ -2,8 +2,6 @@ package model
 
 import (
 	"fmt"
-	"time"
-
 	"github.com/huzhongqing/qelog/infra/mongo"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -73,11 +71,11 @@ func (lvl Level) String() string {
 	return v
 }
 
-func LoggingCollectionName(dbIndex int32, unix int64) string {
-	y, m, _ := time.Unix(unix, 0).Date()
-	v := fmt.Sprintf("logging_%d_%d%02d", dbIndex, y, m)
-	return v
-}
+//func LoggingCollectionName(dbIndex int32, unix int64) string {
+//	y, m, _ := time.Unix(unix, 0).Date()
+//	v := fmt.Sprintf("logging_%d_%d%02d", dbIndex, y, m)
+//	return v
+//}
 
 // 因为有分片的机制，那么同一collection下面，同一uniqueKey module 占多数情况。
 // 所以时间可作为较大范围过滤，结合Limit可以较快返回

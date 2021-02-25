@@ -25,7 +25,7 @@ func (srv *HTTPService) Run(addr string) error {
 		gin.SetMode(gin.ReleaseMode)
 		handler.Use(httputil.GinLogger([]string{"/health"}), httputil.GinRecoveryWithLogger())
 	} else {
-		handler.Use(gin.Logger(), httputil.GinRecoveryWithLogger())
+		handler.Use(gin.Logger(), gin.Recovery())
 	}
 
 	RegisterRouter(handler)
