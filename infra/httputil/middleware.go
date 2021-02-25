@@ -65,9 +65,9 @@ func HandlerLogging(enable bool, skipPrefixPaths ...string) gin.HandlerFunc {
 			c.Request.Body = ioutil.NopCloser(body)
 		}
 		logs.Qezap.InfoWithCtx(c.Request.Context(), "Request", zap.Any("headers", headers), zap.String("reqBody", request),
-			zap.String("path", path),
+			zap.String("uri", uri),
 			logs.Qezap.ConditionOne(method),
-			logs.Qezap.ConditionTwo(uri),
+			logs.Qezap.ConditionTwo(path),
 			logs.Qezap.ConditionThree(ip))
 
 		lrw := &loggingRespWriter{body: bytes.NewBuffer([]byte{}), ResponseWriter: c.Writer}
