@@ -120,6 +120,7 @@ func GinLogger(skipPaths []string) gin.HandlerFunc {
 
 			param.BodySize = c.Writer.Size()
 
+			rawPath := path
 			if raw != "" {
 				path = path + "?" + raw
 			}
@@ -136,7 +137,7 @@ func GinLogger(skipPaths []string) gin.HandlerFunc {
 				zap.String("path", param.Path),
 				zap.String("error", param.ErrorMessage),
 				logs.Qezap.ConditionOne(strconv.Itoa(param.StatusCode)),
-				logs.Qezap.ConditionTwo("["+param.Method+"]"+param.Path),
+				logs.Qezap.ConditionTwo(param.Method+"_"+rawPath),
 				logs.Qezap.ConditionThree(param.ClientIP))
 		}
 	}
