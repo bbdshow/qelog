@@ -70,7 +70,7 @@ func (a *Alarm) InitRuleState(rules []*model.AlarmRule, hooks []*model.HookURL) 
 	for _, state := range a.ruleState {
 		v, ok := ruleState[state.Key()]
 		if ok {
-			ruleState[state.Key()] = state.UpsertRule(v.rule, state.hook)
+			ruleState[state.Key()] = state.UpsertRule(v.rule, v.hook)
 		}
 	}
 	a.mutex.RUnlock()
@@ -151,7 +151,7 @@ func (rs *RuleState) KeyWord() string {
 }
 
 func (rs *RuleState) UpsertRule(new *model.AlarmRule, hook *model.HookURL) *RuleState {
-	if rs.rule == nil || rs.rule.UpdatedAt != new.UpdatedAt {
+	if rs.rule == nil || !rs.rule.UpdatedAt.Equal(new.UpdatedAt) {
 		rs.rule = new
 		rs.hook = hook
 		rs.key = new.Key()
