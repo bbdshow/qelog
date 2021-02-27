@@ -3,11 +3,8 @@ package mongo
 import (
 	"context"
 	"fmt"
-	"math/rand"
-	"strconv"
 	"strings"
 	"testing"
-	"time"
 
 	"go.mongodb.org/mongo-driver/bson"
 )
@@ -23,72 +20,40 @@ type doc struct {
 	Value string `bson:"value"`
 }
 
-func TestNewMongoClientByURI(t *testing.T) {
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
+func TestDatabase_UpsertCollectionIndexMany(t *testing.T) {
 
-	client, err := NewMongoClientByURI(ctx, uri)
+	db, err := NewDatabase(context.Background(), uri, database)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	i := rand.New(rand.NewSource(time.Now().UnixNano())).Int31n(10000000)
-	coll := client.Database(database).Collection(collection)
-	doc := doc{
-		Name:  "TestNewMongoClientByURI",
-		Value: strconv.Itoa(int(i)),
-	}
-
-	result, err := coll.InsertOne(ctx, doc)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	t.Log(result.InsertedID)
-}
-
-func TestCreateCollectionIndexMany(t *testing.T) {
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-
-	client, err := NewMongoClientByURI(ctx, uri)
-	if err != nil {
-		t.Fatal(err)
-	}
-	database := client.Database(database)
-
-	many := []Index{
+	indexs := []Index{
 		{
 			Collection: collection,
-			Keys: bson.M{
-				"name": 1,
-			},
+			Keys:       bson.D{{Key: "name", Value: 1}},
 		},
 		{
 			Collection: collection,
 			Name:       "name_value",
-			Keys: bson.M{
-				"value": -1,
-				"name":  1,
-			},
+			Keys:       bson.D{{Key: "name", Value: 1}, {Key: "value", Value: -1}},
 			Unique:     true,
 			Background: true,
 		}}
 
-	err = UpsertCollectionIndexMany(database, many)
+	err = db.UpsertCollectionIndexMany(indexs)
 	if err != nil {
 		t.Fatal(err)
 		return
 	}
 
-	cursor, err := database.Collection(collection).Indexes().List(ctx)
+	cursor, err := db.Collection(collection).Indexes().List(nil)
 	if err != nil {
 		t.Fatal(err)
 		return
 	}
 	var value interface{}
 next:
-	if cursor.Next(ctx) {
+	if cursor.Next(nil) {
 		err = cursor.Decode(&value)
 		if err != nil {
 			t.Log(err) //return

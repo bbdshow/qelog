@@ -245,7 +245,7 @@ func (srv *Service) collectionExists(store *storage.Store, collectionName string
 		return true, nil
 	}
 	ctx, _ := context.WithTimeout(context.Background(), 3*time.Second)
-	names, err := store.ListAllCollectionNames(ctx)
+	names, err := store.ListCollectionNames(ctx)
 	if err != nil {
 		return false, err
 	}
