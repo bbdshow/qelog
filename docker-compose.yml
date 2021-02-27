@@ -21,4 +21,6 @@ services:
     entrypoint:
       - /app/qelog_manager
       - -f=configs/config.docker.toml
+    depends_on:
+      - qelog_receiver
     restart: always

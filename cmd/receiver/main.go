@@ -58,15 +58,13 @@ func main() {
 		logs.Qezap.Fatal("SetGlobalShardingDB", zap.Error(err))
 	}
 
-	if !cfg.Release() {
-		db, err := sharding.MainStore()
-		if err != nil {
-			logs.Qezap.Fatal("mongo connect failed", zap.Error(err))
-		}
-		if err := db.Database().UpsertCollectionIndexMany(
-			model.ModuleMetricsIndexMany()); err != nil {
-			logs.Qezap.Fatal("mongo create index", zap.Error(err))
-		}
+	db, err := sharding.MainStore()
+	if err != nil {
+		logs.Qezap.Fatal("mongo connect failed", zap.Error(err))
+	}
+	if err := db.Database().UpsertCollectionIndexMany(
+		model.ModuleMetricsIndexMany()); err != nil {
+		logs.Qezap.Fatal("mongo create index", zap.Error(err))
 	}
 
 	httpSrv := receiver.NewHTTPService()

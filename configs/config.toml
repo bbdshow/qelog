@@ -1,32 +1,49 @@
-env = "dev"
-receiverAddr = "0.0.0.0:31081"
-receiverGRPCAddr = ":31082"
-managerAddr = "0.0.0.0:31080"
-authEnable = false
-alarmEnable = true
-metricsEnable = true
-maxShardingIndex = 8
-daySpan = 7
+# 运行环境
+Env = "dev"
+# Receiver 进程HTTP监听地址
+ReceiverAddr = "0.0.0.0:31081"
+# Receiver 进程GRPC监听地址
+ReceiverGRPCAddr = ":31082"
+# Manager管理进程HTTP监听地址
+ManagerAddr = "0.0.0.0:31080"
+# 后台权限验证开启
+AuthEnable = true
+# Receiver报警功能开启
+AlarmEnable = true
+# Receiver 统计信息开启
+MetricsEnable = true
+# Recerver 写入实例分片，最多多少片，可随时扩大
+MaxShardingIndex = 8
+# Receiver 按天范围分集合
+# 举例:7天为一个范围 则 1-7号 生成集合名为 logging_202002_1 8-14号 logging_202002_2
+DaySpan = 7
 
-[main]
-database = "qelog"
-uri = "mongodb://127.0.0.1:27017/admin"
+# 主库Mongodb，用于存储配置信息，统计信息等
+[Main]
+Database = "qelog"
+Uri = "mongodb://127.0.0.1:27017/admin"
 
-[[sharding]]
-index = [1,2,3,4]
-database = "qelog"
-uri = "mongodb://127.0.0.1:27017/admin"
+# Sharding 实例1。 这里的级别可自定义，可以是同Mongodb实例不同库，也可以不同实例
+# index MaxShardingIndex 与此参数对应，可以理解成 redis 的db
+# 实例配置就是, qelog 库负责，dbIndex 1,2,3,4 的存储
+[[Sharding]]
+Index = [1,2,3,4]
+Database = "qelog"
+Uri = "mongodb://127.0.0.1:27017/admin"
 
-[[sharding]]
-index = [5,6,7,8]
-database = "qelog2"
-uri = "mongodb://127.0.0.1:27017/admin"
+[[Sharding]]
+Index = [5,6,7,8]
+Database = "qelog2"
+Uri = "mongodb://127.0.0.1:27017/admin"
 
+# 管理后台登录密码
+[AdminUser]
+Username = "admin"
+Password = "111111"
 
-[adminUser]
-username = "admin"
-password = "111111"
-
-[logging]
-module = "qelog"
-addr = ["127.0.0.1:31082"]
+# 这里是接入Qelog 所需要的配置，Qelog管理后台接入了Qelog
+[Logging]
+# 模块名，相当于接入应用的身份标识
+Module = "qelog"
+# receiver的地址， GRPC 使用数组的方式支持轮询负载。 HTTP 建议直接配置域名+Nginx
+Addr = ["127.0.0.1:31082"]
