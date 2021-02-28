@@ -23,15 +23,15 @@ func SetGlobalShardingDB(db *Sharding) error {
 // 存储分片，把不同的 dbIndex 存储到归类的 DB 实例中，以达到存储横向扩展的目的
 // Note: 分片实例一旦设定。如果更改将涉及到数据迁移， 增加不影响
 type Sharding struct {
-	mainCfg       config.MongoDB
-	shardingCfg   []config.MongoDBIndex
+	mainCfg       config.MongoMainDB
+	shardingCfg   []config.MongoShardingDB
 	mainStore     *Store
-	shardingStore map[int32]*Store
+	shardingStore map[int]*Store
 }
 
 // Sharding Store Lib
-func NewSharding(main config.MongoDB, sharding []config.MongoDBIndex, index int32) (*Sharding, error) {
-	model.SetMaxDBShardingIndex(index)
+func NewSharding(main config.MongoMainDB, sharding []config.MongoShardingDB, index int) (*Sharding, error) {
+	model.SetShardingIndexSize(index)
 	ctx, _ := context.WithTimeout(context.Background(), 30*time.Second)
 	mainDB, err := mongo.NewDatabase(ctx, main.URI, main.DataBase)
 	if err != nil {
@@ -41,7 +41,7 @@ func NewSharding(main config.MongoDB, sharding []config.MongoDBIndex, index int3
 		mainCfg:       main,
 		shardingCfg:   sharding,
 		mainStore:     New(mainDB),
-		shardingStore: make(map[int32]*Store, 0),
+		shardingStore: make(map[int]*Store, 0),
 	}
 	for _, v := range sharding {
 		db, err := mongo.NewDatabase(ctx, v.URI, v.DataBase)
@@ -66,7 +66,7 @@ func (s *Sharding) MainStore() (*Store, error) {
 }
 
 // 日志记录的实例
-func (s *Sharding) GetStore(index int32) (*Store, error) {
+func (s *Sharding) GetStore(index int) (*Store, error) {
 	store, ok := s.shardingStore[index]
 	if !ok {
 		return nil, ErrShardingDBNotFound
@@ -86,10 +86,10 @@ func (s *Sharding) Disconnect() {
 	}
 }
 
-func (s *Sharding) MainCfg() config.MongoDB {
+func (s *Sharding) MainCfg() config.MongoMainDB {
 	return s.mainCfg
 }
 
-func (s *Sharding) ShardingCfg() []config.MongoDBIndex {
+func (s *Sharding) ShardingCfg() []config.MongoShardingDB {
 	return s.shardingCfg
 }

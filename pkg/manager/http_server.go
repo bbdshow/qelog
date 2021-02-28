@@ -75,8 +75,8 @@ func RegisterRouter(route *gin.Engine, midd ...gin.HandlerFunc) {
 		alarmRule.GET("/hook/ping", h.PingHookURL)
 	}
 
-	// 获取 db 信息
-	v1.GET("/dbIndex", h.GetDBIndex)
+	// 获取分片使用信息
+	v1.GET("/shardingIndex", h.GetShardingIndex)
 
 	// 搜索日志
 	logging := v1.Group("/logging")

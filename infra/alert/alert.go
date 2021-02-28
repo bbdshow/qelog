@@ -9,27 +9,32 @@ import (
 	"net/http"
 )
 
+// Alarm
 type Alarm interface {
 	SetHookURL(string)
 	Send(ctx context.Context, content string) error
 	Method() string
 }
 
+// DingDing
 type DingDing struct {
 	hookURL string
 	client  *http.Client
 }
 
+// NewDingDing alarm impl
 func NewDingDing() *DingDing {
 	return &DingDing{
 		client: &http.Client{},
 	}
 }
 
+// SetHookURL http request url
 func (dd *DingDing) SetHookURL(url string) {
 	dd.hookURL = url
 }
 
+// Send
 func (dd *DingDing) Send(ctx context.Context, content string) error {
 	reqBody := struct {
 		MsgType string `json:"msgtype"`
@@ -72,6 +77,7 @@ func (dd *DingDing) Send(ctx context.Context, content string) error {
 	return nil
 }
 
+// Method
 func (dd *DingDing) Method() string {
 	return "DingDing"
 }

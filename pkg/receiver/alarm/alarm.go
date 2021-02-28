@@ -8,8 +8,8 @@ import (
 	"time"
 
 	"github.com/huzhongqing/qelog/infra/alert"
+	"github.com/huzhongqing/qelog/infra/kit"
 	"github.com/huzhongqing/qelog/infra/logs"
-	"github.com/huzhongqing/qelog/pkg/common/kit"
 	"github.com/huzhongqing/qelog/pkg/common/model"
 	"go.uber.org/zap"
 )
@@ -106,7 +106,7 @@ func (rs *RuleState) Send(v *model.Logging) {
 	}
 	if isSend {
 		ctx, _ := context.WithTimeout(context.Background(), 30*time.Second)
-		err := rs.method.Send(ctx, rs.content(v))
+		err := rs.method.Send(ctx, rs.parsingContent(v))
 		if err != nil {
 			logs.Qezap.Error("AlarmSend", zap.String(rs.method.Method(), err.Error()))
 		} else {
@@ -124,7 +124,7 @@ func (rs *RuleState) Send(v *model.Logging) {
 	return
 }
 
-func (rs *RuleState) content(v *model.Logging) string {
+func (rs *RuleState) parsingContent(v *model.Logging) string {
 	return fmt.Sprintf(`%s
 标签: %s
 IP: %s

@@ -27,20 +27,21 @@ type Config struct {
 	AlarmEnable   bool `default:"true"`
 	MetricsEnable bool `default:"true"`
 
-	// 不同的分片索引，可能存储在不同的数据库与集合里
+	// 存储对象分片索引容量，可能存储在不同的数据库与集合里
 	// 索引决定集合的命名
-	MaxShardingIndex int32 `default:"8"`
-	// 分片时间(天)跨度
+	ShardingIndexSize int `default:"8"`
+	// 数据分片时间(天)跨度
 	DaySpan int `default:"7"`
-
+	// 后台账号密码
 	AdminUser AdminUser
+
 	// 日志配置，管理端产生的日志，也可以存储到远端
 	Logging Logging
 
-	// 储存管理配置的实例
-	Main MongoDB
-	// 存储日志内容的实例
-	Sharding []MongoDBIndex
+	// 管理配置的存储对象
+	Main MongoMainDB
+	// 日志内容的分片配置存储对象
+	Sharding []MongoShardingDB
 }
 
 func InitConfig(filename string) *Config {
@@ -53,6 +54,9 @@ func InitConfig(filename string) *Config {
 	if err != nil {
 		panic("config init " + err.Error())
 	}
+	if err := cfg.Validate(); err != nil {
+		panic("config validate " + err.Error())
+	}
 	return cfg
 }
 
@@ -61,9 +65,6 @@ func (c *Config) Release() bool {
 }
 
 func (c *Config) Validate() error {
-	if c.MaxShardingIndex <= 0 {
-		c.MaxShardingIndex = 8
-	}
 	if c.Main.URI == "" {
 		return errors.New("main.uri required")
 	}
@@ -71,7 +72,7 @@ func (c *Config) Validate() error {
 	if len(c.Sharding) <= 0 {
 		return errors.New("sharding required")
 	}
-	indexExists := make(map[int32]struct{})
+	indexExists := make(map[int]struct{})
 	for _, v := range c.Sharding {
 		for _, i := range v.Index {
 			_, ok := indexExists[i]
@@ -89,20 +90,20 @@ func (c *Config) Print() Config {
 	cfg := *c
 	// 脱敏
 	if c.Release() {
-		cfg.Main = MongoDB{}
-		cfg.Sharding = []MongoDBIndex{}
+		cfg.Main = MongoMainDB{}
+		cfg.Sharding = []MongoShardingDB{}
 	}
 	return cfg
 }
 
-type MongoDBIndex struct {
-	// 这个库需负责的存储序列
-	Index    []int32 `default:"1,2,3,4,5,6,7,8"`
-	DataBase string  `default:"sharding_qelog_db"`
-	URI      string  `default:"mongodb://127.0.0.1:27017/admin"`
+type MongoShardingDB struct {
+	// 这个库需负责的分片索引
+	Index    []int  `default:"1,2,3,4,5,6,7,8"`
+	DataBase string `default:"sharding_qelog_db"`
+	URI      string `default:"mongodb://127.0.0.1:27017/admin"`
 }
 
-type MongoDB struct {
+type MongoMainDB struct {
 	DataBase string `default:"qelog"`
 	URI      string `default:"mongodb://127.0.0.1:27017/admin"`
 }

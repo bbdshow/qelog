@@ -33,16 +33,16 @@ func (srv *Service) MetricsDBStats(ctx context.Context, out *entity.ListResp) er
 		return httputil.ErrSystemException.MergeError(err)
 	}
 	dbStats = append(dbStats, entity.DBStats{
-		DBIndex:      []int32{0},
-		Host:         mainStats.Host,
-		DBName:       mainStats.DB,
-		Collections:  mainStats.Collections,
-		DataSize:     mainStats.DataSize,
-		StorageSize:  mainStats.StorageSize,
-		IndexSize:    mainStats.IndexSize,
-		Objects:      mainStats.Objects,
-		Indexs:       mainStats.Indexes,
-		CreatedTsSec: mainStats.CreatedAt.Unix(),
+		ShardingIndex: []int{0},
+		Host:          mainStats.Host,
+		DBName:        mainStats.DB,
+		Collections:   mainStats.Collections,
+		DataSize:      mainStats.DataSize,
+		StorageSize:   mainStats.StorageSize,
+		IndexSize:     mainStats.IndexSize,
+		Objects:       mainStats.Objects,
+		Indexs:        mainStats.Indexes,
+		CreatedTsSec:  mainStats.CreatedAt.Unix(),
 	})
 	// 去获取 sharding 的DB状态
 	for _, v := range shardingCfg {
@@ -53,16 +53,16 @@ func (srv *Service) MetricsDBStats(ctx context.Context, out *entity.ListResp) er
 		}
 
 		dbStats = append(dbStats, entity.DBStats{
-			DBIndex:      v.Index,
-			Host:         sStats.Host,
-			DBName:       sStats.DB,
-			Collections:  sStats.Collections,
-			DataSize:     sStats.DataSize,
-			StorageSize:  sStats.StorageSize,
-			IndexSize:    sStats.IndexSize,
-			Objects:      sStats.Objects,
-			Indexs:       sStats.Indexes,
-			CreatedTsSec: sStats.CreatedAt.Unix(),
+			ShardingIndex: v.Index,
+			Host:          sStats.Host,
+			DBName:        sStats.DB,
+			Collections:   sStats.Collections,
+			DataSize:      sStats.DataSize,
+			StorageSize:   sStats.StorageSize,
+			IndexSize:     sStats.IndexSize,
+			Objects:       sStats.Objects,
+			Indexs:        sStats.Indexes,
+			CreatedTsSec:  sStats.CreatedAt.Unix(),
 		})
 	}
 

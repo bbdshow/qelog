@@ -1,7 +1,7 @@
 package model
 
 import (
-	"bytes"
+	"fmt"
 	"time"
 
 	"go.mongodb.org/mongo-driver/bson"
@@ -20,6 +20,7 @@ const (
 	MethodDingDing = iota + 1
 )
 
+// AlarmRule
 type AlarmRule struct {
 	ID         primitive.ObjectID `bson:"_id,omitempty"`
 	Enable     bool               `bson:"enable"`       // 是否开启
@@ -37,14 +38,8 @@ func (AlarmRule) CollectionName() string {
 	return CollectionNameAlarmRule
 }
 
-func (am AlarmRule) Key() string {
-	buf := bytes.Buffer{}
-	buf.WriteString(am.ModuleName)
-	buf.WriteString("_")
-	buf.WriteString(am.Short)
-	buf.WriteString("_")
-	buf.WriteString(am.Level.String())
-	return buf.String()
+func (ar AlarmRule) Key() string {
+	return fmt.Sprintf("%s_%s_%s", ar.ModuleName, ar.Short, ar.Level)
 }
 
 type HookURL struct {

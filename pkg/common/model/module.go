@@ -14,13 +14,14 @@ const (
 	CollectionNameModule = "module"
 )
 
+// Module 接入应用模块初始化
 type Module struct {
-	ID             primitive.ObjectID `bson:"_id,omitempty" json:"id"`
-	Name           string             `bson:"name" json:"name"`
-	Desc           string             `bson:"desc" json:"desc"`
-	DBIndex        int32              `bson:"db_index" json:"db_index"`
-	HistoryDBIndex []int32            `bson:"history_db_index" json:"history_db_index"`
-	UpdatedAt      time.Time          `bson:"updated_at" json:"updated_at"`
+	ID                   primitive.ObjectID `bson:"_id,omitempty" json:"id"`
+	Name                 string             `bson:"name" json:"name"`
+	Desc                 string             `bson:"desc" json:"desc"`
+	ShardingIndex        int                `bson:"sharding_index"`
+	HistoryShardingIndex []int              `bson:"history_sharding_index"`
+	UpdatedAt            time.Time          `bson:"updated_at" json:"updated_at"`
 }
 
 func (m Module) CollectionName() string {

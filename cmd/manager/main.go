@@ -50,7 +50,7 @@ func main() {
 
 	logs.InitQezap(cfg.Logging.Addr, cfg.Logging.Module, "./log/manage_logger.log")
 
-	sharding, err := storage.NewSharding(cfg.Main, cfg.Sharding, cfg.MaxShardingIndex)
+	sharding, err := storage.NewSharding(cfg.Main, cfg.Sharding, cfg.ShardingIndexSize)
 	if err != nil {
 		logs.Qezap.Fatal("mongo connect failed ", zap.Error(err))
 	}
@@ -65,7 +65,9 @@ func main() {
 	}
 	if err := db.Database().UpsertCollectionIndexMany(
 		model.ModuleIndexMany(),
-		model.AlarmRuleIndexMany()); err != nil {
+		model.AlarmRuleIndexMany(),
+		model.DBStatsIndexMany(),
+		model.CollStatsIndexMany()); err != nil {
 		logs.Qezap.Fatal("mongo create index ", zap.Error(err))
 	}
 

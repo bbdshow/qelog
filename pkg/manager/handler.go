@@ -131,9 +131,9 @@ func (h *Handler) FindLoggingByTraceID(c *gin.Context) {
 	httputil.RespData(c, http.StatusOK, out)
 }
 
-func (h *Handler) GetDBIndex(c *gin.Context) {
-	out := &entity.GetDBIndexResp{}
-	if err := h.srv.GetDBIndex(c.Request.Context(), out); err != nil {
+func (h *Handler) GetShardingIndex(c *gin.Context) {
+	out := &entity.GetShardingIndexResp{}
+	if err := h.srv.GetShardingIndex(c.Request.Context(), out); err != nil {
 		httputil.RespError(c, err)
 		return
 	}

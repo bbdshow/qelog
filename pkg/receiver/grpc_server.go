@@ -6,7 +6,7 @@ import (
 
 	"github.com/huzhongqing/qelog/api/receiverpb"
 	"github.com/huzhongqing/qelog/infra/httputil"
-	"github.com/huzhongqing/qelog/pkg/common/kit"
+	"github.com/huzhongqing/qelog/infra/kit"
 	"github.com/huzhongqing/qelog/pkg/storage"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/peer"

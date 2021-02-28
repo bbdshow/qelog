@@ -13,7 +13,7 @@ import (
 
 func (store *Store) UpsertModuleMetrics(ctx context.Context, filter, update bson.M, opt *options.UpdateOptions) error {
 	_, err := store.database.Collection(model.CollectionNameModuleMetrics).UpdateOne(ctx, filter, update, opt)
-	return err
+	return handlerError(err)
 }
 
 func (store *Store) MetricsModuleCountByDate(ctx context.Context, date time.Time) (*entity.ModuleCount, error) {

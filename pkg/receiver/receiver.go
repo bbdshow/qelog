@@ -48,19 +48,18 @@ func NewService(sharding *storage.Sharding) *Service {
 		lcn:         types.NewLoggingCollectionName(config.Global.DaySpan),
 	}
 
-	if err := srv.syncModule(); err != nil {
+	if err := srv.updateModuleSetting(); err != nil {
 		panic(err)
 	}
 
-	go srv.intervalSyncModule()
+	go srv.backgroundSyncModuleSetting()
 
 	if config.Global.AlarmEnable {
 		srv.alarm = alarm.NewAlarm()
-
-		if err := srv.syncAlarmRule(); err != nil {
+		if err := srv.updateAlarmRuleSetting(); err != nil {
 			panic(err)
 		}
-		go srv.intervalSyncAlarmRule()
+		go srv.backgroundSyncAlarmRuleSetting()
 	}
 
 	if config.Global.MetricsEnable {
@@ -94,7 +93,7 @@ func (srv *Service) InsertJSONPacket(ctx context.Context, ip string, in *api.JSO
 		go srv.metrics.Statistics(in.Module, ip, docs)
 	}
 
-	return srv.insertLogging(ctx, module.DBIndex, docs)
+	return srv.insertLogging(ctx, module.ShardingIndex, docs)
 }
 
 func (srv *Service) InsertPacket(ctx context.Context, ip string, in *receiverpb.Packet) error {
@@ -120,11 +119,11 @@ func (srv *Service) InsertPacket(ctx context.Context, ip string, in *receiverpb.
 		go srv.metrics.Statistics(in.Module, ip, docs)
 	}
 
-	return srv.insertLogging(ctx, module.DBIndex, docs)
+	return srv.insertLogging(ctx, module.ShardingIndex, docs)
 }
 
-func (srv *Service) insertLogging(ctx context.Context, dbIndex int32, docs []*model.Logging) error {
-	aDoc, bDoc := srv.loggingShardingByTimestamp(dbIndex, docs)
+func (srv *Service) insertLogging(ctx context.Context, index int, docs []*model.Logging) error {
+	aDoc, bDoc := srv.loggingDataShardingByTimestamp(index, docs)
 
 	if ctx == nil {
 		ctx, _ = context.WithTimeout(context.Background(), 5*time.Second)
@@ -133,8 +132,7 @@ func (srv *Service) insertLogging(ctx context.Context, dbIndex int32, docs []*mo
 		if v == nil {
 			return nil
 		}
-
-		shardingStore, err := srv.sharding.GetStore(v.DBIndex)
+		shardingStore, err := srv.sharding.GetStore(v.Index)
 		if err != nil {
 			return httputil.ErrArgsInvalid.MergeError(err)
 		}
@@ -260,7 +258,7 @@ func (srv *Service) collectionExists(store *storage.Store, collectionName string
 }
 
 type documents struct {
-	DBIndex        int32
+	Index          int
 	CollectionName string
 	Docs           []interface{}
 }
@@ -272,7 +270,7 @@ var documentsPool = sync.Pool{New: func() interface{} {
 func initDocuments() *documents {
 	v := documentsPool.Get().(*documents)
 	v.CollectionName = ""
-	v.DBIndex = 0
+	v.Index = 0
 	v.Docs = v.Docs[:0]
 	return v
 }
@@ -286,33 +284,33 @@ func freeDocuments(docs ...*documents) {
 }
 
 // 因为是合并包，有少数情况下，根据时间分集合，一个包的内容会写入到不同的集合中区
-func (srv *Service) loggingShardingByTimestamp(dbIndex int32, docs []*model.Logging) (a, b *documents) {
+func (srv *Service) loggingDataShardingByTimestamp(index int, docs []*model.Logging) (d1, d2 *documents) {
 	// 当前时间分片，一组数据最多只会出现在两片上
 	currentName := ""
-	a = initDocuments()
+	d1 = initDocuments()
 	for _, v := range docs {
-		name := srv.lcn.FormatName(int(dbIndex), v.TimeSec)
+		name := srv.lcn.FormatName(index, v.TimeSec)
 		if currentName == "" {
 			currentName = name
-			a.CollectionName = name
-			a.DBIndex = dbIndex
+			d1.CollectionName = name
+			d1.Index = index
 		}
 		if name != currentName {
 			// 出现了两片的情况
-			if b == nil {
-				b = initDocuments()
-				b.CollectionName = name
-				b.DBIndex = dbIndex
+			if d2 == nil {
+				d2 = initDocuments()
+				d2.CollectionName = name
+				d2.Index = index
 			}
-			b.Docs = append(b.Docs, v)
+			d2.Docs = append(d2.Docs, v)
 			continue
 		}
-		a.Docs = append(a.Docs, v)
+		d1.Docs = append(d1.Docs, v)
 	}
-	return a, b
+	return d1, d2
 }
 
-func (srv *Service) syncModule() error {
+func (srv *Service) updateModuleSetting() error {
 	ctx, _ := context.WithTimeout(context.Background(), 5*time.Second)
 	docs, err := srv.store.FindAllModule(ctx)
 	if err != nil {
@@ -325,17 +323,17 @@ func (srv *Service) syncModule() error {
 	srv.mutex.Unlock()
 	return nil
 }
-func (srv *Service) intervalSyncModule() {
+func (srv *Service) backgroundSyncModuleSetting() {
 	tick := time.NewTicker(30 * time.Second)
 	for range tick.C {
-		err := srv.syncModule()
+		err := srv.updateModuleSetting()
 		if err != nil {
-			logs.Qezap.Error("receiver.service", zap.String("syncModule", err.Error()))
+			logs.Qezap.Error("backgroundSyncModuleSetting", zap.Error(err))
 		}
 	}
 }
 
-func (srv *Service) syncAlarmRule() error {
+func (srv *Service) updateAlarmRuleSetting() error {
 	ctx, _ := context.WithTimeout(context.Background(), 5*time.Second)
 	docs, err := srv.store.FindAllEnableAlarmRule(ctx)
 	if err != nil {
@@ -349,12 +347,12 @@ func (srv *Service) syncAlarmRule() error {
 	return nil
 }
 
-func (srv *Service) intervalSyncAlarmRule() {
-	tick := time.NewTicker(35 * time.Second)
+func (srv *Service) backgroundSyncAlarmRuleSetting() {
+	tick := time.NewTicker(time.Minute)
 	for range tick.C {
-		err := srv.syncAlarmRule()
+		err := srv.updateAlarmRuleSetting()
 		if err != nil {
-			logs.Qezap.Error("receiver.service", zap.String("syncAlarmRule", err.Error()))
+			logs.Qezap.Error("backgroundSyncAlarmRuleSetting", zap.String("error", err.Error()))
 		}
 	}
 }

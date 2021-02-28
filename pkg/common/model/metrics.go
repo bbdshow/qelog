@@ -14,6 +14,7 @@ const (
 	CollectionNameCollStats     = "coll_stats"
 )
 
+// ModuleMetrics 模块写入日志数据分布统计
 type ModuleMetrics struct {
 	ID          primitive.ObjectID `bson:"_id,omitempty"`
 	ModuleName  string             `bson:"module_name"`
@@ -87,6 +88,7 @@ func ModuleMetricsIndexMany() []mongo.Index {
 	}
 }
 
+// DBStats 数据库容量统计
 type DBStats struct {
 	ID          primitive.ObjectID `bson:"_id,omitempty"`
 	Host        string             `bson:"host"`
@@ -121,6 +123,7 @@ func DBStatsIndexMany() []mongo.Index {
 	}
 }
 
+// CollStats 集合容量统计
 type CollStats struct {
 	ID             primitive.ObjectID `bson:"_id,omitempty"`
 	Host           string             `bson:"host"`
