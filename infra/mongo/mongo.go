@@ -5,19 +5,19 @@ import (
 	"errors"
 	"time"
 
-	"go.mongodb.org/mongo-driver/bson/primitive"
-
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-// uri 可以包含连接的所有信息 包括设置连接读写超时等
+// NewMongoClientByURI uri = mongo://...
 func NewMongoClientByURI(ctx context.Context, uri string) (*mongo.Client, error) {
 	opt := options.Client().ApplyURI(uri)
 	return NewMongoClient(ctx, opt)
 }
 
+// NewMongoClient client and ping
 func NewMongoClient(ctx context.Context, opts ...*options.ClientOptions) (*mongo.Client, error) {
 	client, err := mongo.NewClient(opts...)
 	if err != nil {
@@ -40,11 +40,13 @@ func NewMongoClient(ctx context.Context, opts ...*options.ClientOptions) (*mongo
 	return client, nil
 }
 
+// URIToHosts parse to hosts
 func URIToHosts(uri string) []string {
 	opt := options.Client().ApplyURI(uri)
 	return opt.Hosts
 }
 
+// Database packaging some method, shortcut
 type Database struct {
 	*mongo.Database
 }
@@ -57,35 +59,34 @@ func NewDatabase(ctx context.Context, uri, database string) (*Database, error) {
 	return &Database{Database: cli.Database(database)}, nil
 }
 
-func (db *Database) FindOne(ctx context.Context, coll *mongo.Collection, filter interface{}, ret interface{}, opt ...*options.FindOneOptions) (bool, error) {
-	sRet := coll.FindOne(ctx, filter, opt...)
-	if sRet.Err() != nil {
-		if sRet.Err() == mongo.ErrNoDocuments {
+func (db *Database) FindOne(ctx context.Context, coll *mongo.Collection, filter interface{}, doc interface{}, opt ...*options.FindOneOptions) (bool, error) {
+	singleRet := coll.FindOne(ctx, filter, opt...)
+	if singleRet.Err() != nil {
+		if singleRet.Err() == mongo.ErrNoDocuments {
 			return false, nil
 		}
-		return false, sRet.Err()
+		return false, singleRet.Err()
 	}
-
-	if err := sRet.Decode(ret); err != nil {
+	if err := singleRet.Decode(doc); err != nil {
 		return false, err
 	}
 	return true, nil
 }
 
-func (db *Database) Find(ctx context.Context, coll *mongo.Collection, filter bson.M, records interface{}, opt ...*options.FindOptions) error {
+func (db *Database) Find(ctx context.Context, coll *mongo.Collection, filter bson.M, docs interface{}, opt ...*options.FindOptions) error {
 	cursor, err := coll.Find(ctx, filter, opt...)
 	if err != nil {
 		return err
 	}
 	defer cursor.Close(ctx)
 
-	if err := cursor.All(ctx, records); err != nil {
+	if err := cursor.All(ctx, docs); err != nil {
 		return err
 	}
 	return nil
 }
 
-func (db *Database) FindAndCount(ctx context.Context, coll *mongo.Collection, filter interface{}, result interface{}, opt ...*options.FindOptions) (int64, error) {
+func (db *Database) FindAndCount(ctx context.Context, coll *mongo.Collection, filter interface{}, docs interface{}, opt ...*options.FindOptions) (int64, error) {
 	c, err := coll.CountDocuments(ctx, filter)
 	if err != nil {
 		return 0, err
@@ -95,14 +96,10 @@ func (db *Database) FindAndCount(ctx context.Context, coll *mongo.Collection, fi
 		return 0, err
 	}
 	defer cursor.Close(ctx)
-	if err := cursor.All(ctx, result); err != nil {
+	if err := cursor.All(ctx, docs); err != nil {
 		return 0, err
 	}
 	return c, nil
-}
-
-func (db *Database) ListAllCollectionNames(ctx context.Context) ([]string, error) {
-	return db.ListCollectionNames(ctx)
 }
 
 func (db *Database) ListCollectionNames(ctx context.Context, prefix ...string) ([]string, error) {

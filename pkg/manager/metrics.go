@@ -351,7 +351,7 @@ func (srv *Service) readCollStatsAndInsert(ctx context.Context, uri, host, datab
 	}
 	defer db.Client().Disconnect(ctx)
 
-	names, err := db.ListAllCollectionNames(ctx)
+	names, err := db.ListCollectionNames(ctx)
 	if err != nil {
 		return nil, err
 	}

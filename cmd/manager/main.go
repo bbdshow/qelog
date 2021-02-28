@@ -8,18 +8,13 @@ import (
 	"syscall"
 	"time"
 
-	"go.uber.org/multierr"
-
 	"github.com/huzhongqing/qelog/infra/logs"
-	"go.uber.org/zap"
-
 	"github.com/huzhongqing/qelog/pkg/common/model"
-
-	"github.com/huzhongqing/qelog/pkg/storage"
-
-	"github.com/huzhongqing/qelog/pkg/manager"
-
 	"github.com/huzhongqing/qelog/pkg/config"
+	"github.com/huzhongqing/qelog/pkg/manager"
+	"github.com/huzhongqing/qelog/pkg/storage"
+	"go.uber.org/multierr"
+	"go.uber.org/zap"
 )
 
 var (

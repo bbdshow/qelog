@@ -30,21 +30,22 @@ func (store *Store) Database() *mongo.Database {
 	return store.database
 }
 
-func (store *Store) ListAllCollectionNames(ctx context.Context) ([]string, error) {
-	names, err := store.database.ListAllCollectionNames(ctx)
+// ListCollectionNames
+func (store *Store) ListCollectionNames(ctx context.Context, prefix ...string) ([]string, error) {
+	names, err := store.database.ListCollectionNames(ctx, prefix...)
 	return names, handlerError(err)
 }
 
+// UpsertCollectionIndexMany
 func (store *Store) UpsertCollectionIndexMany(indexs []mongo.Index) error {
 	err := store.database.UpsertCollectionIndexMany(indexs)
 	return handlerError(err)
 }
 
-// 记录所有的数据库操作错误
 func handlerError(err error) error {
 	if err != nil {
 		if logs.Qezap != nil {
-			logs.Qezap.Error("Store Operation Error", zap.String("error", err.Error()))
+			logs.Qezap.Error("StoreOperationError", zap.String("error", err.Error()))
 		}
 	}
 	return err
