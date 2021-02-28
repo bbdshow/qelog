@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"sort"
+	"sync"
 	"time"
 
 	"github.com/huzhongqing/qelog/pkg/config"
@@ -26,6 +27,8 @@ type Service struct {
 	store    *storage.Store
 	sharding *storage.Sharding
 	lcn      types.LoggingCollectionName
+
+	once sync.Once
 }
 
 func NewService(sharding *storage.Sharding) *Service {
