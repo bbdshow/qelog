@@ -76,6 +76,14 @@ func (lcn LoggingCollectionName) DaySpan() map[int]int {
 	return lcn.daySpan
 }
 
+func (lcn LoggingCollectionName) NameDecodeDate(name string) (time.Time, error) {
+	_, _, y, m, _, err := lcn.Decode(name)
+	if err != nil {
+		return time.Time{}, err
+	}
+	return time.Date(y, m, 0, 0, 0, 0, 0, time.Local), nil
+}
+
 func (lcn LoggingCollectionName) SuggestTime(name string) (t time.Time, err error) {
 	_, _, y1, m1, n1Span, err := lcn.Decode(name)
 	if err != nil {

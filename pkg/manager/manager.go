@@ -41,6 +41,9 @@ func NewService(sharding *storage.Sharding) *Service {
 		sharding: sharding,
 		lcn:      types.NewLoggingCollectionName(config.Global.DaySpan),
 	}
+	srv.once.Do(func() {
+		go srv.backgroundDelExpiredCollection(config.Global.MaxAgeMonth)
+	})
 	return srv
 }
 

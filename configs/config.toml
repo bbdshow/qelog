@@ -17,6 +17,8 @@ ShardingIndexSize = 8
 # Receiver 按天范围分集合
 # 举例:7天为一个范围 则 1-7号 生成集合名为 logging_202002_1 8-14号 logging_202002_2
 DaySpan = 7
+# 数据最大有效期 月
+MaxAgeMonth = 6
 
 # 主库Mongodb，用于存储配置信息，统计信息等
 [Main]
@@ -47,3 +49,4 @@ Password = "111111"
 Module = "qelog"
 # receiver的地址， GRPC 使用数组的方式支持轮询负载。 HTTP 建议直接配置域名+Nginx
 Addr = ["127.0.0.1:31082"]
+Filename = "./log/logger.log"

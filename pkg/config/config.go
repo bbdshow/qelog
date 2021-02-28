@@ -32,6 +32,8 @@ type Config struct {
 	ShardingIndexSize int `default:"8"`
 	// 数据分片时间(天)跨度
 	DaySpan int `default:"7"`
+	// 数据最大有效期 月
+	MaxAgeMonth int `default:"6"`
 	// 后台账号密码
 	AdminUser AdminUser
 

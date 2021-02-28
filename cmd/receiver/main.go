@@ -47,7 +47,7 @@ func main() {
 
 	config.SetGlobalConfig(cfg)
 
-	logs.InitQezap(nil, "")
+	logs.InitQezap(cfg.Logging.Addr, cfg.Logging.Module, cfg.Logging.Filename)
 
 	sharding, err := storage.NewSharding(cfg.Main, cfg.Sharding, cfg.ShardingIndexSize)
 	if err != nil {
