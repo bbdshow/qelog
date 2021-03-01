@@ -145,7 +145,7 @@ IP: %s
 短消息: %s
 详情: %s
 频次: %d/%ds
-报警节点: %s`, rs.KeyWord(), rs.rule.Tag, v.IP, time.Unix(v.TimeSec, 0), v.Level.String(),
+报警节点: %s`, rs.KeyWord(), rs.rule.Tag, v.IP, time.Unix(v.TimeSec, 0).Format("2006-01-02 15:04:05"), v.Level.String(),
 		v.Short, v.Full, atomic.LoadInt32(&rs.count), rs.rule.RateSec, machineIP)
 
 	// 隐藏字段

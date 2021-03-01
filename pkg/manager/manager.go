@@ -363,7 +363,11 @@ func (srv *Service) FindHookURLList(ctx context.Context, in *entity.FindHookURLL
 			URL:          v.URL,
 			Method:       v.Method.Int32(),
 			KeyWord:      v.KeyWord,
+			HideText:     v.HideText,
 			UpdatedTsSec: v.UpdatedAt.Unix(),
+		}
+		if d.HideText == nil {
+			d.HideText = make([]string, 0)
 		}
 		list = append(list, d)
 	}
@@ -434,7 +438,7 @@ func (srv *Service) UpdateHookURL(ctx context.Context, in *entity.UpdateHookURLR
 		"updated_at": doc.UpdatedAt,
 	}
 	// 更新已经引用的
-	if err := srv.store.UpdateManyAlarmRule(ctx, bson.M{"hook_id": id},
+	if err := srv.store.UpdateManyAlarmRule(ctx, bson.M{"hook_id": id.Hex()},
 		bson.M{"$set": bson.M{"updated_at": time.Now().Local()}}); err != nil {
 		return err
 	}
