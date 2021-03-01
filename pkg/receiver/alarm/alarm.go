@@ -3,6 +3,7 @@ package alarm
 import (
 	"context"
 	"fmt"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -24,6 +25,8 @@ type Alarm struct {
 	ruleState map[string]*RuleState
 	hooks     map[string]*model.HookURL
 	modules   map[string]bool
+	// 报警信息隐藏文字
+	hideTexts []string
 }
 
 func NewAlarm() *Alarm {
@@ -32,8 +35,17 @@ func NewAlarm() *Alarm {
 		ruleState: make(map[string]*RuleState, 0),
 		hooks:     make(map[string]*model.HookURL, 0),
 		modules:   make(map[string]bool),
+		hideTexts: make([]string, 0),
 	}
 	return a
+}
+
+func (a *Alarm) AddHideText(txt []string) {
+	for _, v := range txt {
+		if v != "" {
+			a.hideTexts = append(a.hideTexts, v)
+		}
+	}
 }
 
 // 如果模块没有设置报警，则不用判断具体的状态了
@@ -125,7 +137,7 @@ func (rs *RuleState) Send(v *model.Logging) {
 }
 
 func (rs *RuleState) parsingContent(v *model.Logging) string {
-	return fmt.Sprintf(`%s
+	str := fmt.Sprintf(`%s
 标签: %s
 IP: %s
 时间: %s
@@ -135,6 +147,14 @@ IP: %s
 频次: %d/%ds
 报警节点: %s`, rs.KeyWord(), rs.rule.Tag, v.IP, time.Unix(v.TimeSec, 0), v.Level.String(),
 		v.Short, v.Full, atomic.LoadInt32(&rs.count), rs.rule.RateSec, machineIP)
+
+	// 隐藏字段
+	if rs.hook != nil {
+		for _, hide := range rs.hook.HideText {
+			str = strings.ReplaceAll(str, hide, "****")
+		}
+	}
+	return str
 }
 
 func (rs *RuleState) Key() string {

@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"sort"
+	"strings"
 	"sync"
 	"time"
 
@@ -377,6 +378,7 @@ func (srv *Service) CreateHookURL(ctx context.Context, in *entity.CreateHookURLR
 		URL:       in.URL,
 		Method:    model.Method(in.Method),
 		KeyWord:   in.KeyWord,
+		HideText:  in.HideText,
 		UpdatedAt: time.Now().Local(),
 	}
 
@@ -413,6 +415,10 @@ func (srv *Service) UpdateHookURL(ctx context.Context, in *entity.UpdateHookURLR
 
 	if in.KeyWord != doc.KeyWord {
 		fields["key_word"] = in.KeyWord
+	}
+
+	if strings.Join(in.HideText, ",") != strings.Join(doc.HideText, ",") {
+		fields["hide_text"] = in.HideText
 	}
 
 	if len(fields) > 0 {

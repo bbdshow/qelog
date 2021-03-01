@@ -48,6 +48,7 @@ type HookURL struct {
 	URL       string             `bson:"url"`
 	Method    Method             `bson:"method"`
 	KeyWord   string             `bson:"key_word"`
+	HideText  []string           `bson:"hide_text"`
 	UpdatedAt time.Time          `bson:"updated_at"`
 }
 
