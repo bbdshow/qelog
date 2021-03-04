@@ -23,7 +23,7 @@ func (srv *HTTPService) Run(addr string) error {
 	handler := gin.New()
 	if config.Global.Release() {
 		gin.SetMode(gin.ReleaseMode)
-		handler.Use(httputil.GinLogger([]string{"/health"}), httputil.GinRecoveryWithLogger())
+		handler.Use(httputil.GinLogger([]string{"/health", "/admin", "/static"}), httputil.GinRecoveryWithLogger())
 	} else {
 		handler.Use(gin.Logger(), gin.Recovery())
 	}
