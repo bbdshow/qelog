@@ -50,19 +50,21 @@ type FindHookURLListReq struct {
 }
 
 type FindHookURLList struct {
-	ID           string `json:"id"`
-	Name         string `json:"name"`
-	URL          string `json:"url"`
-	Method       int32  `json:"method"`
-	KeyWord      string `json:"keyWord"`
-	UpdatedTsSec int64  `json:"updatedTsSec"`
+	ID           string   `json:"id"`
+	Name         string   `json:"name"`
+	URL          string   `json:"url"`
+	Method       int32    `json:"method"`
+	KeyWord      string   `json:"keyWord"`
+	HideText     []string `json:"hideText"`
+	UpdatedTsSec int64    `json:"updatedTsSec"`
 }
 
 type CreateHookURLReq struct {
-	Name    string `json:"name" binding:"required"`
-	URL     string `json:"url" binding:"required"`
-	Method  int32  `json:"method" binding:"required"`
-	KeyWord string `json:"keyWord" binding:"omitempty,lte=24"`
+	Name     string   `json:"name" binding:"required"`
+	URL      string   `json:"url" binding:"required"`
+	Method   int32    `json:"method" binding:"required"`
+	KeyWord  string   `json:"keyWord" binding:"omitempty,lte=24"`
+	HideText []string `json:"hideText" binding:"omitempty,gte=1"`
 }
 
 type UpdateHookURLReq struct {
