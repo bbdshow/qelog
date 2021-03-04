@@ -16,7 +16,7 @@ type FindLoggingListReq struct {
 }
 
 type FindLoggingByTraceIDReq struct {
-	ShardingIndex int    `json:"sharding_index" binding:"required,min=0"`
+	ShardingIndex int    `json:"shardingIndex" binding:"required,min=0"`
 	ModuleName    string `json:"moduleName" binding:"required"`
 	TraceID       string `json:"traceId" binding:"required,gte=19"`
 	// 指定查询集合
