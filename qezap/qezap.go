@@ -30,7 +30,8 @@ type Logger struct {
 	localW  *WriteSync
 	remoteW *WriteRemote
 
-	core zapcore.Core
+	core            zapcore.Core
+	ioWriterMessage string
 }
 
 func NewOneEncoderMultiWriterCore(enc zapcore.Encoder, level *zap.AtomicLevel, multiW []zapcore.WriteSyncer) *oneEncoderMultiWriter {
@@ -152,6 +153,28 @@ func New(cfg *Config, level zapcore.Level, options ...zap.Option) *Logger {
 	log.Logger = zap.New(log.core, opts...)
 
 	return log
+}
+
+type Writer struct {
+	level   zapcore.Level
+	message string
+	log     *zap.Logger
+}
+
+func (w *Writer) Write(b []byte) (n int, err error) {
+	if ce := w.log.Check(w.level, w.message); ce != nil {
+		ce.Write(zap.String("content", string(b)))
+	}
+	return
+}
+
+func (log *Logger) NewWriter(level zapcore.Level, message string) *Writer {
+	l := zap.New(log.core, zap.AddCaller(), zap.AddCallerSkip(1))
+	return &Writer{
+		level:   level,
+		message: message,
+		log:     l,
+	}
 }
 
 // 可动态修改日志等级

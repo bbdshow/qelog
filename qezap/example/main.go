@@ -55,6 +55,9 @@ func main() {
 	replaceZapLogger := qelog.Logger
 	replaceZapLogger.Info("这种方式，可以替换之前项目用的 zap.Logger")
 
+	w := qelog.NewWriter(zap.InfoLevel, "writer")
+	w.Write([]byte("io.Writer impl"))
+
 	qelog.DPanic("last message")
 	if err := qelog.Sync(); err != nil {
 		fmt.Println(err)
