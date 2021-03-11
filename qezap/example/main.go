@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"fmt"
-	"io"
 	"time"
 
 	"go.uber.org/zap/zapcore"
@@ -46,28 +45,15 @@ func main() {
 	// 已经携带好 TraceID
 	ctx = qelog.WithTraceID(ctx)
 	// 会获取 ctx 的 TraceID
-	qelog.WarnWithCtx(ctx, "have trace id field", zap.String("withCtx", "warn"))
-	qelog.ErrorWithCtx(ctx, "have trace id field", zap.String("withCtx", "error"))
+	qelog.Warn("have trace id field", zap.String("withCtx", "warn"), qelog.FieldTraceID(ctx))
+	qelog.Error("have trace id field", zap.String("withCtx", "error"), qelog.FieldTraceID(ctx))
 
 	// 还可以获取 ctx 里面的 TraceID 写入到 Response Header 等
-	tid := qelog.MustGetTraceID(ctx)
+	tid := qelog.TraceID(ctx)
 	fmt.Println(tid.Hex())
 
-	// 用于替换需要 io.Writer 接口的其他组件
-	// writer 复用，可以设置作为 io.Writer 输出的 prefix 和 level
-	ginDefaultW := qelog.Clone()
-	ginDefaultW.SetWriteLevel(zapcore.InfoLevel)
-	ginDefaultW.SetWritePrefix("GinDefaultWriter")
-
-	replaceGinLogger(ginDefaultW)
-
-	ginDefaultErrorW := qelog.Clone()
-	ginDefaultErrorW.SetWriteLevel(zapcore.ErrorLevel)
-	ginDefaultErrorW.SetWritePrefix("GinDefaultErrorWriter")
-
-	replaceGinLogger(ginDefaultErrorW)
-
-	qelog.Warn("zap.Logger")
+	replaceZapLogger := qelog.Logger
+	replaceZapLogger.Info("这种方式，可以替换之前项目用的 zap.Logger")
 
 	qelog.DPanic("last message")
 	if err := qelog.Sync(); err != nil {
@@ -76,10 +62,4 @@ func main() {
 	if err := qelog.Close(); err != nil {
 		fmt.Println(err)
 	}
-}
-
-func replaceGinLogger(w io.Writer) {
-	// 这里可以替换掉gin默认的输出文件
-	// gin.DefaultWriter = w
-	w.Write([]byte("gin out writer"))
 }

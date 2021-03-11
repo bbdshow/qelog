@@ -30,8 +30,7 @@ type Logger struct {
 	localW  *WriteSync
 	remoteW *WriteRemote
 
-	WritePrefix string
-	WriteLevel  zapcore.Level
+	core zapcore.Core
 }
 
 func NewOneEncoderMultiWriterCore(enc zapcore.Encoder, level *zap.AtomicLevel, multiW []zapcore.WriteSyncer) *oneEncoderMultiWriter {
@@ -114,11 +113,8 @@ func New(cfg *Config, level zapcore.Level, options ...zap.Option) *Logger {
 		atomicLevel: &atomicLevel,
 		localW:      nil,
 		remoteW:     nil,
-		WritePrefix: "",
-		WriteLevel:  zap.DebugLevel,
 	}
 
-	var core zapcore.Core
 	if mode == Release {
 		// 一次编码 多次写入
 		multiW := make([]zapcore.WriteSyncer, 0)
@@ -132,7 +128,7 @@ func New(cfg *Config, level zapcore.Level, options ...zap.Option) *Logger {
 			log.remoteW = remoteW
 			multiW = append(multiW, remoteW)
 		}
-		core = NewOneEncoderMultiWriterCore(jsonEncoder(), &atomicLevel, multiW)
+		log.core = NewOneEncoderMultiWriterCore(jsonEncoder(), &atomicLevel, multiW)
 	} else {
 		localW := NewWriteSync(cfg)
 		log.localW = localW
@@ -143,18 +139,17 @@ func New(cfg *Config, level zapcore.Level, options ...zap.Option) *Logger {
 			log.remoteW = remoteW
 			cores = append(cores, zapcore.NewCore(jsonEncoder(), remoteW, &atomicLevel))
 		}
-		core = zapcore.NewTee(cores...)
+		log.core = zapcore.NewTee(cores...)
 	}
 
 	// 设置默认的 options, caller 设置最前面
 	opts := make([]zap.Option, 0)
-	opts = append(opts, zap.AddCallerSkip(2))
 	opts = append(opts, zap.AddCaller())
 	opts = append(opts, zap.AddStacktrace(zap.DPanicLevel))
 
 	opts = append(opts, options...)
 
-	log.Logger = zap.New(core, opts...)
+	log.Logger = zap.New(log.core, opts...)
 
 	return log
 }
@@ -163,31 +158,6 @@ func New(cfg *Config, level zapcore.Level, options ...zap.Option) *Logger {
 func (log *Logger) SetEnabledLevel(lvl zapcore.Level) *Logger {
 	log.atomicLevel.SetLevel(lvl)
 	return log
-}
-
-// 暴露Write方法，用于替换使用  io.Writer 接口的地方
-func (log *Logger) Write(b []byte) (n int, err error) {
-	ec := log.Check(log.WriteLevel, log.WritePrefix)
-	ec.Write(zap.String("val", string(b)))
-	return len(b), nil
-}
-
-func (log *Logger) SetWriteLevel(lvl zapcore.Level) *Logger {
-	log.WriteLevel = lvl
-	return log
-}
-
-func (log *Logger) SetWritePrefix(s string) *Logger {
-	log.WritePrefix = s
-	return log
-}
-
-func (log *Logger) Clone() *Logger {
-	return &Logger{
-		Logger:      log.Logger,
-		WritePrefix: "",
-		WriteLevel:  0,
-	}
 }
 
 func (log *Logger) ConditionOne(v string) zap.Field {
@@ -206,95 +176,17 @@ func (log *Logger) WithTraceID(ctx context.Context) context.Context {
 	return context.WithValue(ctx, types.EncoderTraceIDKey, types.NewTraceID())
 }
 
-func (log *Logger) Debug(msg string, fields ...zap.Field) {
-	log.encoderWithCtx(zapcore.DebugLevel, nil, msg, fields...)
+func (log *Logger) FieldTraceID(ctx context.Context) zap.Field {
+	return zap.String(types.EncoderTraceIDKey, log.TraceID(ctx).Hex())
 }
 
-func (log *Logger) Info(msg string, fields ...zap.Field) {
-	log.encoderWithCtx(zapcore.InfoLevel, nil, msg, fields...)
-}
-
-func (log *Logger) Warn(msg string, fields ...zap.Field) {
-	log.encoderWithCtx(zapcore.WarnLevel, nil, msg, fields...)
-}
-
-func (log *Logger) Error(msg string, fields ...zap.Field) {
-	log.encoderWithCtx(zapcore.ErrorLevel, nil, msg, fields...)
-}
-
-func (log *Logger) DPanic(msg string, fields ...zap.Field) {
-	log.encoderWithCtx(zapcore.DPanicLevel, nil, msg, fields...)
-}
-
-func (log *Logger) Panic(msg string, fields ...zap.Field) {
-	log.encoderWithCtx(zapcore.PanicLevel, nil, msg, fields...)
-}
-
-func (log *Logger) Fatal(msg string, fields ...zap.Field) {
-	log.encoderWithCtx(zapcore.FatalLevel, nil, msg, fields...)
-}
-
-// 用于把上下文的一些信息打入日志
-func (log *Logger) DebugWithCtx(ctx context.Context, msg string, fields ...zap.Field) {
-	log.encoderWithCtx(zapcore.DebugLevel, ctx, msg, fields...)
-}
-
-func (log *Logger) InfoWithCtx(ctx context.Context, msg string, fields ...zap.Field) {
-	log.encoderWithCtx(zapcore.InfoLevel, ctx, msg, fields...)
-}
-
-func (log *Logger) WarnWithCtx(ctx context.Context, msg string, fields ...zap.Field) {
-	log.encoderWithCtx(zapcore.WarnLevel, ctx, msg, fields...)
-}
-
-func (log *Logger) ErrorWithCtx(ctx context.Context, msg string, fields ...zap.Field) {
-	log.encoderWithCtx(zapcore.ErrorLevel, ctx, msg, fields...)
-}
-
-func (log *Logger) DPanicWithCtx(ctx context.Context, msg string, fields ...zap.Field) {
-	log.encoderWithCtx(zapcore.DPanicLevel, ctx, msg, fields...)
-}
-
-func (log *Logger) PanicWithCtx(ctx context.Context, msg string, fields ...zap.Field) {
-	log.encoderWithCtx(zapcore.PanicLevel, ctx, msg, fields...)
-}
-
-func (log *Logger) FatalWithCtx(ctx context.Context, msg string, fields ...zap.Field) {
-	log.encoderWithCtx(zapcore.FatalLevel, ctx, msg, fields...)
-}
-
-func (log *Logger) MustGetTraceID(ctx context.Context) types.TraceID {
+func (log *Logger) TraceID(ctx context.Context) types.TraceID {
 	val := ctx.Value(types.EncoderTraceIDKey)
 	id, ok := val.(types.TraceID)
 	if ok {
 		return id
 	}
 	return types.NilTraceID
-}
-
-func (log *Logger) encoderWithCtx(level zapcore.Level, ctx context.Context, msg string, fields ...zap.Field) {
-	if ctx != nil {
-		id := log.MustGetTraceID(ctx)
-		if !id.IsZero() {
-			fields = append(fields, zap.String(types.EncoderTraceIDKey, id.Hex()))
-		}
-	}
-	switch level {
-	case zapcore.DebugLevel:
-		log.Logger.Debug(msg, fields...)
-	case zapcore.InfoLevel:
-		log.Logger.Info(msg, fields...)
-	case zapcore.WarnLevel:
-		log.Logger.Warn(msg, fields...)
-	case zapcore.ErrorLevel:
-		log.Logger.Error(msg, fields...)
-	case zapcore.DPanicLevel:
-		log.Logger.DPanic(msg, fields...)
-	case zapcore.PanicLevel:
-		log.Logger.Panic(msg, fields...)
-	case zapcore.FatalLevel:
-		log.Logger.Fatal(msg, fields...)
-	}
 }
 
 func (log *Logger) Config() *Config {
