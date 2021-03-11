@@ -197,7 +197,7 @@ func (srv *Service) FindLoggingList(ctx context.Context, in *entity.FindLoggingL
 	}
 	out.List = list
 
-	logs.Qezap.InfoWithCtx(ctx, "日志查询", zap.String("耗时", time.Now().Sub(s).String()),
+	logs.Qezap.Info("日志查询", zap.String("耗时", time.Now().Sub(s).String()),
 		zap.String("分片", shardingStore.Database().Name()),
 		zap.Any("集合", collectionName),
 		zap.Any("条件", filter))

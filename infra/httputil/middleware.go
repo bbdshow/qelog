@@ -64,11 +64,11 @@ func HandlerLogging(enable bool, skipPrefixPaths ...string) gin.HandlerFunc {
 			request = body.String()
 			c.Request.Body = ioutil.NopCloser(body)
 		}
-		logs.Qezap.InfoWithCtx(c.Request.Context(), "Request", zap.Any("headers", headers), zap.String("reqBody", request),
+		logs.Qezap.Info("Request", zap.Any("headers", headers), zap.String("reqBody", request),
 			zap.String("uri", uri),
 			logs.Qezap.ConditionOne(method),
 			logs.Qezap.ConditionTwo(path),
-			logs.Qezap.ConditionThree(ip))
+			logs.Qezap.ConditionThree(ip), logs.Qezap.FieldTraceID(c.Request.Context()))
 
 		lrw := &loggingRespWriter{body: bytes.NewBuffer([]byte{}), ResponseWriter: c.Writer}
 		c.Writer = lrw
@@ -76,8 +76,9 @@ func HandlerLogging(enable bool, skipPrefixPaths ...string) gin.HandlerFunc {
 		c.Next()
 		baseResp := BaseResp{}
 		if err := json.Unmarshal(lrw.body.Bytes(), &baseResp); err != nil || baseResp.Code != 0 {
-			logs.Qezap.ErrorWithCtx(c.Request.Context(), "Response", zap.String("respBody", lrw.body.String()),
-				logs.Qezap.ConditionOne(path), logs.Qezap.ConditionTwo(uri), logs.Qezap.ConditionThree(ip))
+			logs.Qezap.Error("Response", zap.String("respBody", lrw.body.String()),
+				logs.Qezap.ConditionOne(method), logs.Qezap.ConditionTwo(path), logs.Qezap.ConditionThree(ip),
+				logs.Qezap.FieldTraceID(c.Request.Context()))
 		}
 	}
 }
@@ -145,8 +146,7 @@ func GinLogger(skipPaths []string) gin.HandlerFunc {
 
 func GinRecoveryWithLogger() gin.HandlerFunc {
 	if logs.Qezap != nil {
-		w := logs.Qezap.Clone().SetWriteLevel(zap.ErrorLevel).SetWritePrefix("GIN-ERROR")
-		return gin.RecoveryWithWriter(w)
+		return gin.RecoveryWithWriter(logs.Qezap.NewWriter(zap.ErrorLevel, "GIN-ERROR"))
 	}
 	return gin.Recovery()
 }

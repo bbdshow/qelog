@@ -19,7 +19,7 @@ func SetHideValidatorErr(b bool) {
 func ShouldBind(c *gin.Context, obj interface{}) error {
 	if err := c.ShouldBind(obj); err != nil {
 		if HideValidatorErr {
-			logs.Qezap.InfoWithCtx(c.Request.Context(), "ShouldBind", zap.String("obj", err.Error()))
+			logs.Qezap.Info("ShouldBind", zap.String("obj", err.Error()), logs.Qezap.FieldTraceID(c.Request.Context()))
 			return errors.New("validator error")
 		}
 	}

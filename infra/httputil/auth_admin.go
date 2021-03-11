@@ -22,7 +22,7 @@ func AuthAdmin(enable bool, signingKey ...string) gin.HandlerFunc {
 		}
 		token := c.GetHeader(Authorization)
 		if token == "" {
-			logs.Qezap.InfoWithCtx(c.Request.Context(), fmt.Sprintf("%s header required", Authorization))
+			logs.Qezap.Info(fmt.Sprintf("%s header required", Authorization), logs.Qezap.FieldTraceID(c.Request.Context()))
 			RespError(c, ErrUnauthorized)
 			c.Abort()
 			return
@@ -30,14 +30,14 @@ func AuthAdmin(enable bool, signingKey ...string) gin.HandlerFunc {
 
 		ok, err := jwt.VerifyJWTToken(token, signingKey...)
 		if err != nil || !ok {
-			logs.Qezap.InfoWithCtx(c.Request.Context(), fmt.Sprintf("%s token verify", Authorization), zap.Error(err))
+			logs.Qezap.Info(fmt.Sprintf("%s token verify", Authorization), zap.Error(err), logs.Qezap.FieldTraceID(c.Request.Context()))
 			RespError(c, ErrUnauthorized)
 			c.Abort()
 			return
 		}
 
 		if err := SetJWTClaims(c, token, signingKey...); err != nil {
-			logs.Qezap.InfoWithCtx(c.Request.Context(), fmt.Sprintf("%s token set claims", Authorization), zap.Error(err))
+			logs.Qezap.Info(fmt.Sprintf("%s token set claims", Authorization), zap.Error(err), logs.Qezap.FieldTraceID(c.Request.Context()))
 			RespError(c, ErrUnauthorized)
 			c.Abort()
 			return

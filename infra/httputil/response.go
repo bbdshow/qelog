@@ -97,7 +97,7 @@ func RespDataWithError(c *gin.Context, httpCode int, data interface{}, err error
 			Func:     c.HandlerName(),
 			Error:    message,
 		}
-		logs.Qezap.ErrorWithCtx(c.Request.Context(), "系统错误", zap.Any("resp", respErr), logs.Qezap.ConditionOne(respErr.Path))
+		logs.Qezap.Error("系统错误", zap.Any("resp", respErr), logs.Qezap.ConditionOne(respErr.Path), logs.Qezap.FieldTraceID(c.Request.Context()))
 		// 屏蔽掉系统错误
 		message = CodeMessage[ErrCodeSystemException]
 	}
