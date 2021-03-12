@@ -181,6 +181,8 @@ func (srv *Service) MetricsModuleTrend(ctx context.Context, in *entity.MetricsMo
 	number := int64(0)
 	size := int64(0)
 	ascTsNumbers := make([]model.TsNumbers, 0, in.LastDay*24)
+	allLevels := make(map[model.Level]bool)
+	allIps := make(map[string]bool)
 	for _, v := range docs {
 		number += v.Number
 		size += v.Size
@@ -189,6 +191,13 @@ func (srv *Service) MetricsModuleTrend(ctx context.Context, in *entity.MetricsMo
 				Ts:      ts,
 				Numbers: numbers,
 			})
+			// 需要找出这个时间段的所有 等级 和 ip， 在后面排序时，如果某个时间段不存在值， 则应该默认 0
+			for lvl := range numbers.Levels {
+				allLevels[lvl] = true
+			}
+			for ip := range numbers.IPs {
+				allIps[ip] = true
+			}
 		}
 	}
 	sort.Sort(model.AscTsNumbers(ascTsNumbers))
@@ -200,23 +209,26 @@ func (srv *Service) MetricsModuleTrend(ctx context.Context, in *entity.MetricsMo
 		t := time.Unix(v.Ts, 0)
 		xData = append(xData, fmt.Sprintf("%d-%d %d:00", t.Month(), t.Day(), t.Hour()))
 		//xData = append(xData, t.Format("2006-01-02 15:04:05"))
-		for lvl, num := range v.Levels {
+		for lvl := range allLevels {
 			data, ok := levelMapData[lvl]
-			if ok {
-				levelMapData[lvl] = append(data, num)
-			} else {
+			if !ok {
 				data = make([]int32, 0, in.LastDay*24)
-				levelMapData[lvl] = append(data, num)
+				levelMapData[lvl] = data
 			}
+			// 这个时间段没有这个错误等级，默认设置为 0
+			num := v.Levels[lvl]
+			levelMapData[lvl] = append(data, num)
 		}
-		for ip, num := range v.IPs {
+
+		for ip := range allIps {
 			data, ok := ipMapData[ip]
-			if ok {
-				ipMapData[ip] = append(data, num)
-			} else {
+			if !ok {
 				data = make([]int32, 0, in.LastDay*24)
-				ipMapData[ip] = append(data, num)
+				ipMapData[ip] = data
 			}
+			// 这个时间段没有这个错误等级，默认设置为 0
+			num := v.IPs[ip]
+			ipMapData[ip] = append(data, num)
 		}
 	}
 	out.XData = xData
