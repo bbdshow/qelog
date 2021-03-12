@@ -44,9 +44,9 @@ func JSONOutput(resp *http.Response, t *testing.T) {
 
 func TestCreateModule(t *testing.T) {
 	in := entity.CreateModuleReq{
-		Name:    "example",
-		DBIndex: 1,
-		Desc:    "example 演示",
+		Name:          "example",
+		ShardingIndex: 1,
+		Desc:          "example 演示",
 	}
 	resp, err := http.Post(fmt.Sprintf("%s/v1/module", host), ContentTypeJSON, JSONReader(in))
 	if err != nil {
@@ -57,7 +57,7 @@ func TestCreateModule(t *testing.T) {
 
 func TestFindLoggingList(t *testing.T) {
 	in := entity.FindLoggingListReq{
-		DBIndex:        1,
+		ShardingIndex:  1,
 		ModuleName:     "example",
 		Short:          "",
 		Level:          0,
@@ -82,9 +82,9 @@ func TestFindLoggingList(t *testing.T) {
 
 func TestFindLoggingByTraceID(t *testing.T) {
 	in := entity.FindLoggingByTraceIDReq{
-		DBIndex:    1,
-		ModuleName: "example",
-		TraceID:    "1666dcdd45c308587d4933fe",
+		ShardingIndex: 1,
+		ModuleName:    "example",
+		TraceID:       "1666dcdd45c308587d4933fe",
 	}
 	resp, err := http.Post(fmt.Sprintf("%s/v1/logging/traceid", host), ContentTypeJSON, JSONReader(in))
 	if err != nil {

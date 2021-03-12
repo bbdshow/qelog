@@ -184,32 +184,27 @@ func (log *Logger) SetEnabledLevel(lvl zapcore.Level) *Logger {
 }
 
 func (log *Logger) ConditionOne(v string) zap.Field {
-	return zap.String(types.EncoderConditionOneKey, v)
+	return ConditionOne(v)
 }
 
 func (log *Logger) ConditionTwo(v string) zap.Field {
-	return zap.String(types.EncoderConditionTwoKey, v)
+	return ConditionTwo(v)
 }
 
 func (log *Logger) ConditionThree(v string) zap.Field {
-	return zap.String(types.EncoderConditionThreeKey, v)
+	return ConditionThree(v)
 }
 
 func (log *Logger) WithTraceID(ctx context.Context) context.Context {
-	return context.WithValue(ctx, types.EncoderTraceIDKey, types.NewTraceID())
+	return WithTraceID(ctx)
 }
 
 func (log *Logger) FieldTraceID(ctx context.Context) zap.Field {
-	return zap.String(types.EncoderTraceIDKey, log.TraceID(ctx).Hex())
+	return FieldTraceID(ctx)
 }
 
 func (log *Logger) TraceID(ctx context.Context) types.TraceID {
-	val := ctx.Value(types.EncoderTraceIDKey)
-	id, ok := val.(types.TraceID)
-	if ok {
-		return id
-	}
-	return types.NilTraceID
+	return TraceID(ctx)
 }
 
 func (log *Logger) Config() *Config {
@@ -225,4 +220,33 @@ func (log *Logger) Close() error {
 		err = multierr.Append(err, log.remoteW.Close())
 	}
 	return err
+}
+
+func ConditionOne(v string) zap.Field {
+	return zap.String(types.EncoderConditionOneKey, v)
+}
+
+func ConditionTwo(v string) zap.Field {
+	return zap.String(types.EncoderConditionTwoKey, v)
+}
+
+func ConditionThree(v string) zap.Field {
+	return zap.String(types.EncoderConditionThreeKey, v)
+}
+
+func WithTraceID(ctx context.Context) context.Context {
+	return context.WithValue(ctx, types.EncoderTraceIDKey, types.NewTraceID())
+}
+
+func FieldTraceID(ctx context.Context) zap.Field {
+	return zap.String(types.EncoderTraceIDKey, TraceID(ctx).Hex())
+}
+
+func TraceID(ctx context.Context) types.TraceID {
+	val := ctx.Value(types.EncoderTraceIDKey)
+	id, ok := val.(types.TraceID)
+	if ok {
+		return id
+	}
+	return types.NilTraceID
 }
