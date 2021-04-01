@@ -7,24 +7,26 @@ import (
 	"go.uber.org/zap"
 )
 
-func InitTestDepends() {
-	InitTestConfig()
-	InitTestQezap()
-	InitShardingDB()
+func InitTestDepends(cfgPath ...string) {
+	InitTestConfig(cfgPath...)
+	InitTestQezap(config.Global)
+	InitShardingDB(config.Global)
 }
 
-func InitTestConfig() {
-	cfg := config.InitConfig("")
+func InitTestConfig(cfgPath ...string) {
+	path := ""
+	if len(cfgPath) > 0 {
+		path = cfgPath[0]
+	}
+	cfg := config.InitConfig(path)
 	config.SetGlobalConfig(cfg)
 }
 
-func InitTestQezap() {
-	cfg := config.InitConfig("")
+func InitTestQezap(cfg *config.Config) {
 	logs.InitQezap(cfg.Logging.Addr, cfg.Logging.Module, cfg.Logging.Filename)
 }
 
-func InitShardingDB() {
-	cfg := config.InitConfig("")
+func InitShardingDB(cfg *config.Config) {
 	sharding, err := storage.NewSharding(cfg.Main, cfg.Sharding, cfg.ShardingIndexSize)
 	if err != nil {
 		logs.Qezap.Fatal("mongo connect failed ", zap.Error(err))

@@ -3,6 +3,7 @@ package main
 import (
 	"flag"
 	"fmt"
+	"github.com/huzhongqing/qelog/pkg/httpserver"
 	"os"
 	"os/signal"
 	"syscall"
@@ -67,9 +68,10 @@ func main() {
 		logs.Qezap.Fatal("mongo create index", zap.Error(err))
 	}
 
-	httpSrv := receiver.NewHTTPService()
-
+	httpSrv := httpserver.NewHTTPServer(cfg.Env)
+	receiver.RegisterRouter(httpSrv.Engine())
 	go func() {
+		fmt.Println("http server listen", cfg.ReceiverAddr)
 		if err := httpSrv.Run(cfg.ReceiverAddr); err != nil {
 			logs.Qezap.Fatal("http server listen failed", zap.Error(err))
 		}
@@ -77,6 +79,7 @@ func main() {
 
 	grpcSrv := receiver.NewGRPCService()
 	go func() {
+		fmt.Println("gRPC server listen", cfg.ReceiverGRPCAddr)
 		if err := grpcSrv.Run(cfg.ReceiverGRPCAddr); err != nil {
 			logs.Qezap.Fatal("gRPC server listen failed", zap.Error(err))
 		}

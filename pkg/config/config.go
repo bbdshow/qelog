@@ -21,7 +21,7 @@ type Config struct {
 	Env              string `default:"dev"`
 	ReceiverAddr     string `default:"0.0.0.0:31081"`
 	ReceiverGRPCAddr string `default:":31082"`
-	ManagerAddr      string `default:"0.0.0.0:31080"`
+	AdminAddr      string `default:"0.0.0.0:31080"`
 
 	AuthEnable    bool `default:"true"`
 	AlarmEnable   bool `default:"true"`
@@ -52,10 +52,13 @@ func InitConfig(filename string) *Config {
 		panic(err)
 	}
 
-	_, err := toml.DecodeFile(filename, cfg)
-	if err != nil {
-		panic("config init " + err.Error())
+	if filename != "" {
+		_, err := toml.DecodeFile(filename, cfg)
+		if err != nil {
+			panic("config init " + err.Error())
+		}
 	}
+
 	if err := cfg.Validate(); err != nil {
 		panic("config validate " + err.Error())
 	}

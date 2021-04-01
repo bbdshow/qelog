@@ -9,9 +9,10 @@ import (
 	"time"
 
 	"github.com/huzhongqing/qelog/infra/logs"
+	"github.com/huzhongqing/qelog/pkg/admin"
 	"github.com/huzhongqing/qelog/pkg/common/model"
 	"github.com/huzhongqing/qelog/pkg/config"
-	"github.com/huzhongqing/qelog/pkg/manager"
+	"github.com/huzhongqing/qelog/pkg/httpserver"
 	"github.com/huzhongqing/qelog/pkg/storage"
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
@@ -22,7 +23,7 @@ var (
 	buildTime = ""
 	gitHash   = ""
 
-	configPath = "./configs/config.toml"
+	configPath = "./configs/config.docker.toml"
 	version    = false
 )
 
@@ -66,11 +67,13 @@ func main() {
 		logs.Qezap.Fatal("mongo create index ", zap.Error(err))
 	}
 
-	httpSrv := manager.NewHTTPService()
+	httpSrv := httpserver.NewHTTPServer(cfg.Env)
+	// 注册后台路由
+	admin.RegisterRouter(httpSrv.Engine())
 
 	go func() {
-		logs.Qezap.Info("http server listen", zap.String("addr", cfg.ManagerAddr))
-		if err := httpSrv.Run(cfg.ManagerAddr); err != nil {
+		fmt.Println("http server listen", cfg.AdminAddr)
+		if err := httpSrv.Run(cfg.AdminAddr); err != nil {
 			logs.Qezap.Fatal("http server listen failed", zap.Error(err))
 		}
 	}()

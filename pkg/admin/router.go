@@ -1,52 +1,12 @@
-package manager
+package admin
 
 import (
-	"net/http"
-	"time"
-
+	"github.com/gin-gonic/gin"
 	"github.com/huzhongqing/qelog/infra/httputil"
 	"github.com/huzhongqing/qelog/pkg/config"
-
-	"github.com/gin-gonic/gin"
 )
 
-type HTTPService struct {
-	server *http.Server
-}
-
-func NewHTTPService() *HTTPService {
-	srv := &HTTPService{}
-	return srv
-}
-
-func (srv *HTTPService) Run(addr string) error {
-	handler := gin.New()
-	if config.Global.Release() {
-		gin.SetMode(gin.ReleaseMode)
-		handler.Use(httputil.GinLogger([]string{"/health", "/admin", "/static"}), httputil.GinRecoveryWithLogger())
-	} else {
-		handler.Use(gin.Logger(), gin.Recovery())
-	}
-
-	RegisterRouter(handler)
-
-	srv.server = &http.Server{
-		Addr:         addr,
-		Handler:      handler,
-		ReadTimeout:  120 * time.Second,
-		WriteTimeout: 90 * time.Second,
-	}
-	return srv.server.ListenAndServe()
-}
-
-func (srv *HTTPService) Close() error {
-	if srv.server != nil {
-		_ = srv.server.Close()
-	}
-	return nil
-}
-
-func RegisterRouter(route *gin.Engine, midd ...gin.HandlerFunc) {
+func RegisterRouter(route *gin.Engine) {
 	h := NewHandler()
 
 	route.HEAD("/", func(c *gin.Context) { c.Status(200) })

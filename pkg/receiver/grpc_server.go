@@ -22,7 +22,6 @@ func NewGRPCService() *GRPCService {
 		server:   nil,
 		receiver: NewService(storage.ShardingDB),
 	}
-
 	return srv
 }
 
