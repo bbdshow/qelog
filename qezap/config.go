@@ -2,6 +2,7 @@ package qezap
 
 import (
 	"errors"
+	"fmt"
 	"path"
 	"strings"
 	"time"
@@ -67,9 +68,9 @@ func NewConfig(addrs []string, moduleName string) *Config {
 }
 
 func (cfg *Config) SetFilename(filename string) *Config {
-	dir := path.Dir(filename)
+	dir,file := path.Split(filename)
 	cfg.Filename = filename
-	cfg.BackupFilename = path.Join(dir, "backup", "backup.log")
+	cfg.BackupFilename = path.Join(dir, "backup", fmt.Sprintf("bak.%s",file))
 	return cfg
 }
 

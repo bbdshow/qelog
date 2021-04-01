@@ -29,7 +29,7 @@ func main() {
 		log.Fatal(err.Error())
 	}
 	cfg := qezap.NewConfig([]string{addr}, module)
-	cfg.SetFilename("./data/log/logger.log")
+	cfg.SetFilename("./data/log/qelogger.log")
 	qelog := qezap.New(cfg, zap.DebugLevel)
 
 	count := 0

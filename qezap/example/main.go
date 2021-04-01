@@ -22,12 +22,15 @@ func init() {
 	cfg.SetMaxAge(30 * 24 * time.Hour)
 	// config 具体设置可查看响应的方法
 
+	cfg.SetFilename("./log/qelogger.log")
+
 	qelog = qezap.New(cfg, zap.DebugLevel, zap.AddStacktrace(zap.ErrorLevel))
 	// 测试，等待后台建立好 gRPC 连接
 	time.Sleep(time.Second)
 }
 
 func main() {
+
 	// 普通用法
 	qelog.Debug("Debug", zap.String("val", "i am string field"))
 
