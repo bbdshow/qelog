@@ -2,91 +2,94 @@ package storage
 
 import (
 	"context"
+	"github.com/huzhongqing/qelog/infra/mongo"
 
 	"github.com/huzhongqing/qelog/pkg/common/model"
 	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
+type AlarmRule struct {
+	db *mongo.Database
+}
+
+func NewAlarmRule(db *mongo.Database) *AlarmRule {
+	return &AlarmRule{db: db}
+}
+
 // 当报警规则超过上千的规则，可优化语句
-func (store *Store) FindAllEnableAlarmRule(ctx context.Context) ([]*model.AlarmRule, error) {
+func (ar *AlarmRule) FindAlarmRule(ctx context.Context, filter bson.M, opts ...*options.FindOptions) ([]*model.AlarmRule, error) {
 	docs := make([]*model.AlarmRule, 0)
-	coll := store.database.Collection(model.CollectionNameAlarmRule)
-	err := store.database.Find(ctx, coll, bson.M{"enable": true}, &docs)
-	return docs, handlerError(err)
+	err := ar.db.Find(ctx, ar.db.Collection(model.CollectionNameAlarmRule), filter, &docs, opts...)
+	return docs, err
 }
 
-func (store *Store) FindAlarmRuleList(ctx context.Context, filter bson.M, result interface{}, opt *options.FindOptions) (int64, error) {
-	c, err := store.database.FindAndCount(ctx, store.database.Collection(model.CollectionNameAlarmRule), filter, result, opt)
-	return c, handlerError(err)
+func (ar *AlarmRule) FindCountAlarmRule(ctx context.Context, filter bson.M, opts ...*options.FindOptions) (int64, []*model.AlarmRule, error) {
+	docs := make([]*model.AlarmRule, 0)
+	c, err := ar.db.FindAndCount(ctx, ar.db.Collection(model.CollectionNameAlarmRule), filter, &docs, opts...)
+	return c, docs, err
 }
 
-func (store *Store) InsertAlarmRule(ctx context.Context, doc *model.AlarmRule) error {
-	_, err := store.database.Collection(doc.CollectionName()).InsertOne(ctx, doc)
-	return handlerError(err)
+func (ar *AlarmRule) InsertAlarmRule(ctx context.Context, doc *model.AlarmRule) error {
+	_, err := ar.db.Collection(doc.CollectionName()).InsertOne(ctx, doc)
+	return err
 }
 
-func (store *Store) FindOneAlarmRule(ctx context.Context, filter bson.M, doc *model.AlarmRule) (bool, error) {
-	return store.database.FindOne(ctx, store.database.Collection(doc.CollectionName()), filter, doc)
+func (ar *AlarmRule) FindOneAlarmRule(ctx context.Context, filter bson.M, doc *model.AlarmRule) (bool, error) {
+	return ar.db.FindOne(ctx, ar.db.Collection(doc.CollectionName()), filter, doc)
 }
 
-func (store *Store) UpdateAlarmRule(ctx context.Context, filter, update bson.M) error {
-	uRet, err := store.database.Collection(model.CollectionNameAlarmRule).UpdateOne(ctx, filter, update)
+func (ar *AlarmRule) UpdateAlarmRule(ctx context.Context, filter, update bson.M) error {
+	uRet, err := ar.db.Collection(model.CollectionNameAlarmRule).UpdateOne(ctx, filter, update)
 	if err != nil {
-		return handlerError(err)
+		return err
 	}
 	if uRet.MatchedCount <= 0 {
-		return ErrNotMatched
+		return mongo.ErrNotMatched
 	}
 	return nil
 }
 
-func (store *Store) UpdateManyAlarmRule(ctx context.Context, filter, update bson.M) error {
-	_, err := store.database.Collection(model.CollectionNameAlarmRule).UpdateMany(ctx, filter, update)
+func (ar *AlarmRule) UpdateManyAlarmRule(ctx context.Context, filter, update bson.M) error {
+	_, err := ar.db.Collection(model.CollectionNameAlarmRule).UpdateMany(ctx, filter, update)
 	if err != nil {
-		return handlerError(err)
+		return err
 	}
 	return nil
 }
 
-func (store *Store) DeleteAlarmRule(ctx context.Context, id primitive.ObjectID) error {
-	filter := bson.M{
-		"_id": id,
-	}
-	_, err := store.database.Collection(model.CollectionNameAlarmRule).DeleteOne(ctx, filter)
-	return handlerError(err)
+func (ar *AlarmRule) DeleteAlarmRule(ctx context.Context, filter bson.M) error {
+	_, err := ar.db.Collection(model.CollectionNameAlarmRule).DeleteOne(ctx, filter)
+	return err
 }
 
-func (store *Store) FindHookURL(ctx context.Context, filter bson.M, result interface{}, opt *options.FindOptions) (int64, error) {
-	c, err := store.database.FindAndCount(ctx, store.database.Collection(model.CollectionNameHookURL), filter, result, opt)
-	return c, handlerError(err)
+func (ar *AlarmRule) FindCountHookURL(ctx context.Context, filter bson.M, opts ...*options.FindOptions) (int64, []*model.HookURL, error) {
+	docs := make([]*model.HookURL, 0)
+	c, err := ar.db.FindAndCount(ctx, ar.db.Collection(model.CollectionNameHookURL), filter, &docs, opts...)
+	return c, docs, err
 }
 
-func (store *Store) FindOneHookURL(ctx context.Context, filter bson.M, doc *model.HookURL) (bool, error) {
-	return store.database.FindOne(ctx, store.database.Collection(doc.CollectionName()), filter, doc)
+func (ar *AlarmRule) FindOneHookURL(ctx context.Context, filter bson.M, doc *model.HookURL) (bool, error) {
+	return ar.db.FindOne(ctx, ar.db.Collection(doc.CollectionName()), filter, doc)
 }
 
-func (store *Store) InsertHookURL(ctx context.Context, doc *model.HookURL) error {
-	_, err := store.database.Collection(doc.CollectionName()).InsertOne(ctx, doc)
-	return handlerError(err)
+func (ar *AlarmRule) InsertHookURL(ctx context.Context, doc *model.HookURL) error {
+	_, err := ar.db.Collection(doc.CollectionName()).InsertOne(ctx, doc)
+	return err
 }
 
-func (store *Store) UpdateHookURL(ctx context.Context, filter, update bson.M) error {
-	uRet, err := store.database.Collection(model.CollectionNameHookURL).UpdateOne(ctx, filter, update)
+func (ar *AlarmRule) UpdateHookURL(ctx context.Context, filter, update bson.M) error {
+	uRet, err := ar.db.Collection(model.CollectionNameHookURL).UpdateOne(ctx, filter, update)
 	if err != nil {
-		return handlerError(err)
+		return err
 	}
 	if uRet.MatchedCount <= 0 {
-		return ErrNotMatched
+		return mongo.ErrNotMatched
 	}
 	return nil
 }
 
-func (store *Store) DelHookURL(ctx context.Context, id primitive.ObjectID) error {
-	filter := bson.M{
-		"_id": id,
-	}
-	_, err := store.database.Collection(model.CollectionNameHookURL).DeleteOne(ctx, filter)
-	return handlerError(err)
+func (ar *AlarmRule) DelHookURL(ctx context.Context, filter bson.M) error {
+	_, err := ar.db.Collection(model.CollectionNameHookURL).DeleteOne(ctx, filter)
+	return err
 }

@@ -11,7 +11,6 @@ import (
 
 	"github.com/huzhongqing/qelog/infra/httputil"
 	"github.com/huzhongqing/qelog/infra/mongo"
-	"github.com/huzhongqing/qelog/pkg/mongoutil"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 
 	"github.com/huzhongqing/qelog/pkg/common/model"
@@ -23,8 +22,8 @@ import (
 
 func (srv *Service) MetricsDBStats(ctx context.Context, out *entity.ListResp) error {
 	// 先查看最后一条， 如果超时就去库里查询
-	mainCfg := srv.sharding.MainCfg()
-	shardingCfg := srv.sharding.ShardingCfg()
+	mainCfg := model.ShardingDB.MainConfig()
+	shardingCfg := model.ShardingDB.ShardSlotsConfig()
 	mainHost := strings.Join(mongo.URIToHosts(mainCfg.URI), ",")
 
 	dbStats := make([]entity.DBStats, 0)
@@ -74,8 +73,8 @@ func (srv *Service) MetricsDBStats(ctx context.Context, out *entity.ListResp) er
 
 func (srv *Service) MetricsCollStats(ctx context.Context, in *entity.MetricsCollStatsReq, out *entity.ListResp) error {
 	uri := ""
-	mainCfg := srv.sharding.MainCfg()
-	shardingCfg := srv.sharding.ShardingCfg()
+	mainCfg := model.ShardingDB.MainConfig()
+	shardingCfg := model.ShardingDB.ShardSlotsConfig()
 
 	mainHost := strings.Join(mongo.URIToHosts(mainCfg.URI), ",")
 	if mainHost == in.Host {
@@ -138,12 +137,8 @@ func (srv *Service) MetricsModuleList(ctx context.Context, in *entity.MetricsMod
 		}
 	}
 
-	docs := make([]*model.ModuleMetrics, 0, in.Limit)
-	opt := options.Find()
-	in.SetPage(opt)
-	opt.SetSort(bson.M{"number": -1})
-	opt.SetProjection(bson.M{"sections": 0})
-	c, err := srv.store.FindMetricsModuleList(ctx, filter, &docs, opt)
+	opt := in.SetPage(options.Find()).SetSort(bson.M{"number": -1}).SetProjection(bson.M{"sections": 0})
+	c, docs, err := srv.moduleMetricsStore.FindCountModuleMetrics(ctx, filter, opt)
 	if err != nil {
 		return httputil.ErrSystemException.MergeError(err)
 	}
@@ -172,9 +167,9 @@ func (srv *Service) MetricsModuleTrend(ctx context.Context, in *entity.MetricsMo
 		"module_name":  in.ModuleName,
 		"created_date": bson.M{"$gte": lastDay},
 	}
-	fmt.Println(filter)
-	docs := make([]*model.ModuleMetrics, 0, in.LastDay)
-	if err := srv.store.FindModuleMetrics(ctx, filter, &docs, nil); err != nil {
+
+	_, docs, err := srv.moduleMetricsStore.FindCountModuleMetrics(ctx, filter, nil)
+	if err != nil {
 		return httputil.ErrSystemException.MergeError(err)
 	}
 
@@ -306,7 +301,7 @@ func (srv *Service) readDBStatsAndInsert(ctx context.Context, uri, host, databas
 	opt := options.FindOne()
 	opt.SetSort(bson.M{"_id": -1})
 	latestDBStats := &model.DBStats{}
-	ok, err := srv.store.FindOneDBStats(ctx, filter, latestDBStats, opt)
+	ok, err := srv.moduleMetricsStore.FindOneDBStats(ctx, filter, latestDBStats, opt)
 	if err != nil {
 		return nil, err
 	}
@@ -320,7 +315,7 @@ func (srv *Service) readDBStatsAndInsert(ctx context.Context, uri, host, databas
 		return nil, err
 	}
 	defer db.Client().Disconnect(ctx)
-	util := mongoutil.NewMongodbUtil(db)
+	util := mongo.NewUtil(db)
 
 	stats, err := util.DBStats(ctx)
 	if err != nil {
@@ -338,7 +333,7 @@ func (srv *Service) readDBStatsAndInsert(ctx context.Context, uri, host, databas
 		CreatedAt:   time.Now(),
 	}
 
-	srv.store.InsertOneDBStats(ctx, doc)
+	_ = srv.moduleMetricsStore.InsertOneDBStats(ctx, doc)
 
 	return doc, nil
 }
@@ -349,10 +344,8 @@ func (srv *Service) readCollStatsAndInsert(ctx context.Context, uri, host, datab
 		"db":         database,
 		"created_at": bson.M{"$gte": time.Now().Add(-30 * time.Minute)},
 	}
-	opt := options.Find()
-	opt.SetSort(bson.M{"name": -1})
-	latestCollStats := make([]*model.CollStats, 0)
-	err := srv.store.FindCollStats(ctx, filter, &latestCollStats, opt)
+	opt := options.Find().SetSort(bson.M{"name": -1})
+	latestCollStats, err := srv.moduleMetricsStore.FindCollStats(ctx, filter, opt)
 	if err != nil {
 		return nil, err
 	}
@@ -372,7 +365,7 @@ func (srv *Service) readCollStatsAndInsert(ctx context.Context, uri, host, datab
 	}
 
 	// 去读取最新的结果
-	util := mongoutil.NewMongodbUtil(db)
+	util := mongo.NewUtil(db)
 
 	collStats, err := util.CollStats(ctx, names)
 	if err != nil {
@@ -403,7 +396,7 @@ func (srv *Service) readCollStatsAndInsert(ctx context.Context, uri, host, datab
 		latestCollStats = append(latestCollStats, doc)
 	}
 
-	srv.store.InsertManyCollStats(ctx, insertDocs)
+	_ = srv.moduleMetricsStore.InsertManyCollStats(ctx, insertDocs)
 
 	return latestCollStats, nil
 }

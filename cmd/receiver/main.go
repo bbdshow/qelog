@@ -3,6 +3,7 @@ package main
 import (
 	"flag"
 	"fmt"
+	"github.com/huzhongqing/qelog/infra/mongo"
 	"github.com/huzhongqing/qelog/pkg/httpserver"
 	"os"
 	"os/signal"
@@ -14,8 +15,6 @@ import (
 	"github.com/huzhongqing/qelog/infra/logs"
 
 	"github.com/huzhongqing/qelog/pkg/common/model"
-	"github.com/huzhongqing/qelog/pkg/storage"
-
 	"github.com/huzhongqing/qelog/pkg/receiver"
 
 	"github.com/huzhongqing/qelog/pkg/config"
@@ -50,22 +49,32 @@ func main() {
 
 	logs.InitQezap(cfg.Logging.Addr, cfg.Logging.Module, cfg.Logging.Filename)
 
-	sharding, err := storage.NewSharding(cfg.Main, cfg.Sharding, cfg.ShardingIndexSize)
+	slots := make([]mongo.ShardSlotConfig, 0)
+	for _, v := range cfg.Sharding {
+		slots = append(slots, mongo.ShardSlotConfig{
+			Index:    v.Index,
+			DataBase: v.DataBase,
+			URI:      v.URI,
+		})
+	}
+	sharding, err := mongo.NewSharding(mongo.MainConfig{
+		DataBase: cfg.Main.DataBase,
+		URI:      cfg.Main.URI,
+	}, slots)
 	if err != nil {
 		logs.Qezap.Fatal("mongo connect failed ", zap.Error(err))
 	}
 
-	if err := storage.SetGlobalShardingDB(sharding); err != nil {
+	if err := model.SetGlobalShardingDB(sharding); err != nil {
 		logs.Qezap.Fatal("SetGlobalShardingDB", zap.Error(err))
 	}
 
-	db, err := sharding.MainStore()
+	mainDB, err := sharding.MainDB()
 	if err != nil {
-		logs.Qezap.Fatal("mongo connect failed", zap.Error(err))
+		logs.Qezap.Fatal("mongo connect failed ", zap.Error(err))
 	}
-	if err := db.Database().UpsertCollectionIndexMany(
-		model.ModuleMetricsIndexMany()); err != nil {
-		logs.Qezap.Fatal("mongo create index", zap.Error(err))
+	if err := model.SetGlobalMainDB(mainDB); err != nil {
+		logs.Qezap.Fatal("SetGlobalMainDB", zap.Error(err))
 	}
 
 	httpSrv := httpserver.NewHTTPServer(cfg.Env)

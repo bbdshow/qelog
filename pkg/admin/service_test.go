@@ -3,17 +3,16 @@ package admin
 import (
 	"context"
 	"github.com/huzhongqing/qelog/pkg/common/entity"
-	"github.com/huzhongqing/qelog/pkg/storage"
 	"github.com/huzhongqing/qelog/tests"
 	"testing"
 )
 
-func init(){
+func init() {
 	tests.InitTestDepends("../../configs/config.docker.toml")
 }
 
 func TestDropCollection(t *testing.T) {
-	srv := NewService(storage.ShardingDB)
+	srv := NewService()
 
 	err := srv.DropLoggingCollection(context.Background(), &entity.DropLoggingCollectionReq{
 		Host: "",
@@ -23,4 +22,3 @@ func TestDropCollection(t *testing.T) {
 		t.Fatal(err)
 	}
 }
-

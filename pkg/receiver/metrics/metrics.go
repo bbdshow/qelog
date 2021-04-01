@@ -28,16 +28,16 @@ func SetIncIntervalSec(sec int64) {
 }
 
 type Metrics struct {
-	mutex  sync.Mutex
-	states map[string]*state
-	store  *storage.Store
+	mutex              sync.Mutex
+	states             map[string]*state
+	moduleMetricsStore *storage.ModuleMetrics
 }
 
-func NewMetrics(store *storage.Store) *Metrics {
+func NewMetrics() *Metrics {
 	m := &Metrics{
-		mutex:  sync.Mutex{},
-		states: make(map[string]*state),
-		store:  store,
+		mutex:              sync.Mutex{},
+		states:             make(map[string]*state),
+		moduleMetricsStore: storage.NewModuleMetrics(model.MainDB),
 	}
 	return m
 }
@@ -170,11 +170,13 @@ loop:
 		return
 	}
 	retry--
-	ctx, _ := context.WithTimeout(context.Background(), 5*time.Second)
-	if err := m.store.UpsertModuleMetrics(ctx, filter, update, opt); err != nil {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	if err := m.moduleMetricsStore.UpdateModuleMetrics(ctx, filter, update, opt); err != nil {
 		logs.Qezap.Error("Metrics", zap.String("UpsertModuleMetrics", err.Error()))
+		cancel()
 		goto loop
 	}
+	cancel()
 }
 
 func (m *Metrics) Sync() {

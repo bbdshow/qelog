@@ -2,12 +2,11 @@ package receiver
 
 import (
 	"context"
+	"github.com/huzhongqing/qelog/api/receiverpb"
 	"net"
 
-	"github.com/huzhongqing/qelog/api/receiverpb"
 	"github.com/huzhongqing/qelog/infra/httputil"
 	"github.com/huzhongqing/qelog/infra/kit"
-	"github.com/huzhongqing/qelog/pkg/storage"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/peer"
 )
@@ -20,7 +19,7 @@ type GRPCService struct {
 func NewGRPCService() *GRPCService {
 	srv := &GRPCService{
 		server:   nil,
-		receiver: NewService(storage.ShardingDB),
+		receiver: NewService(),
 	}
 	return srv
 }

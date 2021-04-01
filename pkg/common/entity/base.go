@@ -1,6 +1,7 @@
 package entity
 
 import (
+	"github.com/huzhongqing/qelog/infra/httputil"
 	"time"
 
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -12,9 +13,10 @@ type PageReq struct {
 	Limit int64 `json:"limit" from:"limit" default:"20"`
 }
 
-func (v PageReq) SetPage(opt *options.FindOptions) {
+func (v PageReq) SetPage(opt *options.FindOptions) *options.FindOptions {
 	opt.SetSkip((v.Page - 1) * v.Limit)
 	opt.SetLimit(v.Limit)
+	return opt
 }
 
 type ObjectIDReq struct {
@@ -26,11 +28,19 @@ type OmitObjectIDReq struct {
 }
 
 func (v OmitObjectIDReq) ObjectID() (primitive.ObjectID, error) {
-	return primitive.ObjectIDFromHex(v.ID)
+	id, err := primitive.ObjectIDFromHex(v.ID)
+	if err != nil {
+		return id, httputil.ErrArgsInvalid.MergeError(err)
+	}
+	return id, nil
 }
 
 func (v ObjectIDReq) ObjectID() (primitive.ObjectID, error) {
-	return primitive.ObjectIDFromHex(v.ID)
+	id, err := primitive.ObjectIDFromHex(v.ID)
+	if err != nil {
+		return id, httputil.ErrArgsInvalid.MergeError(err)
+	}
+	return id, nil
 }
 
 type TimeReq struct {

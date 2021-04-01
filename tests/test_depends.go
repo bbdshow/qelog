@@ -2,9 +2,9 @@ package tests
 
 import (
 	"github.com/huzhongqing/qelog/infra/logs"
+	"github.com/huzhongqing/qelog/infra/mongo"
+	"github.com/huzhongqing/qelog/pkg/common/model"
 	"github.com/huzhongqing/qelog/pkg/config"
-	"github.com/huzhongqing/qelog/pkg/storage"
-	"go.uber.org/zap"
 )
 
 func InitTestDepends(cfgPath ...string) {
@@ -27,12 +27,32 @@ func InitTestQezap(cfg *config.Config) {
 }
 
 func InitShardingDB(cfg *config.Config) {
-	sharding, err := storage.NewSharding(cfg.Main, cfg.Sharding, cfg.ShardingIndexSize)
+	slots := make([]mongo.ShardSlotConfig, 0)
+	for _, v := range cfg.Sharding {
+		slots = append(slots, mongo.ShardSlotConfig{
+			Index:    v.Index,
+			DataBase: v.DataBase,
+			URI:      v.URI,
+		})
+	}
+	db, err := mongo.NewSharding(mongo.MainConfig{
+		DataBase: cfg.Main.DataBase,
+		URI:      cfg.Main.URI,
+	}, slots)
 	if err != nil {
-		logs.Qezap.Fatal("mongo connect failed ", zap.Error(err))
+		panic(err)
 	}
 
-	if err := storage.SetGlobalShardingDB(sharding); err != nil {
-		logs.Qezap.Fatal("SetGlobalShardingDB", zap.Error(err))
+	_ = model.SetGlobalShardingDB(db)
+
+	mainDB, err := db.MainDB()
+	if err != nil {
+		panic(err)
+	}
+	_ = model.SetGlobalMainDB(mainDB)
+
+	// 创建索引
+	if err := mainDB.UpsertCollectionIndexMany(model.AllIndex()); err != nil {
+		panic(err)
 	}
 }

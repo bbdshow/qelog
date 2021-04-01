@@ -1,4 +1,4 @@
-package types
+package mongo
 
 import (
 	"fmt"
@@ -8,18 +8,21 @@ import (
 	"time"
 )
 
-type LoggingCollectionName struct {
+// 分片集合名 生成规则
+type ShardingCollection struct {
+	prefix string
 	// 天范围
 	daySpan map[int]int
 }
 
-func NewLoggingCollectionName(span int) LoggingCollectionName {
-	lcn := LoggingCollectionName{daySpan: make(map[int]int)}
-	lcn.daySpan = lcn.calcSpan(span)
-	return lcn
+// NewShardingCollection
+func NewShardingCollection(namePrefix string, span int) ShardingCollection {
+	sn := ShardingCollection{prefix: namePrefix, daySpan: make(map[int]int)}
+	sn.daySpan = sn.calcSpan(span)
+	return sn
 }
 
-func (lcn LoggingCollectionName) calcSpan(span int) map[int]int {
+func (sc ShardingCollection) calcSpan(span int) map[int]int {
 	// 31天，span=7 则 7天一个区间
 	ds := span
 	if ds <= 0 {
@@ -42,21 +45,21 @@ func (lcn LoggingCollectionName) calcSpan(span int) map[int]int {
 	return daySpan
 }
 
-func (lcn LoggingCollectionName) FormatName(index int, unix int64) string {
+func (sc ShardingCollection) EncodeCollectionName(index int, unix int64) string {
 	y, m, d := time.Unix(unix, 0).Date()
-	s := lcn.daySpan[d]
-	return lcn.formatName("logging", index, y, int(m), s)
+	s := sc.daySpan[d]
+	return sc.collectionName(sc.prefix, index, y, int(m), s)
 }
 
-func (lcn LoggingCollectionName) formatName(prefix string, index, year, month, span int) string {
+func (sc ShardingCollection) collectionName(prefix string, index, year, month, span int) string {
 	v := fmt.Sprintf("%s_%d_%d%02d_%02d", prefix, index, year, month, span)
 	return v
 }
 
-func (lcn LoggingCollectionName) Decode(name string) (prefix string, index, year int, month time.Month, span int, err error) {
-	str := strings.Split(name, "_")
+func (sc ShardingCollection) DecodeCollectionName(collectionName string) (prefix string, index, year int, month time.Month, span int, err error) {
+	str := strings.Split(collectionName, "_")
 	if len(str) != 4 {
-		err = fmt.Errorf("invalid name %s", name)
+		err = fmt.Errorf("invalid collection name %s", collectionName)
 		return
 	}
 	prefix = str[0]
@@ -72,25 +75,25 @@ func (lcn LoggingCollectionName) Decode(name string) (prefix string, index, year
 	return
 }
 
-func (lcn LoggingCollectionName) DaySpan() map[int]int {
-	return lcn.daySpan
+func (sc ShardingCollection) DaySpan() map[int]int {
+	return sc.daySpan
 }
 
-func (lcn LoggingCollectionName) NameDecodeDate(name string) (time.Time, error) {
-	_, _, y, m, _, err := lcn.Decode(name)
+func (sc ShardingCollection) CollectionNameToTime(collectionName string) (time.Time, error) {
+	_, _, y, m, _, err := sc.DecodeCollectionName(collectionName)
 	if err != nil {
 		return time.Time{}, err
 	}
 	return time.Date(y, m, 0, 0, 0, 0, 0, time.Local), nil
 }
 
-func (lcn LoggingCollectionName) SuggestTime(name string) (t time.Time, err error) {
-	_, _, y1, m1, n1Span, err := lcn.Decode(name)
+func (sc ShardingCollection) SuggestSpanTime(collectionName string) (t time.Time, err error) {
+	_, _, y1, m1, n1Span, err := sc.DecodeCollectionName(collectionName)
 	if err != nil {
 		return t, err
 	}
 	minDay := math.MaxInt32
-	for d, span := range lcn.daySpan {
+	for d, span := range sc.daySpan {
 		if span > n1Span {
 			if d < minDay {
 				minDay = d
@@ -102,7 +105,7 @@ func (lcn LoggingCollectionName) SuggestTime(name string) (t time.Time, err erro
 }
 
 // 根据开始时间和结束时间，查询出所有生成的 name
-func (lcn LoggingCollectionName) ScopeNames(index int, beginUnix, endUnix int64) []string {
+func (sc ShardingCollection) ScopeCollectionNames(index int, beginUnix, endUnix int64) []string {
 
 	beginTime := time.Unix(beginUnix, 0)
 	endTime := time.Unix(endUnix, 0)
@@ -120,7 +123,7 @@ func (lcn LoggingCollectionName) ScopeNames(index int, beginUnix, endUnix int64)
 	nameMap := make(map[string]struct{})
 	names := make([]string, 0, len(date))
 	for _, v := range date {
-		name := lcn.FormatName(index, v.Unix())
+		name := sc.EncodeCollectionName(index, v.Unix())
 		_, ok := nameMap[name]
 		if !ok {
 			nameMap[name] = struct{}{}

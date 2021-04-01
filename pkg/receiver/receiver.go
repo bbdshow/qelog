@@ -3,6 +3,7 @@ package receiver
 import (
 	"bytes"
 	"context"
+	"github.com/huzhongqing/qelog/infra/mongo"
 	"strconv"
 	"sync"
 	"time"
@@ -23,29 +24,25 @@ import (
 )
 
 type Service struct {
-	store    *storage.Store
-	sharding *storage.Sharding
+	alarmRuleStore *storage.AlarmRule
+	moduleStore    *storage.Module
 
 	mutex       sync.RWMutex
 	modules     map[string]*model.Module
 	collections map[string]struct{}
-	lcn         types.LoggingCollectionName
+	sc          mongo.ShardingCollection
 
 	alarm   *alarm.Alarm
 	metrics *metrics.Metrics
 }
 
-func NewService(sharding *storage.Sharding) *Service {
-	mainDB, err := sharding.MainStore()
-	if err != nil {
-		panic(err)
-	}
+func NewService() *Service {
 	srv := &Service{
-		store:       mainDB,
-		sharding:    sharding,
-		modules:     make(map[string]*model.Module, 0),
-		collections: make(map[string]struct{}, 0),
-		lcn:         types.NewLoggingCollectionName(config.Global.DaySpan),
+		alarmRuleStore: storage.NewAlarmRule(model.MainDB),
+		moduleStore:    storage.NewModule(model.MainDB),
+		modules:        make(map[string]*model.Module, 0),
+		collections:    make(map[string]struct{}, 0),
+		sc:             mongo.NewShardingCollection("logging", config.Global.DaySpan),
 	}
 
 	if err := srv.updateModuleSetting(); err != nil {
@@ -63,7 +60,7 @@ func NewService(sharding *storage.Sharding) *Service {
 	}
 
 	if config.Global.MetricsEnable {
-		srv.metrics = metrics.NewMetrics(srv.store)
+		srv.metrics = metrics.NewMetrics()
 		metrics.SetIncIntervalSec(30)
 	}
 
@@ -132,23 +129,23 @@ func (srv *Service) insertLogging(ctx context.Context, index int, docs []*model.
 		if v == nil {
 			return nil
 		}
-		shardingStore, err := srv.sharding.GetStore(v.Index)
+		shardSlot, err := model.ShardingDB.ShardSlotDB(v.Index)
 		if err != nil {
 			return httputil.ErrArgsInvalid.MergeError(err)
 		}
 
-		ok, err := srv.collectionExists(shardingStore, v.CollectionName)
+		ok, err := srv.collectionExists(shardSlot, v.CollectionName)
 		if err != nil {
 			return httputil.ErrSystemException.MergeError(err)
 		}
 		if !ok {
 			// 如果不存在创建索引
-			if err := shardingStore.UpsertCollectionIndexMany(model.LoggingIndexMany(v.CollectionName)); err != nil {
+			if err := shardSlot.UpsertCollectionIndexMany(model.LoggingIndexMany(v.CollectionName)); err != nil {
 				return httputil.ErrSystemException.MergeError(err)
 			}
 		}
 
-		if err := shardingStore.InsertManyLogging(ctx, v.CollectionName, v.Docs); err != nil {
+		if err := storage.NewLogging(shardSlot).InsertManyLogging(ctx, v.CollectionName, v.Docs); err != nil {
 			return httputil.ErrSystemException.MergeError(err)
 		}
 		return nil
@@ -236,14 +233,14 @@ func (srv *Service) decodeJSONPacket(ip string, in *api.JSONPacket) []*model.Log
 
 // 判断集合是否存在，如果不存在需要创建索引
 // 因为有序号绑定，每一个集合名都是唯一的
-func (srv *Service) collectionExists(store *storage.Store, collectionName string) (bool, error) {
+func (srv *Service) collectionExists(db *mongo.Database, collectionName string) (bool, error) {
 	srv.mutex.Lock()
 	defer srv.mutex.Unlock()
 	if _, ok := srv.collections[collectionName]; ok {
 		return true, nil
 	}
 	ctx, _ := context.WithTimeout(context.Background(), 3*time.Second)
-	names, err := store.ListCollectionNames(ctx)
+	names, err := db.ListCollectionNames(ctx)
 	if err != nil {
 		return false, err
 	}
@@ -289,7 +286,7 @@ func (srv *Service) loggingDataShardingByTimestamp(index int, docs []*model.Logg
 	currentName := ""
 	d1 = initDocuments()
 	for _, v := range docs {
-		name := srv.lcn.FormatName(index, v.TimeSec)
+		name := srv.sc.EncodeCollectionName(index, v.TimeSec)
 		if currentName == "" {
 			currentName = name
 			d1.CollectionName = name
@@ -311,8 +308,9 @@ func (srv *Service) loggingDataShardingByTimestamp(index int, docs []*model.Logg
 }
 
 func (srv *Service) updateModuleSetting() error {
-	ctx, _ := context.WithTimeout(context.Background(), 5*time.Second)
-	docs, err := srv.store.FindAllModule(ctx)
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	_, docs, err := srv.moduleStore.FindCountModule(ctx, bson.M{})
 	if err != nil {
 		return err
 	}
@@ -335,12 +333,12 @@ func (srv *Service) backgroundSyncModuleSetting() {
 
 func (srv *Service) updateAlarmRuleSetting() error {
 	ctx, _ := context.WithTimeout(context.Background(), 5*time.Second)
-	docs, err := srv.store.FindAllEnableAlarmRule(ctx)
+	docs, err := srv.alarmRuleStore.FindAlarmRule(ctx, bson.M{"enable": true})
 	if err != nil {
 		return err
 	}
-	hooks := make([]*model.HookURL, 0)
-	if _, err := srv.store.FindHookURL(ctx, bson.M{}, &hooks, nil); err != nil {
+	_, hooks, err := srv.alarmRuleStore.FindCountHookURL(ctx, bson.M{})
+	if err != nil {
 		return err
 	}
 	srv.alarm.InitRuleState(docs, hooks)

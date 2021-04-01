@@ -4,8 +4,6 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/huzhongqing/qelog/pkg/storage"
-
 	"github.com/gin-gonic/gin"
 	"github.com/huzhongqing/qelog/infra/httputil"
 	"github.com/huzhongqing/qelog/infra/jwt"
@@ -18,7 +16,7 @@ type Handler struct {
 }
 
 func NewHandler() *Handler {
-	h := &Handler{srv: NewService(storage.ShardingDB)}
+	h := &Handler{srv: NewService()}
 	return h
 }
 

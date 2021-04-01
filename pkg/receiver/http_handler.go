@@ -4,7 +4,6 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/huzhongqing/qelog/api"
 	"github.com/huzhongqing/qelog/infra/httputil"
-	"github.com/huzhongqing/qelog/pkg/storage"
 	"net/http"
 )
 
@@ -14,7 +13,7 @@ type HttpHandler struct {
 
 func NewHttpHandler() *HttpHandler {
 	srv := &HttpHandler{
-		receiver: NewService(storage.ShardingDB),
+		receiver: NewService(),
 	}
 	return srv
 }

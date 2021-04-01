@@ -10,9 +10,9 @@ import (
 )
 
 var (
-	uri        = "mongodb://localhost:27017"
-	database   = "mongo_test"
-	collection = "test"
+	_database   = "test_db"
+	_uri        = "mongodb://127.0.0.1:27017/admin"
+	_collection = "test"
 )
 
 type doc struct {
@@ -22,18 +22,18 @@ type doc struct {
 
 func TestDatabase_UpsertCollectionIndexMany(t *testing.T) {
 
-	db, err := NewDatabase(context.Background(), uri, database)
+	db, err := NewDatabase(context.Background(), _uri, _database)
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	indexs := []Index{
 		{
-			Collection: collection,
+			Collection: _collection,
 			Keys:       bson.D{{Key: "name", Value: 1}},
 		},
 		{
-			Collection: collection,
+			Collection: _collection,
 			Name:       "name_value",
 			Keys:       bson.D{{Key: "name", Value: 1}, {Key: "value", Value: -1}},
 			Unique:     true,
@@ -46,7 +46,7 @@ func TestDatabase_UpsertCollectionIndexMany(t *testing.T) {
 		return
 	}
 
-	cursor, err := db.Collection(collection).Indexes().List(nil)
+	cursor, err := db.Collection(_collection).Indexes().List(nil)
 	if err != nil {
 		t.Fatal(err)
 		return

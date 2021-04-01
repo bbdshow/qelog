@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/huzhongqing/qelog/pkg/config"
+	"github.com/huzhongqing/qelog/pkg/storage"
 	"math/rand"
 	"strings"
 	"time"
@@ -38,7 +39,7 @@ func (srv *Service) FindLoggingByTraceID(ctx context.Context, in *entity.FindLog
 			collectionNames = append(collectionNames, in.ForceCollectionName)
 		}
 	} else {
-		collectionNames = append(collectionNames, srv.lcn.ScopeNames(in.ShardingIndex, b.Unix(), e.Unix())...)
+		collectionNames = append(collectionNames, srv.sc.ScopeCollectionNames(in.ShardingIndex, b.Unix(), e.Unix())...)
 	}
 	count := int64(0)
 	list := make([]*entity.FindLoggingList, 0)
@@ -47,16 +48,14 @@ func (srv *Service) FindLoggingByTraceID(ctx context.Context, in *entity.FindLog
 			"m":  in.ModuleName,
 			"ti": in.TraceID,
 		}
-		findOpt := options.Find()
+		findOpt := options.Find().SetSort(bson.M{"ts": 1})
 		// 正序，调用流
-		findOpt.SetSort(bson.M{"ts": 1})
-		docs := make([]*model.Logging, 0)
 
-		shardingStore, err := srv.sharding.GetStore(in.ShardingIndex)
+		shardSlot, err := model.ShardingDB.ShardSlotDB(in.ShardingIndex)
 		if err != nil {
 			return httputil.ErrArgsInvalid.MergeError(err)
 		}
-		c, err := shardingStore.FindLoggingList(ctx, coll, filter, 50000, &docs, findOpt)
+		c, docs, err := storage.NewLogging(shardSlot).FindCountLoggingList(ctx, coll, filter, 50000, findOpt)
 		if err != nil {
 			return httputil.ErrSystemException.MergeError(err)
 		}
@@ -106,10 +105,10 @@ func (srv *Service) FindLoggingList(ctx context.Context, in *entity.FindLoggingL
 		}
 	} else {
 		// 计算集合名
-		names := srv.lcn.ScopeNames(in.ShardingIndex, b.Unix(), e.Unix())
+		names := srv.sc.ScopeCollectionNames(in.ShardingIndex, b.Unix(), e.Unix())
 		if len(names) >= 2 {
 			format := "2006-01-02 15:04:05"
-			suggestTime, _ := srv.lcn.SuggestTime(names[0])
+			suggestTime, _ := srv.sc.SuggestSpanTime(names[0])
 			suggest := suggestTime.Format(format)
 			return httputil.NewError(httputil.ErrCodeOpException,
 				fmt.Sprintf("查询时间已跨分片集合,未不影响结果,建议查询时间: %s -- %s 或者 %s -- %s",
@@ -158,16 +157,13 @@ func (srv *Service) FindLoggingList(ctx context.Context, in *entity.FindLoggingL
 		}
 	}
 
-	findOpt := options.Find()
-	in.SetPage(findOpt)
-	findOpt.SetSort(bson.M{"ts": -1})
+	findOpt := in.SetPage(options.Find()).SetSort(bson.M{"ts": -1})
 
-	shardingStore, err := srv.sharding.GetStore(in.ShardingIndex)
+	shardSlot, err := model.ShardingDB.ShardSlotDB(in.ShardingIndex)
 	if err != nil {
 		return httputil.ErrArgsInvalid.MergeError(err)
 	}
-	docs := make([]*model.Logging, 0, in.Limit)
-	c, err := shardingStore.FindLoggingList(ctx, collectionName, filter, 50000, &docs, findOpt)
+	c, docs, err := storage.NewLogging(shardSlot).FindCountLoggingList(ctx, collectionName, filter, 50000, findOpt)
 	if err != nil {
 		return httputil.ErrSystemException.MergeError(err)
 	}
@@ -200,7 +196,7 @@ func (srv *Service) FindLoggingList(ctx context.Context, in *entity.FindLoggingL
 	out.List = list
 
 	logs.Qezap.Info("日志查询", zap.String("耗时", time.Now().Sub(s).String()),
-		zap.String("分片", shardingStore.Database().Name()),
+		zap.String("分片", shardSlot.Name()),
 		zap.Any("集合", collectionName),
 		zap.Any("条件", filter))
 
@@ -221,8 +217,8 @@ func (srv *Service) DropLoggingCollection(ctx context.Context, in *entity.DropLo
 
 	// 根据host找到db
 	uri := ""
-	mainCfg := srv.sharding.MainCfg()
-	shardingCfg := srv.sharding.ShardingCfg()
+	mainCfg := model.ShardingDB.MainConfig()
+	shardingCfg := model.ShardingDB.ShardSlotsConfig()
 
 	mainHost := strings.Join(mongo.URIToHosts(mainCfg.URI), ",")
 	if mainHost == in.Host && database == mainCfg.DataBase {
@@ -258,13 +254,12 @@ func (srv *Service) DropLoggingCollection(ctx context.Context, in *entity.DropLo
 		"name": in.Name,
 	}
 	// 同时删除主库集合统计数据
-	_, err = srv.store.Database().Collection(model.CollectionNameCollStats).DeleteMany(ctx, filter)
+	_, err = model.MainDB.Collection(model.CollectionNameCollStats).DeleteMany(ctx, filter)
 	if err != nil {
 		return httputil.ErrSystemException.MergeError(err)
 	}
 	return nil
 }
-
 
 // backgroundDelExpiredCollection 删除已经过期了的集合
 // 月为单位
@@ -276,12 +271,12 @@ func (srv *Service) backgroundDelExpiredCollection(maxAgeMonth int) {
 	for {
 		time.Sleep(time.Duration(rand.Intn(5)+5) * time.Second)
 		for i := 1; i <= config.Global.ShardingIndexSize; i++ {
-			store, err := srv.sharding.GetStore(i)
+			db, err := model.ShardingDB.ShardSlotDB(i)
 			if err != nil {
 				continue
 			}
 			// 找到所有 logging 开头的集合
-			names, err := store.ListCollectionNames(context.Background(), "logging")
+			names, err := db.ListCollectionNames(context.Background(), "logging")
 			if err != nil {
 				logs.Qezap.Error("ListCollectionNames", zap.Error(err))
 				continue
@@ -289,7 +284,7 @@ func (srv *Service) backgroundDelExpiredCollection(maxAgeMonth int) {
 			expiredNames := make([]string, 0)
 			// 判断是否过期
 			for _, v := range names {
-				date, err := srv.lcn.NameDecodeDate(v)
+				date, err := srv.sc.CollectionNameToTime(v)
 				if err != nil {
 					logs.Qezap.Error("NameDecodeDate", zap.Error(err))
 					continue
@@ -304,7 +299,7 @@ func (srv *Service) backgroundDelExpiredCollection(maxAgeMonth int) {
 			}
 
 			for _, v := range expiredNames {
-				if err := store.Database().Collection(v).Drop(context.Background()); err != nil {
+				if err := db.Collection(v).Drop(context.Background()); err != nil {
 					logs.Qezap.Error("DropCollection", zap.Error(err))
 					continue
 				}

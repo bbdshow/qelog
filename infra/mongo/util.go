@@ -1,9 +1,7 @@
-package mongoutil
+package mongo
 
 import (
 	"context"
-
-	"github.com/huzhongqing/qelog/infra/mongo"
 	"go.mongodb.org/mongo-driver/bson"
 )
 
@@ -12,12 +10,12 @@ collStats
 dbStats
 hostInfo
 */
-type MongodbUtil struct {
-	database *mongo.Database
+type Util struct {
+	database *Database
 }
 
-func NewMongodbUtil(database *mongo.Database) *MongodbUtil {
-	return &MongodbUtil{database: database}
+func NewUtil(database *Database) *Util {
+	return &Util{database: database}
 }
 
 type CollStatsResp struct {
@@ -32,11 +30,11 @@ type CollStatsResp struct {
 	IndexSizes     map[string]int64 `json:"indexSizes"`
 }
 
-func (mu *MongodbUtil) CollStats(ctx context.Context, colls []string) ([]CollStatsResp, error) {
+func (u *Util) CollStats(ctx context.Context, colls []string) ([]CollStatsResp, error) {
 	out := make([]CollStatsResp, 0, len(colls))
 	for _, coll := range colls {
 		stats := CollStatsResp{}
-		err := mu.database.RunCommand(ctx, bson.D{{Key: "collStats", Value: coll}}).Decode(&stats)
+		err := u.database.RunCommand(ctx, bson.D{{Key: "collStats", Value: coll}}).Decode(&stats)
 		if err != nil {
 			return nil, err
 		}
@@ -56,7 +54,7 @@ type DBStatsResp struct {
 	IndexSize   int64  `json:"indexSize"`
 }
 
-func (mu *MongodbUtil) DBStats(ctx context.Context) (DBStatsResp, error) {
+func (mu *Util) DBStats(ctx context.Context) (DBStatsResp, error) {
 	out := DBStatsResp{}
 	err := mu.database.RunCommand(ctx, bson.D{{Key: "dbStats", Value: 1}}).Decode(&out)
 	return out, err
@@ -67,8 +65,8 @@ type HostInfoResp struct {
 	Os     map[string]interface{} `json:"os"`
 }
 
-func (mu *MongodbUtil) HostInfo(ctx context.Context) (HostInfoResp, error) {
+func (u *Util) HostInfo(ctx context.Context) (HostInfoResp, error) {
 	out := HostInfoResp{}
-	err := mu.database.RunCommand(ctx, bson.D{{Key: "hostInfo", Value: 1}}).Decode(&out)
+	err := u.database.RunCommand(ctx, bson.D{{Key: "hostInfo", Value: 1}}).Decode(&out)
 	return out, err
 }

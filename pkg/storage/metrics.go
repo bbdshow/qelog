@@ -2,24 +2,32 @@ package storage
 
 import (
 	"context"
+	"github.com/huzhongqing/qelog/infra/mongo"
 	"time"
 
 	"github.com/huzhongqing/qelog/pkg/common/entity"
 	"github.com/huzhongqing/qelog/pkg/common/model"
 	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-func (store *Store) UpsertModuleMetrics(ctx context.Context, filter, update bson.M, opt *options.UpdateOptions) error {
-	_, err := store.database.Collection(model.CollectionNameModuleMetrics).UpdateOne(ctx, filter, update, opt)
-	return handlerError(err)
+type ModuleMetrics struct {
+	db *mongo.Database
 }
 
-func (store *Store) MetricsModuleCountByDate(ctx context.Context, date time.Time) (*entity.ModuleCount, error) {
-	coll := store.database.Collection(model.CollectionNameModuleMetrics)
+func NewModuleMetrics(db *mongo.Database) *ModuleMetrics {
+	return &ModuleMetrics{db: db}
+}
 
-	pipeline := mongo.Pipeline{
+func (mm *ModuleMetrics) UpdateModuleMetrics(ctx context.Context, filter, update bson.M, opts ...*options.UpdateOptions) error {
+	_, err := mm.db.Collection(model.CollectionNameModuleMetrics).UpdateOne(ctx, filter, update, opts...)
+	return err
+}
+
+func (mm *ModuleMetrics) GetModuleMetricsCountByDate(ctx context.Context, date time.Time) (*entity.ModuleCount, error) {
+	coll := mm.db.Collection(model.CollectionNameModuleMetrics)
+
+	pipeline := []bson.D{
 		bson.D{
 			{Key: "$match", Value: bson.M{"created_date": date}},
 		},
@@ -46,7 +54,7 @@ func (store *Store) MetricsModuleCountByDate(ctx context.Context, date time.Time
 	}
 	cursor, err := coll.Aggregate(ctx, pipeline)
 	if err != nil {
-		return nil, handlerError(err)
+		return nil, err
 	}
 	defer cursor.Close(ctx)
 
@@ -57,7 +65,7 @@ func (store *Store) MetricsModuleCountByDate(ctx context.Context, date time.Time
 	}
 	val := make([]counts, 0)
 	if err := cursor.All(ctx, &val); err != nil {
-		return nil, handlerError(err)
+		return nil, err
 	}
 	out := &entity.ModuleCount{}
 	if len(val) > 0 {
@@ -68,32 +76,29 @@ func (store *Store) MetricsModuleCountByDate(ctx context.Context, date time.Time
 	return out, nil
 }
 
-func (store *Store) FindMetricsModuleList(ctx context.Context, filter bson.M, result interface{}, opt *options.FindOptions) (int64, error) {
-	c, err := store.database.FindAndCount(ctx, store.database.Collection(model.CollectionNameModuleMetrics), filter, result, opt)
-	return c, handlerError(err)
+func (mm *ModuleMetrics) FindCountModuleMetrics(ctx context.Context, filter bson.M, opts ...*options.FindOptions) (int64, []*model.ModuleMetrics, error) {
+	docs := make([]*model.ModuleMetrics, 0)
+	c, err := mm.db.FindAndCount(ctx, mm.db.Collection(model.CollectionNameModuleMetrics), filter, &docs, opts...)
+	return c, docs, err
 }
 
-func (store *Store) FindModuleMetrics(ctx context.Context, filter bson.M, result interface{}, opt *options.FindOptions) error {
-	err := store.database.Find(ctx, store.database.Collection(model.CollectionNameModuleMetrics), filter, result, opt)
-	return handlerError(err)
+func (mm *ModuleMetrics) InsertOneDBStats(ctx context.Context, doc *model.DBStats) error {
+	_, err := mm.db.Collection(doc.CollectionName()).InsertOne(ctx, doc)
+	return err
 }
 
-func (store *Store) InsertOneDBStats(ctx context.Context, doc *model.DBStats) error {
-	_, err := store.database.Collection(doc.CollectionName()).InsertOne(ctx, doc)
-	return handlerError(err)
+func (mm *ModuleMetrics) FindOneDBStats(ctx context.Context, filter bson.M, doc *model.DBStats, opts ...*options.FindOneOptions) (bool, error) {
+	ok, err := mm.db.FindOne(ctx, mm.db.Collection(doc.CollectionName()), filter, doc, opts...)
+	return ok, err
 }
 
-func (store *Store) FindOneDBStats(ctx context.Context, filter bson.M, doc *model.DBStats, opt *options.FindOneOptions) (bool, error) {
-	ok, err := store.database.FindOne(ctx, store.database.Collection(doc.CollectionName()), filter, doc, opt)
-	return ok, handlerError(err)
+func (mm *ModuleMetrics) InsertManyCollStats(ctx context.Context, docs []interface{}) error {
+	_, err := mm.db.Collection(model.CollectionNameCollStats).InsertMany(ctx, docs)
+	return err
 }
 
-func (store *Store) InsertManyCollStats(ctx context.Context, docs []interface{}) error {
-	_, err := store.database.Collection(model.CollectionNameCollStats).InsertMany(ctx, docs)
-	return handlerError(err)
-}
-
-func (store *Store) FindCollStats(ctx context.Context, filter bson.M, doc interface{}, opt *options.FindOptions) error {
-	err := store.database.Find(ctx, store.database.Collection(model.CollectionNameCollStats), filter, doc, opt)
-	return handlerError(err)
+func (mm *ModuleMetrics) FindCollStats(ctx context.Context, filter bson.M, opts ...*options.FindOptions) ([]*model.CollStats, error) {
+	docs := make([]*model.CollStats, 0)
+	err := mm.db.Find(ctx, mm.db.Collection(model.CollectionNameCollStats), filter, &docs, opts...)
+	return docs, err
 }
