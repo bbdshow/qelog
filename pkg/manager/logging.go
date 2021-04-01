@@ -223,13 +223,13 @@ func (srv *Service) DropLoggingCollection(ctx context.Context, in *entity.DropLo
 	shardingCfg := srv.sharding.ShardingCfg()
 
 	mainHost := strings.Join(mongo.URIToHosts(mainCfg.URI), ",")
-	if mainHost == in.Host && database != mainCfg.DataBase {
+	if mainHost == in.Host && database == mainCfg.DataBase {
 		uri = mainCfg.URI
 	}
 	if uri == "" {
 		for _, s := range shardingCfg {
 			host := strings.Join(mongo.URIToHosts(s.URI), ",")
-			if host == in.Host && database != s.DataBase {
+			if host == in.Host && database == s.DataBase {
 				uri = s.URI
 				break
 			}
