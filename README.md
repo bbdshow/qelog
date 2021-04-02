@@ -49,7 +49,7 @@ Qelog是一款小巧且功能干练实用的日志系统(集成报警)。采用P
 ### 后台部分截图
 
 ![查询](https://github.com/huzhongqing/images/blob/master/qelog/find.png)
-![报警](https://github.com/huzhongqing/images/blob/master/qelog/alarm.png)
+![报警](https://github.com/huzhongqing/images/blob/master/qelog/alarm.png?raw=true)
 ![容量](https://github.com/huzhongqing/images/blob/master/qelog/db.png)
 ![趋势](https://github.com/huzhongqing/images/blob/master/qelog/trend.png)
 
