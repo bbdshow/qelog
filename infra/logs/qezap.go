@@ -28,7 +28,7 @@ func InitQezap(addrs []string, moduleName string, filename ...string) {
 		}
 		return
 	}
-	cfg := qezap.NewConfig(addrs, moduleName)
+	cfg := qezap.NewConfig(addrs, moduleName).SetMaxAge(6 * 30 * 24 * time.Hour)
 	if len(filename) > 0 {
 		cfg.SetFilename(filename[0])
 	}

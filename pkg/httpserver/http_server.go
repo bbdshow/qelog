@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
-
 )
 
 type HTTPServer struct {
@@ -17,15 +16,6 @@ type HTTPServer struct {
 
 func NewHTTPServer(env string) *HTTPServer {
 	handler := gin.New()
-	if env == gin.ReleaseMode {
-		gin.SetMode(gin.ReleaseMode)
-		handler.Use(httputil.GinLogger([]string{"/health","/admin", "/static"}), httputil.GinRecoveryWithLogger())
-	} else {
-		handler.Use(gin.Logger(), httputil.GinRecoveryWithLogger())
-	}
-
-	handler.HEAD("/health", func(c *gin.Context) { c.Status(200) })
-
 	return &HTTPServer{
 		server:  nil,
 		env:     env,
@@ -35,12 +25,16 @@ func NewHTTPServer(env string) *HTTPServer {
 
 // 统一使用此 handler 注册路由
 func (srv *HTTPServer) Engine() *gin.Engine {
+	srv.handler.HEAD("/health", func(c *gin.Context) { c.Status(200) })
+	skipPaths := []string{"/health", "/admin", "/static", "/docs"}
 	// 注册TraceID
 	srv.handler.Use(httputil.HandlerRegisterTraceID())
-
-	if srv.env != gin.ReleaseMode {
+	if srv.env == gin.ReleaseMode {
+		gin.SetMode(gin.ReleaseMode)
+		srv.handler.Use(httputil.GinLogger(skipPaths), httputil.GinRecoveryWithLogger())
+	} else {
 		// 测试环境，记录请求返回日志
-		srv.handler.Use(httputil.HandlerLogging(true, []string{"/docs/", "/health"}...))
+		srv.handler.Use(httputil.HandlerLogging(true, skipPaths...), httputil.GinRecoveryWithLogger())
 	}
 	return srv.handler
 }

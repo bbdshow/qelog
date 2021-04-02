@@ -8,18 +8,18 @@ services:
      volumes:
       - '/data/log/receiver:/app/log'
      entrypoint:
-      - /app/qelog_receiver
+      - /app/receiver
       - -f=configs/config.docker.toml
      restart: always
 
-  qelog_manager:
+  qelog_admin:
     image: qelog:latest
     ports:
       - '31080:31080'
     volumes:
-      - '/data/log/manager:/app/log'
+      - '/data/log/admin:/app/log'
     entrypoint:
-      - /app/qelog_manager
+      - /app/admin
       - -f=configs/config.docker.toml
     depends_on:
       - qelog_receiver
