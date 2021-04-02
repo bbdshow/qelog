@@ -31,7 +31,7 @@ func (srv *HTTPServer) Engine() *gin.Engine {
 	srv.handler.Use(httputil.HandlerRegisterTraceID())
 	if srv.env == gin.ReleaseMode {
 		gin.SetMode(gin.ReleaseMode)
-		srv.handler.Use(httputil.GinLogger(skipPaths), httputil.GinRecoveryWithLogger())
+		srv.handler.Use(httputil.GinRecoveryWithLogger())
 	} else {
 		// 测试环境，记录请求返回日志
 		srv.handler.Use(httputil.HandlerLogging(true, skipPaths...), httputil.GinRecoveryWithLogger())

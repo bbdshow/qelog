@@ -28,13 +28,13 @@ func (m *Module) InsertModule(ctx context.Context, doc *model.Module) error {
 	return err
 }
 
-func (m *Module) FindOneModule(ctx context.Context, filter bson.M, doc *model.Module) (bool, error) {
-	ok, err := m.db.FindOne(ctx, m.db.Collection(doc.CollectionName()), filter, doc)
+func (m *Module) FindOneModule(ctx context.Context, filter bson.M, doc *model.Module, opts ...*options.FindOneOptions) (bool, error) {
+	ok, err := m.db.FindOne(ctx, m.db.Collection(doc.CollectionName()), filter, doc, opts...)
 	return ok, err
 }
 
-func (m *Module) UpdateModule(ctx context.Context, filter, update bson.M) error {
-	uRet, err := m.db.Collection(model.CollectionNameModule).UpdateOne(ctx, filter, update)
+func (m *Module) UpdateModule(ctx context.Context, filter, update bson.M, opts ...*options.UpdateOptions) error {
+	uRet, err := m.db.Collection(model.CollectionNameModule).UpdateOne(ctx, filter, update, opts...)
 	if err != nil {
 		return err
 	}

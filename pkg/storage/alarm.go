@@ -35,12 +35,12 @@ func (ar *AlarmRule) InsertAlarmRule(ctx context.Context, doc *model.AlarmRule) 
 	return err
 }
 
-func (ar *AlarmRule) FindOneAlarmRule(ctx context.Context, filter bson.M, doc *model.AlarmRule) (bool, error) {
-	return ar.db.FindOne(ctx, ar.db.Collection(doc.CollectionName()), filter, doc)
+func (ar *AlarmRule) FindOneAlarmRule(ctx context.Context, filter bson.M, doc *model.AlarmRule, opts ...*options.FindOneOptions) (bool, error) {
+	return ar.db.FindOne(ctx, ar.db.Collection(doc.CollectionName()), filter, doc, opts...)
 }
 
-func (ar *AlarmRule) UpdateAlarmRule(ctx context.Context, filter, update bson.M) error {
-	uRet, err := ar.db.Collection(model.CollectionNameAlarmRule).UpdateOne(ctx, filter, update)
+func (ar *AlarmRule) UpdateAlarmRule(ctx context.Context, filter, update bson.M, opts ...*options.UpdateOptions) error {
+	uRet, err := ar.db.Collection(model.CollectionNameAlarmRule).UpdateOne(ctx, filter, update, opts...)
 	if err != nil {
 		return err
 	}
@@ -50,8 +50,8 @@ func (ar *AlarmRule) UpdateAlarmRule(ctx context.Context, filter, update bson.M)
 	return nil
 }
 
-func (ar *AlarmRule) UpdateManyAlarmRule(ctx context.Context, filter, update bson.M) error {
-	_, err := ar.db.Collection(model.CollectionNameAlarmRule).UpdateMany(ctx, filter, update)
+func (ar *AlarmRule) UpdateManyAlarmRule(ctx context.Context, filter, update bson.M, opts ...*options.UpdateOptions) error {
+	_, err := ar.db.Collection(model.CollectionNameAlarmRule).UpdateMany(ctx, filter, update, opts...)
 	if err != nil {
 		return err
 	}
@@ -69,8 +69,8 @@ func (ar *AlarmRule) FindCountHookURL(ctx context.Context, filter bson.M, opts .
 	return c, docs, err
 }
 
-func (ar *AlarmRule) FindOneHookURL(ctx context.Context, filter bson.M, doc *model.HookURL) (bool, error) {
-	return ar.db.FindOne(ctx, ar.db.Collection(doc.CollectionName()), filter, doc)
+func (ar *AlarmRule) FindOneHookURL(ctx context.Context, filter bson.M, doc *model.HookURL, opts ...*options.FindOneOptions) (bool, error) {
+	return ar.db.FindOne(ctx, ar.db.Collection(doc.CollectionName()), filter, doc, opts...)
 }
 
 func (ar *AlarmRule) InsertHookURL(ctx context.Context, doc *model.HookURL) error {
@@ -78,8 +78,8 @@ func (ar *AlarmRule) InsertHookURL(ctx context.Context, doc *model.HookURL) erro
 	return err
 }
 
-func (ar *AlarmRule) UpdateHookURL(ctx context.Context, filter, update bson.M) error {
-	uRet, err := ar.db.Collection(model.CollectionNameHookURL).UpdateOne(ctx, filter, update)
+func (ar *AlarmRule) UpdateHookURL(ctx context.Context, filter, update bson.M, opts ...*options.UpdateOptions) error {
+	uRet, err := ar.db.Collection(model.CollectionNameHookURL).UpdateOne(ctx, filter, update, opts...)
 	if err != nil {
 		return err
 	}

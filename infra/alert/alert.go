@@ -22,14 +22,14 @@ type DingDing struct {
 	client  *http.Client
 }
 
-// NewDingDing alarm impl
+// NewDingDing
 func NewDingDing() *DingDing {
 	return &DingDing{
 		client: &http.Client{},
 	}
 }
 
-// SetHookURL http request url
+// SetHookURL 设置RequestURL
 func (dd *DingDing) SetHookURL(url string) {
 	dd.hookURL = url
 }

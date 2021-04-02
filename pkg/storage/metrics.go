@@ -28,10 +28,10 @@ func (mm *ModuleMetrics) GetModuleMetricsCountByDate(ctx context.Context, date t
 	coll := mm.db.Collection(model.CollectionNameModuleMetrics)
 
 	pipeline := []bson.D{
-		bson.D{
+		{
 			{Key: "$match", Value: bson.M{"created_date": date}},
 		},
-		bson.D{
+		{
 			{Key: "$group", Value: bson.M{
 				"_id": bson.D{
 					{"$dateToString", bson.D{
@@ -44,7 +44,7 @@ func (mm *ModuleMetrics) GetModuleMetricsCountByDate(ctx context.Context, date t
 				"count":   bson.M{"$sum": 1},
 			}},
 		},
-		bson.D{
+		{
 			{Key: "$project", Value: bson.M{
 				"numbers": 1,
 				"sizes":   1,
