@@ -24,11 +24,17 @@ Qelog是一款小巧且功能干练实用的日志系统(集成报警)。采用P
 1. 后端：语言Golang、协议GRPC HTTP、存储Mongodb
 2. 前端：Vue
 
+
+
 #### 设计简图
 
-![设计简图](docs/qelog_design.png)
+![设计简图](https://github.com/huzhongqing/images/blob/master/qelog/qelog_design.png)
 
 ### 使用建议
+
+#### 日志Client端
+
+> go get -u github.com/huzhongqing/qelog/qezap
 
 配置文件参考 <a href="https://github.com/huzhongqing/qelog/blob/main/configs/config.toml">configs/config.toml</a>
 
@@ -42,14 +48,15 @@ Qelog是一款小巧且功能干练实用的日志系统(集成报警)。采用P
 
 ### 后台部分截图
 
-![查询](docs/find.png)
-![报警](docs/alarm.png)
-![容量](docs/db.png)
+![查询](https://github.com/huzhongqing/images/blob/master/qelog/find.png)
+![报警](https://github.com/huzhongqing/images/blob/master/qelog/alarm.png)
+![容量](https://github.com/huzhongqing/images/blob/master/qelog/db.png)
+![趋势](https://github.com/huzhongqing/images/blob/master/qelog/trend.png)
 
 **更多内容，还请部署后查看**
 
 > 后台地址  http://localhost:31080/admin
 
-#### 项目已线上稳定运行小半年，欢迎大家使用反馈问题提交PR。
+#### 项目已线上稳定运行小半年，欢迎大家使用反馈问题提交PR等。
 #### 感谢支持,喜欢点一个小星星，持续更新并解决问题。
 
