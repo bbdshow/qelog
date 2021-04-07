@@ -26,7 +26,7 @@ func NewHTTPServer(env string) *HTTPServer {
 // 统一使用此 handler 注册路由
 func (srv *HTTPServer) Engine() *gin.Engine {
 	srv.handler.HEAD("/health", func(c *gin.Context) { c.Status(200) })
-	skipPaths := []string{"/health", "/admin", "/static", "/docs"}
+	skipPaths := []string{"/health", "/admin", "/static", "/docs", "/favicon.ico"}
 	// 注册TraceID
 	srv.handler.Use(httputil.HandlerRegisterTraceID())
 	if srv.env == gin.ReleaseMode {
