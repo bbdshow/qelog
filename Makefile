@@ -8,8 +8,8 @@ build:
 	mkdir -p ./bin && rm -r ./bin
 	mkdir -p ./bin/configs && cp -r configs ./bin
 	mkdir -p ./bin/web && cp -r web ./bin
-	go build -ldflags ${flag} -o bin/receiver cmd/receiver/main.go
-	go build -ldflags ${flag} -o bin/admin cmd/admin/main.go
+	go build -ldflags ${flag} -o bin/qelog_receiver cmd/receiver/main.go
+	go build -ldflags ${flag} -o bin/qelog_admin cmd/admin/main.go
 
 .PHONY: clean
 clean:
