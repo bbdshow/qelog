@@ -1,6 +1,8 @@
 FROM golang:1.14.13-alpine3.12 as builder
 WORKDIR /app
 
+COPY api .
+COPY qezap .
 COPY go.mod .
 COPY go.sum .
 
