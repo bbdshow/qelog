@@ -18,6 +18,6 @@ clean:
 	rm -rf ./log
 
 # 构建Docker镜像
-.PHONY: buildImage
-buildImage:
+.PHONY: image
+image:
 	docker build -t ${tag} .
