@@ -1,12 +1,13 @@
 FROM golang:1.14.13-alpine3.12 as builder
 WORKDIR /app
 
-COPY api .
-COPY qezap .
+COPY api ./api
+COPY qezap ./qezap
 COPY go.mod .
 COPY go.sum .
 
 RUN set -eux; \
+      ls -l; \
       export GOPROXY="https://goproxy.io,direct"; \
       go version && go mod download \
       ;
