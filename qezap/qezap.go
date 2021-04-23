@@ -183,15 +183,15 @@ func (log *Logger) SetEnabledLevel(lvl zapcore.Level) *Logger {
 	return log
 }
 
-func (log *Logger) ConditionOne(v string) zap.Field {
+func (log *Logger) ConditionOne(v interface{}) zap.Field {
 	return ConditionOne(v)
 }
 
-func (log *Logger) ConditionTwo(v string) zap.Field {
+func (log *Logger) ConditionTwo(v interface{}) zap.Field {
 	return ConditionTwo(v)
 }
 
-func (log *Logger) ConditionThree(v string) zap.Field {
+func (log *Logger) ConditionThree(v interface{}) zap.Field {
 	return ConditionThree(v)
 }
 
@@ -222,16 +222,16 @@ func (log *Logger) Close() error {
 	return err
 }
 
-func ConditionOne(v string) zap.Field {
-	return zap.String(types.EncoderConditionOneKey, v)
+func ConditionOne(v interface{}) zap.Field {
+	return zap.Any(types.EncoderConditionOneKey, v)
 }
 
-func ConditionTwo(v string) zap.Field {
-	return zap.String(types.EncoderConditionTwoKey, v)
+func ConditionTwo(v interface{}) zap.Field {
+	return zap.Any(types.EncoderConditionTwoKey, v)
 }
 
-func ConditionThree(v string) zap.Field {
-	return zap.String(types.EncoderConditionThreeKey, v)
+func ConditionThree(v interface{}) zap.Field {
+	return zap.Any(types.EncoderConditionThreeKey, v)
 }
 
 func WithTraceID(ctx context.Context) context.Context {
