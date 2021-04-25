@@ -2,6 +2,7 @@ package qezap
 
 import (
 	"context"
+	"fmt"
 
 	"go.uber.org/multierr"
 
@@ -184,15 +185,15 @@ func (log *Logger) SetEnabledLevel(lvl zapcore.Level) *Logger {
 }
 
 func (log *Logger) ConditionOne(v interface{}) zap.Field {
-	return ConditionOne(v)
+	return ConditionOne(fmt.Sprintf("%v", v))
 }
 
 func (log *Logger) ConditionTwo(v interface{}) zap.Field {
-	return ConditionTwo(v)
+	return ConditionTwo(fmt.Sprintf("%v", v))
 }
 
 func (log *Logger) ConditionThree(v interface{}) zap.Field {
-	return ConditionThree(v)
+	return ConditionThree(fmt.Sprintf("%v", v))
 }
 
 func (log *Logger) WithTraceID(ctx context.Context) context.Context {
@@ -222,16 +223,16 @@ func (log *Logger) Close() error {
 	return err
 }
 
-func ConditionOne(v interface{}) zap.Field {
-	return zap.Any(types.EncoderConditionOneKey, v)
+func ConditionOne(v string) zap.Field {
+	return zap.String(types.EncoderConditionOneKey, v)
 }
 
-func ConditionTwo(v interface{}) zap.Field {
-	return zap.Any(types.EncoderConditionTwoKey, v)
+func ConditionTwo(v string) zap.Field {
+	return zap.String(types.EncoderConditionTwoKey, v)
 }
 
-func ConditionThree(v interface{}) zap.Field {
-	return zap.Any(types.EncoderConditionThreeKey, v)
+func ConditionThree(v string) zap.Field {
+	return zap.String(types.EncoderConditionThreeKey, v)
 }
 
 func WithTraceID(ctx context.Context) context.Context {
