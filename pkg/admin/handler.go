@@ -4,11 +4,11 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/bbdshow/qelog/infra/httputil"
+	"github.com/bbdshow/qelog/infra/jwt"
+	"github.com/bbdshow/qelog/pkg/common/entity"
+	"github.com/bbdshow/qelog/pkg/config"
 	"github.com/gin-gonic/gin"
-	"github.com/huzhongqing/qelog/infra/httputil"
-	"github.com/huzhongqing/qelog/infra/jwt"
-	"github.com/huzhongqing/qelog/pkg/common/entity"
-	"github.com/huzhongqing/qelog/pkg/config"
 )
 
 type Handler struct {

@@ -2,7 +2,7 @@ package model
 
 import (
 	"fmt"
-	"github.com/huzhongqing/qelog/infra/mongo"
+	"github.com/bbdshow/qelog/infra/mongo"
 )
 
 // 定义存储数据结构

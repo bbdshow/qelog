@@ -2,11 +2,11 @@ package storage
 
 import (
 	"context"
-	"github.com/huzhongqing/qelog/infra/mongo"
+	"github.com/bbdshow/qelog/infra/mongo"
 	"time"
 
-	"github.com/huzhongqing/qelog/pkg/common/entity"
-	"github.com/huzhongqing/qelog/pkg/common/model"
+	"github.com/bbdshow/qelog/pkg/common/entity"
+	"github.com/bbdshow/qelog/pkg/common/model"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )

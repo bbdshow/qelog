@@ -2,15 +2,15 @@ package main
 
 import (
 	"fmt"
-	"github.com/huzhongqing/qelog/cmd/provide"
-	"github.com/huzhongqing/qelog/infra/kit"
-	"github.com/huzhongqing/qelog/pkg/httpserver"
+	"github.com/bbdshow/qelog/cmd/provide"
+	"github.com/bbdshow/qelog/infra/kit"
+	"github.com/bbdshow/qelog/pkg/httpserver"
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
 
-	"github.com/huzhongqing/qelog/infra/logs"
+	"github.com/bbdshow/qelog/infra/logs"
 
-	"github.com/huzhongqing/qelog/pkg/receiver"
+	"github.com/bbdshow/qelog/pkg/receiver"
 )
 
 func main() {

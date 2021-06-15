@@ -3,8 +3,8 @@ package httputil
 import (
 	"fmt"
 
-	"github.com/huzhongqing/qelog/infra/jwt"
-	"github.com/huzhongqing/qelog/infra/logs"
+	"github.com/bbdshow/qelog/infra/jwt"
+	"github.com/bbdshow/qelog/infra/logs"
 
 	"github.com/gin-gonic/gin"
 

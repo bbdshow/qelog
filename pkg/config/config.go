@@ -3,7 +3,7 @@ package config
 import (
 	"errors"
 
-	"github.com/huzhongqing/qelog/infra/defval"
+	"github.com/bbdshow/qelog/infra/defval"
 
 	"github.com/BurntSushi/toml"
 )
@@ -21,7 +21,7 @@ type Config struct {
 	Env              string `default:"dev"`
 	ReceiverAddr     string `default:"0.0.0.0:31081"`
 	ReceiverGRPCAddr string `default:":31082"`
-	AdminAddr      string `default:"0.0.0.0:31080"`
+	AdminAddr        string `default:"0.0.0.0:31080"`
 
 	AuthEnable    bool `default:"true"`
 	AlarmEnable   bool `default:"true"`

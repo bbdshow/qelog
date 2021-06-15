@@ -2,10 +2,10 @@ package storage
 
 import (
 	"context"
-	"github.com/huzhongqing/qelog/infra/mongo"
-	"github.com/huzhongqing/qelog/pkg/common/model"
+	"github.com/bbdshow/qelog/infra/mongo"
+	"github.com/bbdshow/qelog/pkg/common/model"
 
-	"github.com/huzhongqing/qelog/infra/logs"
+	"github.com/bbdshow/qelog/infra/logs"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"go.uber.org/zap"

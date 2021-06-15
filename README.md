@@ -28,30 +28,30 @@ Qelog是一款小巧且功能干练实用的日志系统(集成报警)。采用P
 
 #### 设计简图
 
-![设计简图](https://github.com/huzhongqing/images/blob/master/qelog/qelog_design.png)
+![设计简图](https://github.com/bbdshow/images/blob/master/qelog/qelog_design.png)
 
 ### 使用建议
 
 #### 日志Client端
 
-> go get -u github.com/huzhongqing/qelog/qezap
+> go get -u github.com/bbdshow/qelog/qezap
 
-配置文件参考 <a href="https://github.com/huzhongqing/qelog/blob/main/configs/config.toml">configs/config.toml</a>
+配置文件参考 <a href="https://github.com/bbdshow/qelog/blob/main/configs/config.toml">configs/config.toml</a>
 
 使用方式可以参考Qelog项目本身
 
-<a href="https://github.com/huzhongqing/qelog/blob/main/infra/logs/qezap.go">infra/logs/qezap.go</a> 
+<a href="https://github.com/bbdshow/qelog/blob/main/infra/logs/qezap.go">infra/logs/qezap.go</a> 
 
-<a href="https://github.com/huzhongqing/qelog/blob/main/infra/httputil/middleware.go">infra/httputil/middleware.go</a>  
+<a href="https://github.com/bbdshow/qelog/blob/main/infra/httputil/middleware.go">infra/httputil/middleware.go</a>  
 
-<a href="https://github.com/huzhongqing/qelog/blob/main/qezap/example/main.go">qezap/example/main.go</a>
+<a href="https://github.com/bbdshow/qelog/blob/main/qezap/example/main.go">qezap/example/main.go</a>
 
 ### 后台部分截图
 
-![查询](https://github.com/huzhongqing/images/blob/master/qelog/find.png)
-![报警](https://github.com/huzhongqing/images/blob/master/qelog/alarm.png?raw=true)
-![容量](https://github.com/huzhongqing/images/blob/master/qelog/db.png)
-![趋势](https://github.com/huzhongqing/images/blob/master/qelog/trend.png)
+![查询](https://github.com/bbdshow/images/blob/master/qelog/find.png)
+![报警](https://github.com/bbdshow/images/blob/master/qelog/alarm.png?raw=true)
+![容量](https://github.com/bbdshow/images/blob/master/qelog/db.png)
+![趋势](https://github.com/bbdshow/images/blob/master/qelog/trend.png)
 
 **更多内容，还请部署后查看**
 

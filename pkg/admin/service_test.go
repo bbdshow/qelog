@@ -2,8 +2,8 @@ package admin
 
 import (
 	"context"
-	"github.com/huzhongqing/qelog/pkg/common/entity"
-	"github.com/huzhongqing/qelog/tests"
+	"github.com/bbdshow/qelog/pkg/common/entity"
+	"github.com/bbdshow/qelog/tests"
 	"testing"
 )
 

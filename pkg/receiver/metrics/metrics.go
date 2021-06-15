@@ -8,9 +8,9 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/huzhongqing/qelog/infra/logs"
-	"github.com/huzhongqing/qelog/pkg/common/model"
-	"github.com/huzhongqing/qelog/pkg/storage"
+	"github.com/bbdshow/qelog/infra/logs"
+	"github.com/bbdshow/qelog/pkg/common/model"
+	"github.com/bbdshow/qelog/pkg/storage"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"go.uber.org/zap"

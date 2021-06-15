@@ -3,8 +3,8 @@ package httputil
 import (
 	"time"
 
+	"github.com/bbdshow/qelog/infra/jwt"
 	"github.com/gin-gonic/gin"
-	"github.com/huzhongqing/qelog/infra/jwt"
 )
 
 type ClaimsData struct {
@@ -16,6 +16,7 @@ type ClaimsData struct {
 
 var ClaimsKey = "jwt_claims_key"
 
+// GenerateJWTToken
 func GenerateJWTToken(data ClaimsData, ttl time.Duration, signingKey ...string) (token string, err error) {
 	return jwt.GenerateJWTToken(jwt.NewCustomClaims(data, ttl, signingKey...))
 }
@@ -41,6 +42,7 @@ func GetJWTClaims(c *gin.Context) (data ClaimsData, exists bool) {
 	return data, true
 }
 
+// CheckClaimsUidIsEqual
 func CheckClaimsUidIsEqual(c *gin.Context, uid int64) bool {
 	data, exists := GetJWTClaims(c)
 	if !exists {

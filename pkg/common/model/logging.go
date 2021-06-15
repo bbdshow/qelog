@@ -3,7 +3,7 @@ package model
 import (
 	"fmt"
 
-	"github.com/huzhongqing/qelog/infra/mongo"
+	"github.com/bbdshow/qelog/infra/mongo"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )

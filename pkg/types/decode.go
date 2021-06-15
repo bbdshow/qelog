@@ -4,9 +4,9 @@ import (
 	"strings"
 	"time"
 
-	apitypes "github.com/huzhongqing/qelog/api/types"
+	apitypes "github.com/bbdshow/qelog/api/types"
 
-	"github.com/huzhongqing/qelog/pkg/common/model"
+	"github.com/bbdshow/qelog/pkg/common/model"
 	jsoniterator "github.com/json-iterator/go"
 )
 

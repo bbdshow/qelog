@@ -9,7 +9,7 @@ import (
 
 	"go.uber.org/zap"
 
-	"github.com/huzhongqing/qelog/qezap"
+	"github.com/bbdshow/qelog/qezap"
 )
 
 var (

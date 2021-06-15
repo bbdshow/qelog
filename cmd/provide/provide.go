@@ -1,10 +1,10 @@
 package provide
 
 import (
-	"github.com/huzhongqing/qelog/infra/logs"
-	"github.com/huzhongqing/qelog/infra/mongo"
-	"github.com/huzhongqing/qelog/pkg/common/model"
-	"github.com/huzhongqing/qelog/pkg/config"
+	"github.com/bbdshow/qelog/infra/logs"
+	"github.com/bbdshow/qelog/infra/mongo"
+	"github.com/bbdshow/qelog/pkg/common/model"
+	"github.com/bbdshow/qelog/pkg/config"
 	"go.uber.org/zap"
 )
 

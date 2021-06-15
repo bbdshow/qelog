@@ -1,9 +1,9 @@
 package receiver
 
 import (
+	"github.com/bbdshow/qelog/api"
+	"github.com/bbdshow/qelog/infra/httputil"
 	"github.com/gin-gonic/gin"
-	"github.com/huzhongqing/qelog/api"
-	"github.com/huzhongqing/qelog/infra/httputil"
 	"net/http"
 )
 

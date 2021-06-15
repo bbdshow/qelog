@@ -1,7 +1,7 @@
 package httpserver
 
 import (
-	"github.com/huzhongqing/qelog/infra/httputil"
+	"github.com/bbdshow/qelog/infra/httputil"
 	"net/http"
 	"time"
 

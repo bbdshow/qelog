@@ -8,7 +8,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/huzhongqing/qelog/infra/logs"
+	"github.com/bbdshow/qelog/infra/logs"
 
 	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"

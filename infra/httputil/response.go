@@ -8,9 +8,9 @@ import (
 
 	"go.uber.org/zap"
 
+	apitypes "github.com/bbdshow/qelog/api/types"
+	"github.com/bbdshow/qelog/infra/logs"
 	"github.com/gin-gonic/gin"
-	apitypes "github.com/huzhongqing/qelog/api/types"
-	"github.com/huzhongqing/qelog/infra/logs"
 )
 
 func WithTraceID(c *gin.Context) {

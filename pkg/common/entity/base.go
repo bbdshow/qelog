@@ -1,7 +1,7 @@
 package entity
 
 import (
-	"github.com/huzhongqing/qelog/infra/httputil"
+	"github.com/bbdshow/qelog/infra/httputil"
 	"time"
 
 	"go.mongodb.org/mongo-driver/bson/primitive"

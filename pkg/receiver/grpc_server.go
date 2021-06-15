@@ -2,11 +2,11 @@ package receiver
 
 import (
 	"context"
-	"github.com/huzhongqing/qelog/api/receiverpb"
+	"github.com/bbdshow/qelog/api/receiverpb"
 	"net"
 
-	"github.com/huzhongqing/qelog/infra/httputil"
-	"github.com/huzhongqing/qelog/infra/kit"
+	"github.com/bbdshow/qelog/infra/httputil"
+	"github.com/bbdshow/qelog/infra/kit"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/peer"
 )

@@ -8,10 +8,10 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/huzhongqing/qelog/infra/alert"
-	"github.com/huzhongqing/qelog/infra/kit"
-	"github.com/huzhongqing/qelog/infra/logs"
-	"github.com/huzhongqing/qelog/pkg/common/model"
+	"github.com/bbdshow/qelog/infra/alert"
+	"github.com/bbdshow/qelog/infra/kit"
+	"github.com/bbdshow/qelog/infra/logs"
+	"github.com/bbdshow/qelog/pkg/common/model"
 	"go.uber.org/zap"
 )
 

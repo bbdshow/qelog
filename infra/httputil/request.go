@@ -4,9 +4,9 @@ import (
 	"errors"
 	"strings"
 
+	"github.com/bbdshow/qelog/infra/logs"
 	"github.com/gin-gonic/gin"
 	"github.com/gin-gonic/gin/binding"
-	"github.com/huzhongqing/qelog/infra/logs"
 	"go.uber.org/zap"
 )
 
