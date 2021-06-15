@@ -1,4 +1,4 @@
-module github.com/huzhongqing/qelog/api
+module github.com/bbdshow/qelog/api
 
 go 1.14
 
