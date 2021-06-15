@@ -14,7 +14,7 @@ import (
 	"google.golang.org/grpc/balancer/roundrobin"
 	"google.golang.org/grpc/resolver"
 
-	"github.com/huzhongqing/qelog/api/receiverpb"
+	"github.com/bbdshow/qelog/api/receiverpb"
 	"google.golang.org/grpc"
 )
 

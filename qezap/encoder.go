@@ -1,7 +1,7 @@
 package qezap
 
 import (
-	"github.com/huzhongqing/qelog/api/types"
+	"github.com/bbdshow/qelog/api/types"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 )

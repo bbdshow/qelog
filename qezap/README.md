@@ -3,4 +3,4 @@
 
 配合qelog，实现远程解构存储
 
-> go get -u github.com/huzhongqing/qelog/qezap
+> go get -u github.com/bbdshow/qelog/qezap

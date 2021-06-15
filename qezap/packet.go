@@ -3,8 +3,8 @@ package qezap
 import (
 	"sync"
 
-	"github.com/huzhongqing/qelog/api/receiverpb"
-	apitypes "github.com/huzhongqing/qelog/api/types"
+	"github.com/bbdshow/qelog/api/receiverpb"
+	apitypes "github.com/bbdshow/qelog/api/types"
 )
 
 var (

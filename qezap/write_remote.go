@@ -10,7 +10,7 @@ import (
 
 	"go.uber.org/multierr"
 
-	"github.com/huzhongqing/qelog/api/receiverpb"
+	"github.com/bbdshow/qelog/api/receiverpb"
 )
 
 type WriteRemote struct {

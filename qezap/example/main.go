@@ -7,7 +7,7 @@ import (
 
 	"go.uber.org/zap/zapcore"
 
-	"github.com/huzhongqing/qelog/qezap"
+	"github.com/bbdshow/qelog/qezap"
 
 	"go.uber.org/zap"
 )
