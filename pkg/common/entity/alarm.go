@@ -64,7 +64,7 @@ type CreateHookURLReq struct {
 	URL      string   `json:"url" binding:"required"`
 	Method   int32    `json:"method" binding:"required"`
 	KeyWord  string   `json:"keyWord" binding:"omitempty,lte=24"`
-	HideText []string `json:"hideText" binding:"omitempty,gte=1"`
+	HideText []string `json:"hideText"`
 }
 
 type UpdateHookURLReq struct {
