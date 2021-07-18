@@ -120,7 +120,7 @@ func (rs *RuleState) Send(v *model.Logging) {
 		ctx, _ := context.WithTimeout(context.Background(), 30*time.Second)
 		err := rs.method.Send(ctx, rs.parsingContent(v))
 		if err != nil {
-			logs.Qezap.Error("AlarmSend", zap.String(rs.method.Method(), err.Error()))
+			logs.Qezap.Error("AlarmSend", zap.String(rs.method.Method(), err.Error()), zap.Any("content", rs.parsingContent(v)))
 		} else {
 			atomic.StoreInt32(&rs.count, 0)
 			// 如果间隔时间 <= 0  那么每次都直接发送

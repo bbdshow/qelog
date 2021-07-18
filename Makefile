@@ -1,3 +1,4 @@
+SET_OS=""
 config=config.toml
 tag=qelog:latest
 flag="-s -w -X 'main.buildTime=`date`' -X 'main.goVersion=`go version`' -X 'main.gitHash=`git rev-parse HEAD`'"
@@ -8,8 +9,13 @@ build:
 	mkdir -p ./bin && rm -r ./bin
 	mkdir -p ./bin/configs && cp -r configs ./bin
 	mkdir -p ./bin/web && cp -r web ./bin
-	go build -ldflags ${flag} -o bin/qelog_receiver cmd/receiver/main.go
-	go build -ldflags ${flag} -o bin/qelog_admin cmd/admin/main.go
+	@if [ ${SET_OS} != "" ]; then\
+		GOOS=${SET_OS} go build -ldflags ${flag} -o bin/qelog_receiver cmd/receiver/main.go;\
+		GOOS=${SET_OS} go build -ldflags ${flag} -o bin/qelog_admin cmd/admin/main.go;\
+	else\
+		go build -ldflags ${flag} -o bin/qelog_receiver cmd/receiver/main.go;\
+		go build -ldflags ${flag} -o bin/qelog_admin cmd/admin/main.go;\
+    fi
 
 .PHONY: clean
 clean:
