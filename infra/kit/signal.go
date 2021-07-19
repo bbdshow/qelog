@@ -15,13 +15,18 @@ func SignalAccept(close func() error, reload func() error) {
 		si := <-ch
 		switch si {
 		case syscall.SIGQUIT, syscall.SIGTERM, syscall.SIGINT:
-			if err := close(); err != nil {
-				log.Fatal("exit", err)
+			if close != nil {
+				if err := close(); err != nil {
+					log.Fatal("exit", err)
+				}
 			}
+
 			return
 		case syscall.SIGHUP:
-			if err := reload(); err != nil {
-				log.Println(err)
+			if reload != nil {
+				if err := reload(); err != nil {
+					log.Println(err)
+				}
 			}
 		default:
 			return
