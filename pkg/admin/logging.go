@@ -303,6 +303,7 @@ func (srv *Service) backgroundDelExpiredCollection(maxAgeMonth int) {
 					logs.Qezap.Error("DropCollection", zap.Error(err))
 					continue
 				}
+				time.Sleep(3 * time.Second)
 			}
 		}
 

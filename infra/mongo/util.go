@@ -54,9 +54,9 @@ type DBStatsResp struct {
 	IndexSize   int64  `json:"indexSize"`
 }
 
-func (mu *Util) DBStats(ctx context.Context) (DBStatsResp, error) {
+func (u *Util) DBStats(ctx context.Context) (DBStatsResp, error) {
 	out := DBStatsResp{}
-	err := mu.database.RunCommand(ctx, bson.D{{Key: "dbStats", Value: 1}}).Decode(&out)
+	err := u.database.RunCommand(ctx, bson.D{{Key: "dbStats", Value: 1}}).Decode(&out)
 	return out, err
 }
 
