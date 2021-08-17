@@ -6,10 +6,10 @@ services:
       - '31081:31081'
       - '31082:31082'
      volumes:
-      - '/data/log/receiver:/app/log'
+      - '/data/log/receiver:/app/receiver/log'
      entrypoint:
-      - /app/qelog_receiver
-      - -f=configs/config.docker.toml
+      - /app/receiver/qelog_receiver
+      - -f=../configs/config.docker.toml
      restart: always
 
   qelog_admin:
@@ -17,10 +17,10 @@ services:
     ports:
       - '31080:31080'
     volumes:
-      - '/data/log/admin:/app/log'
+      - '/data/log/admin:/app/admin/log'
     entrypoint:
-      - /app/qelog_admin
-      - -f=configs/config.docker.toml
+      - /app/admin/qelog_admin
+      - -f=../configs/config.docker.toml
     depends_on:
       - qelog_receiver
     restart: always

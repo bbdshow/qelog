@@ -10,7 +10,7 @@ import (
 func SignalAccept(close func() error, reload func() error) {
 	// 不同的信号量不同的处理方式
 	ch := make(chan os.Signal, 1)
-	signal.Notify(ch, syscall.SIGHUP, syscall.SIGQUIT, syscall.SIGTERM, syscall.SIGINT)
+	signal.Notify(ch, syscall.SIGQUIT, syscall.SIGTERM, syscall.SIGINT)
 	for {
 		si := <-ch
 		switch si {
@@ -20,14 +20,7 @@ func SignalAccept(close func() error, reload func() error) {
 					log.Fatal("exit", err)
 				}
 			}
-
 			return
-		case syscall.SIGHUP:
-			if reload != nil {
-				if err := reload(); err != nil {
-					log.Println(err)
-				}
-			}
 		default:
 			return
 		}
