@@ -3,21 +3,20 @@ package alarm
 import (
 	"context"
 	"fmt"
+	"github.com/bbdshow/bkit/logs"
+	"github.com/bbdshow/bkit/util/net"
+	"github.com/bbdshow/qelog/common/alert"
+	"github.com/bbdshow/qelog/pkg/model"
+	"go.uber.org/zap"
 	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
-
-	"github.com/bbdshow/qelog/infra/alert"
-	"github.com/bbdshow/qelog/infra/kit"
-	"github.com/bbdshow/qelog/infra/logs"
-	"github.com/bbdshow/qelog/pkg/common/model"
-	"go.uber.org/zap"
 )
 
 var (
 	ContentPrefix = "[QELOG]"
-	machineIP, _  = kit.GetLocalIPV4()
+	machineIP, _  = net.GetLocalIPV4()
 )
 
 type Alarm struct {
