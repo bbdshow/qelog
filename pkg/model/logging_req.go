@@ -1,7 +1,6 @@
-package entity
+package model
 
 type FindLoggingListReq struct {
-	ShardingIndex  int    `json:"shardingIndex"binding:"required,min=0"`
 	ModuleName     string `json:"moduleName" binding:"required"`
 	Short          string `json:"short"`
 	Level          int32  `json:"level" binding:"omitempty,min=-2,max=5"`
@@ -11,6 +10,7 @@ type FindLoggingListReq struct {
 	ConditionThree string `json:"conditionThree"`
 	// 指定查询集合
 	ForceCollectionName string `json:"forceCollectionName"`
+	ForceDatabase       string `json:"forceDatabase"`
 	TimeReq
 	PageReq
 }
@@ -20,6 +20,7 @@ type FindLoggingByTraceIDReq struct {
 	TraceID    string `json:"traceId" binding:"required,gte=19"`
 	// 指定查询集合
 	ForceCollectionName string `json:"forceCollectionName"`
+	ForceDatabase       string `json:"forceDatabase"`
 }
 
 type FindLoggingList struct {
@@ -33,4 +34,9 @@ type FindLoggingList struct {
 	ConditionThree string `json:"conditionThree"`
 	TraceID        string `json:"traceId"`
 	IP             string `json:"ip"`
+}
+
+type DropLoggingCollectionReq struct {
+	ModuleName string `json:"moduleName" binding:"required"`
+	Collection string `json:"collection" binding:"required"`
 }

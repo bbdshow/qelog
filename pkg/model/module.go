@@ -22,6 +22,7 @@ type Module struct {
 	Database  string             `bson:"database" json:"database"`
 	DaySpan   int                `bson:"day_span" json:"day_span"`
 	MaxMonth  int                `bson:"max_month" json:"max_month"`
+	Prefix    string             `bson:"prefix" json:"prefix"`
 	UpdatedAt time.Time          `bson:"updated_at" json:"updated_at"`
 }
 

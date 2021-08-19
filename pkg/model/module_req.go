@@ -28,6 +28,7 @@ type UpdateModuleReq struct {
 	DaySpan  int    `json:"daySpan" binding:"omitempty,gte=1,lte=31"`
 	MaxMonth int    `json:"maxMonth" binding:"omitempty,gte=1"`
 	Database string `json:"database" binding:"omitempty,gte=1"`
+	Prefix   string `json:"prefix" binding:"omitempty,gte=1,lte=6"`
 	Desc     string `json:"desc" binding:"required,gte=1,lte=128"`
 }
 

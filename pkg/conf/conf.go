@@ -1,6 +1,7 @@
 package conf
 
 import (
+	"fmt"
 	"github.com/bbdshow/bkit/conf"
 	"github.com/bbdshow/bkit/db/mongo"
 	"github.com/bbdshow/bkit/gen/defval"
@@ -31,6 +32,21 @@ func InitConf(path ...string) error {
 }
 
 func (c *Config) Validate() error {
+
+	mongoConn := map[string]struct{}{}
+	for _, v := range c.Mongo.Conns {
+		mongoConn[v.Database] = struct{}{}
+	}
+	if len(mongoConn) != len(c.Mongo.Conns) {
+		return fmt.Errorf("mongo conns database must be different")
+	}
+
+	for db := range mongoConn {
+		if !c.MongoGroup.IsExists(db) {
+			return fmt.Errorf("mongo conns databse must be in the mongo group database")
+		}
+	}
+
 	return nil
 }
 
@@ -62,6 +78,15 @@ func (mg MongoGroup) IsExists(database string) bool {
 	return false
 }
 
+func (mg MongoGroup) IsReceiverDatabase(database string) bool {
+	for _, v := range mg.ReceiverDatabase {
+		if v == database {
+			return true
+		}
+	}
+	return false
+}
+
 func (mg MongoGroup) RandReceiverDatabase() string {
 	if len(mg.ReceiverDatabase) == 0 {
 		return ""
@@ -78,6 +103,8 @@ type Receiver struct {
 }
 
 type Admin struct {
+	HttpListenAddr string `defval:"0.0.0.0:31080"`
+	AuthEnable     bool   `defval:"true"`
 }
 
 type AdminUser struct {

@@ -41,8 +41,3 @@ type ShardingIndexState struct {
 	Index int `json:"index"`
 	Use   int `json:"use"`
 }
-
-type DropLoggingCollectionReq struct {
-	Host string `json:"host" binding:"required"`
-	Name string `json:"name" binding:"required"`
-}

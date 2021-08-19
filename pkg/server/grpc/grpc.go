@@ -37,7 +37,7 @@ func NewReceiverGRpc(cfg *conf.Config, svc *receiver.Service) runner.Server {
 
 func (rpc *ReceiverGrpc) PushPacket(ctx context.Context, in *receiverpb.Packet) (*receiverpb.BaseResp, error) {
 	// 获取 clientIP
-	if err := receiverSvc.PacketToLogger(ctx, clientIP(ctx), in); err != nil {
+	if err := receiverSvc.PacketToLogging(ctx, clientIP(ctx), in); err != nil {
 		e, ok := err.(errc.Error)
 		if ok {
 			// 数据库操作错误

@@ -7,6 +7,7 @@ import (
 	"github.com/bbdshow/bkit/gen/str"
 	"github.com/bbdshow/qelog/pkg/model"
 	"go.mongodb.org/mongo-driver/bson"
+	"regexp"
 	"time"
 )
 
@@ -42,6 +43,7 @@ func (svc *Service) CreateModule(ctx context.Context, in *model.CreateModuleReq)
 		DaySpan:   in.DaySpan,
 		MaxMonth:  in.MaxMonth,
 		Database:  svc.cfg.MongoGroup.RandReceiverDatabase(),
+		Prefix:    "lg",
 		UpdatedAt: time.Now(),
 	}
 	if err := svc.d.CreateModule(ctx, doc); err != nil {
@@ -54,6 +56,15 @@ func (svc *Service) UpdateModule(ctx context.Context, in *model.UpdateModuleReq)
 	if in.Database != "" {
 		if !svc.cfg.MongoGroup.IsExists(in.Database) {
 			return errc.ErrNotFound.MultiMsg(fmt.Sprintf("%s database", in.Database))
+		}
+	}
+	if in.Prefix != "" {
+		reg, err := regexp.Compile("[a-z]")
+		if err != nil {
+			return errc.ErrInternalErr.MultiErr(err)
+		}
+		if !reg.MatchString(in.Prefix) {
+			return errc.ErrParamInvalid.MultiMsg("prefix must regexp [a-z]")
 		}
 	}
 	if err := svc.d.UpdateModule(ctx, in); err != nil {

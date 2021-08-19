@@ -3,6 +3,7 @@ package receiver
 import (
 	"bytes"
 	"context"
+	"fmt"
 	"github.com/bbdshow/bkit/errc"
 	"github.com/bbdshow/qelog/api"
 	"github.com/bbdshow/qelog/api/receiverpb"
@@ -13,7 +14,7 @@ import (
 	"time"
 )
 
-func (svc *Service) JSONPacketToLogger(ctx context.Context, ip string, in *api.JSONPacket) error {
+func (svc *Service) JSONPacketToLogging(ctx context.Context, ip string, in *api.JSONPacket) error {
 	if len(in.Data) <= 0 {
 		return nil
 	}
@@ -36,10 +37,10 @@ func (svc *Service) JSONPacketToLogger(ctx context.Context, ip string, in *api.J
 		go svc.metrics.Statistics(in.Module, ip, docs)
 	}
 
-	return svc.createLogger(ctx, m, docs)
+	return svc.createLogging(ctx, m, docs)
 }
 
-func (svc *Service) PacketToLogger(ctx context.Context, ip string, in *receiverpb.Packet) error {
+func (svc *Service) PacketToLogging(ctx context.Context, ip string, in *receiverpb.Packet) error {
 	if len(in.Data) <= 0 {
 		return nil
 	}
@@ -62,7 +63,7 @@ func (svc *Service) PacketToLogger(ctx context.Context, ip string, in *receiverp
 		go svc.metrics.Statistics(in.Module, ip, docs)
 	}
 
-	return svc.createLogger(ctx, m, docs)
+	return svc.createLogging(ctx, m, docs)
 }
 
 func (svc *Service) decodePacket(ip string, in *receiverpb.Packet) []*model.Logging {
@@ -132,7 +133,7 @@ func (svc *Service) decodeJSONPacket(ip string, in *api.JSONPacket) []*model.Log
 	return records
 }
 
-func (svc *Service) createLogger(ctx context.Context, m *module, docs []*model.Logging) error {
+func (svc *Service) createLogging(ctx context.Context, m *module, docs []*model.Logging) error {
 	aDoc, bDoc := svc.loggerDataShardingByTimestamp(m, docs)
 	if ctx == nil {
 		c, cancel := context.WithTimeout(context.Background(), 30*time.Second)
@@ -147,7 +148,7 @@ func (svc *Service) createLogger(ctx context.Context, m *module, docs []*model.L
 			return errc.ErrInternalErr.MultiErr(err)
 		}
 
-		if err := svc.d.CreateManyLogger(ctx, m.m.Database, v.CollectionName, v.Docs); err != nil {
+		if err := svc.d.CreateManyLogging(ctx, m.m.Database, v.CollectionName, v.Docs); err != nil {
 			return errc.ErrInternalErr.MultiErr(err)
 		}
 		return nil
@@ -227,7 +228,7 @@ func (svc *Service) ifCreateCollIndex(ctx context.Context, m *module, collection
 	if _, ok := svc.collections[collectionName]; ok {
 		return nil
 	}
-	names, err := svc.d.ListCollectionNames(ctx, m.m.Database, m.sc.Prefix)
+	names, err := svc.d.ListCollectionNames(ctx, m.m.Database, fmt.Sprintf("%s%s%s", m.sc.Prefix, m.sc.Sep, m.m.Bucket))
 	if err != nil {
 		return err
 	}
@@ -240,7 +241,7 @@ func (svc *Service) ifCreateCollIndex(ctx context.Context, m *module, collection
 	}
 
 	if !exists {
-		return svc.d.CreateLoggerIndex(m.m.Database, collectionName)
+		return svc.d.CreateLoggingIndex(m.m.Database, collectionName)
 	}
 
 	return nil

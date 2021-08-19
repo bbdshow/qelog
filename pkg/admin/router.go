@@ -46,8 +46,4 @@ func RegisterRouter(route *gin.Engine) {
 	//	v1.GET("/metrics/module/trend", h.MetricsModuleTrend)
 	//}
 
-	// 单页应用
-	route.StaticFile("/favicon.ico", "web/favicon.ico")
-	route.Static("/static", "web/static")
-	route.Static("/admin", "web")
 }

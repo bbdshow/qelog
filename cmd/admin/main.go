@@ -1,37 +1,31 @@
 package main
 
 import (
-	"fmt"
-	"github.com/bbdshow/qelog/cmd/provide"
-	"github.com/bbdshow/qelog/infra/kit"
-	"github.com/bbdshow/qelog/infra/logs"
+	"github.com/bbdshow/bkit/logs"
+	"github.com/bbdshow/bkit/runner"
 	"github.com/bbdshow/qelog/pkg/admin"
-	"github.com/bbdshow/qelog/pkg/httpserver"
-	"go.uber.org/multierr"
+	"github.com/bbdshow/qelog/pkg/conf"
+	"github.com/bbdshow/qelog/pkg/server/http"
 	"go.uber.org/zap"
+	"log"
 )
 
 func main() {
-	provide.InitFlag()
-	cfg := provide.InitConfig()
-	logs.InitQezap(cfg.Logging.Addr, cfg.Logging.Module, cfg.Logging.Filename)
-	db := provide.InitMongodb(cfg, true)
+	if err := conf.InitConf(); err != nil {
+		panic(err)
+	}
+	logs.InitQezap(conf.Conf.Logging)
+	defer logs.Qezap.Close()
+	logs.Qezap.Info("init", zap.Any("config", conf.Conf.EraseSensitive()))
 
-	httpSrv := httpserver.NewHTTPServer(cfg.Env)
-	// 注册后台路由
-	admin.RegisterRouter(httpSrv.Engine())
+	svc := admin.NewService(conf.Conf)
+	defer svc.Close()
 
-	go func() {
-		fmt.Println("http server listen", cfg.AdminAddr)
-		if err := httpSrv.Run(cfg.AdminAddr); err != nil {
-			logs.Qezap.Fatal("http server listen failed", zap.Error(err))
-		}
-	}()
-
-	logs.Qezap.Info("init", zap.Any("config", cfg.Print()), zap.String("buildInfo", provide.BuildInfo()))
-
-	kit.SignalAccept(func() error {
-		// 释放资源
-		return multierr.Combine(db.Disconnect(), httpSrv.Close(), logs.Qezap.Close())
-	}, nil)
+	httpSvc := http.NewAdminHttpServer(conf.Conf, svc)
+	if err := runner.Run(httpSvc, func() error {
+		// dealloc
+		return nil
+	}, runner.WithListenAddr(conf.Conf.Admin.HttpListenAddr)); err != nil {
+		log.Printf("runner exit: %v\n", err)
+	}
 }

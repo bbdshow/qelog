@@ -21,7 +21,7 @@ func (svc *Service) updateModuleSetting() error {
 	for _, v := range docs {
 		svc.modules[v.Name] = &module{
 			m:  v,
-			sc: mongo.NewCollShardByDay("logging", v.DaySpan),
+			sc: mongo.NewShardCollection(v.Prefix, v.DaySpan),
 		}
 	}
 	return nil

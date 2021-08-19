@@ -25,7 +25,7 @@ type Service struct {
 
 type module struct {
 	m  *model.Module
-	sc mongo.CollShardByDay
+	sc mongo.ShardCollection
 }
 
 func NewService(cfg *conf.Config) *Service {

@@ -13,7 +13,7 @@ func receiverPacket(c *gin.Context) {
 		return
 	}
 
-	if err := receiverSvc.JSONPacketToLogger(c.Request.Context(), c.ClientIP(), in); err != nil {
+	if err := receiverSvc.JSONPacketToLogging(c.Request.Context(), c.ClientIP(), in); err != nil {
 		ginutil.RespErr(c, err)
 		return
 	}

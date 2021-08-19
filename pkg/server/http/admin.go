@@ -205,3 +205,31 @@ func pingHookURL(c *gin.Context) {
 	}
 	ginutil.RespSuccess(c)
 }
+
+func findLoggingList(c *gin.Context) {
+	in := &model.FindLoggingListReq{}
+	if err := ginutil.ShouldBind(c, in); err != nil {
+		ginutil.RespErr(c, err)
+		return
+	}
+	out := &model.ListResp{}
+	if err := adminSvc.FindLoggingList(c.Request.Context(), in, out); err != nil {
+		ginutil.RespErr(c, err)
+		return
+	}
+	ginutil.RespData(c, out)
+}
+
+func findLoggingByTraceId(c *gin.Context) {
+	in := &model.FindLoggingByTraceIDReq{}
+	if err := ginutil.ShouldBind(c, in); err != nil {
+		ginutil.RespErr(c, err)
+		return
+	}
+	out := &model.ListResp{}
+	if err := adminSvc.FindLoggingByTraceID(c.Request.Context(), in, out); err != nil {
+		ginutil.RespErr(c, err)
+		return
+	}
+	ginutil.RespData(c, out)
+}

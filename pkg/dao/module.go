@@ -74,6 +74,9 @@ func (d *Dao) UpdateModule(ctx context.Context, in *model.UpdateModuleReq) error
 	if doc.Database != in.Database {
 		fields["database"] = in.Database
 	}
+	if doc.Prefix != in.Prefix {
+		fields["prefix"] = in.Prefix
+	}
 
 	if len(fields) > 0 {
 		fields["updated_at"] = time.Now().Local()
