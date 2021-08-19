@@ -21,22 +21,36 @@ daySpan = 7
 maxAgeMonth = 6
 
 # 主库Mongodb，用于存储配置信息，统计信息等
-[main]
-database = "qelog"
-uri = "mongodb://127.0.0.1:27017/admin"
+#[main]
+#database = "qelog"
+#uri = "mongodb://127.0.0.1:27017/admin"
 
 # Sharding 实例1。 这里的级别可自定义，可以是同Mongodb实例不同库，也可以不同实例
 # index ShardingIndexSize 与此参数对应，可以理解成 redis 的db
 # 实例配置就是, qelog 库负责，dbIndex 1,2,3,4 的存储
-[[sharding]]
-index = [1,2,3,4]
-database = "qelog"
-uri = "mongodb://127.0.0.1:27017/admin"
+#[[sharding]]
+#index = [1,2,3,4]
+#database = "qelog"
+#uri = "mongodb://127.0.0.1:27017/admin"
+#
+#[[sharding]]
+#index = [5,6,7,8]
+#database = "qelog2"
+#uri = "mongodb://127.0.0.1:27017/admin"
+[[Mongo.Conns]]
+    Database = "qelog"
+    Uri = "mongodb://127.0.0.1:27017/admin"
 
-[[sharding]]
-index = [5,6,7,8]
-database = "qelog2"
-uri = "mongodb://127.0.0.1:27017/admin"
+[[Mongo.Conns]]
+    Database = "qelog1"
+    Uri = "mongodb://127.0.0.1:27017/admin"
+[[Mongo.Conns]]
+    Database = "qelog2"
+    Uri = "mongodb://127.0.0.1:27017/admin"
+
+[MongoGroup]
+    AdminDatabase = "qelog"
+    ReceiverDatabase = ["qelog1","qelog2"]
 
 # 管理后台登录密码
 [AdminUser]

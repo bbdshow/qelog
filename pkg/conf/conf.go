@@ -19,6 +19,10 @@ type Config struct {
 	Mongo      *mongo.Config
 	Logging    *logs.Config
 
+	// 后台账号密码
+	AdminUser AdminUser
+
+	Admin    Admin
 	Receiver Receiver
 }
 
@@ -67,7 +71,16 @@ func (mg MongoGroup) RandReceiverDatabase() string {
 }
 
 type Receiver struct {
-	RpcListenAddr string `defval:":31082"`
-	AlarmEnable   bool   `defval:"true"`
-	MetricsEnable bool   `defval:"true"`
+	HttpListenAddr string `defval:"0.0.0.0:31081"` // 如果 "" 则不开启 http 服务
+	RpcListenAddr  string `defval:":31082"`
+	AlarmEnable    bool   `defval:"true"`
+	MetricsEnable  bool   `defval:"true"`
+}
+
+type Admin struct {
+}
+
+type AdminUser struct {
+	Username string `default:"admin"`
+	Password string `default:"111111"`
 }

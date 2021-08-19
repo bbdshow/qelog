@@ -1,10 +1,12 @@
 package main
 
 import (
+	"fmt"
 	"github.com/bbdshow/bkit/logs"
 	"github.com/bbdshow/bkit/runner"
 	"github.com/bbdshow/qelog/pkg/conf"
 	"github.com/bbdshow/qelog/pkg/server/grpc"
+	"github.com/bbdshow/qelog/pkg/server/http"
 	"log"
 
 	"go.uber.org/zap"
@@ -23,8 +25,20 @@ func main() {
 	svc := receiver.NewService(conf.Conf)
 	defer svc.Close()
 
-	rpcSvc := grpc.NewReceiverGRpc(conf.Conf, svc)
+	// http
+	go func() {
+		if conf.Conf.Receiver.HttpListenAddr != "" {
+			httpSvc := http.NewReceiverHttpServer(conf.Conf, svc)
+			if err := runner.Run(httpSvc, func() error {
+				// dealloc
+				return nil
+			}, runner.WithListenAddr(conf.Conf.Receiver.HttpListenAddr)); err != nil {
+				panic(fmt.Sprintf("runner exit: %v\n", err))
+			}
+		}
+	}()
 
+	rpcSvc := grpc.NewReceiverGRpc(conf.Conf, svc)
 	if err := runner.Run(rpcSvc, func() error {
 		// dealloc
 		return nil

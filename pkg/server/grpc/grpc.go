@@ -20,46 +20,24 @@ var (
 )
 
 type ReceiverGrpc struct {
-	server *grpc.Server
+	*runner.GrpcServer
 }
 
 func NewReceiverGRpc(cfg *conf.Config, svc *receiver.Service) runner.Server {
 	receiverSvc = svc
 	rpc := &ReceiverGrpc{
-		server: nil,
+		GrpcServer: runner.NewGrpcServer(),
 	}
+	rpc.RunAfter(func(s *grpc.Server) error {
+		receiverpb.RegisterReceiverServer(s, rpc)
+		return nil
+	})
 	return rpc
-}
-
-func (rpc *ReceiverGrpc) Run(opts ...runner.Option) error {
-	c := new(runner.Config).Init().WithOptions(opts...)
-	listen, err := net.Listen("tcp", c.ListenAddr)
-	if err != nil {
-		return err
-	}
-
-	server := grpc.NewServer()
-	rpc.server = server
-
-	receiverpb.RegisterReceiverServer(rpc.server, rpc)
-
-	if err := server.Serve(listen); err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func (rpc *ReceiverGrpc) Shutdown(ctx context.Context) error {
-	if rpc.server != nil {
-		rpc.server.Stop()
-	}
-	return nil
 }
 
 func (rpc *ReceiverGrpc) PushPacket(ctx context.Context, in *receiverpb.Packet) (*receiverpb.BaseResp, error) {
 	// 获取 clientIP
-	if err := receiverSvc.PacketToLogger(ctx, rpc.clientIP(ctx), in); err != nil {
+	if err := receiverSvc.PacketToLogger(ctx, clientIP(ctx), in); err != nil {
 		e, ok := err.(errc.Error)
 		if ok {
 			// 数据库操作错误
@@ -80,7 +58,7 @@ func (rpc *ReceiverGrpc) PushPacket(ctx context.Context, in *receiverpb.Packet) 
 	}, nil
 }
 
-func (rpc *ReceiverGrpc) clientIP(ctx context.Context) string {
+func clientIP(ctx context.Context) string {
 	ctxPeer, ok := peer.FromContext(ctx)
 	if ok && ctxPeer.Addr != nil {
 		if ipNet, ok := ctxPeer.Addr.(*net.IPNet); ok {

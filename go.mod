@@ -9,7 +9,7 @@ replace (
 
 require (
 	github.com/BurntSushi/toml v0.3.1
-	github.com/bbdshow/bkit v0.0.0-20210818101654-d4eb1bde2f5a
+	github.com/bbdshow/bkit v0.0.0-20210819014641-f5c93ee441cd
 	github.com/bbdshow/qelog/api v1.0.1
 	github.com/bbdshow/qelog/qezap v1.0.3
 	github.com/dgrijalva/jwt-go v3.2.0+incompatible

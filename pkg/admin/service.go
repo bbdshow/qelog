@@ -5,13 +5,9 @@ import (
 	"github.com/bbdshow/qelog/pkg/dao"
 
 	"sync"
-
-	"github.com/bbdshow/qelog/pkg/common/model"
-	"github.com/bbdshow/qelog/pkg/storage"
 )
 
 type Service struct {
-	moduleMetricsStore *storage.ModuleMetrics
 	//sc                 mongo.ShardingCollection
 	cfg  *conf.Config
 	d    *dao.Dao
@@ -20,9 +16,8 @@ type Service struct {
 
 func NewService(cfg *conf.Config) *Service {
 	svc := &Service{
-		cfg:                cfg,
-		d:                  dao.New(cfg),
-		moduleMetricsStore: storage.NewModuleMetrics(model.MainDB),
+		cfg: cfg,
+		d:   dao.New(cfg),
 		//sc:                 mongo.NewShardingCollection("logging", config.Global.DaySpan),
 	}
 	svc.once.Do(func() {

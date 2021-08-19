@@ -27,7 +27,6 @@ type Metrics struct {
 	mutex  sync.Mutex
 	states map[string]*model.MetricsState
 	d      *dao.Dao
-	//moduleMetricsStore *storage.ModuleMetrics
 }
 
 func NewMetrics(d *dao.Dao) *Metrics {
@@ -35,7 +34,6 @@ func NewMetrics(d *dao.Dao) *Metrics {
 		mutex:  sync.Mutex{},
 		states: make(map[string]*model.MetricsState),
 		d:      d,
-		//moduleMetricsStore: storage.NewModuleMetrics(model.MainDB),
 	}
 	return m
 }

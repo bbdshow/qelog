@@ -4,7 +4,6 @@ import (
 	"github.com/bbdshow/bkit/auth/jwt"
 	"github.com/bbdshow/bkit/errc"
 	"github.com/bbdshow/bkit/ginutil"
-	"github.com/bbdshow/qelog/pkg/config"
 	"github.com/bbdshow/qelog/pkg/model"
 	"github.com/gin-gonic/gin"
 	"time"
@@ -16,8 +15,8 @@ func login(c *gin.Context) {
 		ginutil.RespErr(c, err)
 		return
 	}
-	if in.Username != config.Global.AdminUser.Username ||
-		in.Password != config.Global.AdminUser.Password {
+	if in.Username != cfg.AdminUser.Username ||
+		in.Password != cfg.AdminUser.Password {
 		ginutil.RespErr(c, errc.ErrAuthInvalid.MultiMsg("账户或密码错误"))
 		return
 	}

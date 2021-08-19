@@ -13,22 +13,25 @@ var (
 	adminSvc *admin.Service
 
 	receiverSvc *receiver.Service
+
+	cfg *conf.Config
 )
 
-func NewAdminHttpServer(cfg *conf.Config, svc *admin.Service) runner.Server {
+func NewAdminHttpServer(c *conf.Config, svc *admin.Service) runner.Server {
 	adminSvc = svc
+	cfg = c
 
 	midFlag := ginutil.MStd
 	if cfg.Release() {
 		midFlag = ginutil.MRelease | ginutil.MTraceId | ginutil.MRecoverLogger
 	}
 	httpHandler := ginutil.DefaultEngine(midFlag)
-	registerAdminRouter(httpHandler, cfg)
+	registerAdminRouter(httpHandler)
 
 	return runner.NewHttpServer(httpHandler)
 }
 
-func registerAdminRouter(e *gin.Engine, cfg *conf.Config) {
+func registerAdminRouter(e *gin.Engine) {
 	e.POST("/v1/login", login)
 
 	v1 := e.Group("/v1")
@@ -58,19 +61,20 @@ func registerAdminRouter(e *gin.Engine, cfg *conf.Config) {
 	e.Static("/admin", "web")
 }
 
-func NewReceiverHttpServer(cfg *conf.Config, svc *receiver.Service) runner.Server {
+func NewReceiverHttpServer(c *conf.Config, svc *receiver.Service) runner.Server {
 	receiverSvc = svc
+	cfg = c
 
 	midFlag := ginutil.MStd
 	if cfg.Release() {
 		midFlag = ginutil.MRelease | ginutil.MTraceId | ginutil.MRecoverLogger
 	}
 	httpHandler := ginutil.DefaultEngine(midFlag)
-	registerReceiverRouter(httpHandler, cfg)
+	registerReceiverRouter(httpHandler)
 
 	return runner.NewHttpServer(httpHandler)
 }
 
-func registerReceiverRouter(e *gin.Engine, cfg *conf.Config) {
+func registerReceiverRouter(e *gin.Engine) {
 	e.POST("/v1/receiver/packet", receiverPacket)
 }

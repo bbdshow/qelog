@@ -2,8 +2,7 @@ package config
 
 import (
 	"errors"
-
-	"github.com/bbdshow/qelog/infra/defval"
+	"github.com/bbdshow/bkit/gen/defval"
 
 	"github.com/BurntSushi/toml"
 )
