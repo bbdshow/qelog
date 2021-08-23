@@ -30,6 +30,7 @@ type module struct {
 
 func NewService(cfg *conf.Config) *Service {
 	svc := &Service{
+		cfg:         cfg,
 		d:           dao.New(cfg),
 		lock:        sync.RWMutex{},
 		modules:     map[string]*module{},
