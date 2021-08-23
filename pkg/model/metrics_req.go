@@ -8,21 +8,19 @@ type MetricsDBStatsResp struct {
 
 // 数据库最新统计周期
 type DBStat struct {
-	ShardingIndex []int  `json:"shardingIndex"`
-	Host          string `json:"host"`
-	DBName        string `json:"dbName"`
-	Collections   int32  `json:"collections"`
-	DataSize      int64  `json:"dataSize"`
-	StorageSize   int64  `json:"storageSize"`
-	IndexSize     int64  `json:"indexSize"`
-	Objects       int64  `json:"objects"`
-	Indexs        int64  `json:"indexs"`
-	CreatedTsSec  int64  `json:"createdTsSec"`
+	Host         string `json:"host"`
+	DBName       string `json:"dbName"`
+	Collections  int32  `json:"collections"`
+	DataSize     int64  `json:"dataSize"`
+	StorageSize  int64  `json:"storageSize"`
+	IndexSize    int64  `json:"indexSize"`
+	Objects      int64  `json:"objects"`
+	Indexs       int64  `json:"indexs"`
+	CreatedTsSec int64  `json:"createdTsSec"`
 }
 
 type MetricsCollStatsReq struct {
-	Host   string `json:"host" form:"host" binding:"required"`
-	DBName string `json:"dbName" form:"dbName" binding:"required"`
+	ModuleName string `json:"moduleName" form:"moduleName" binding:"required"`
 }
 
 type CollStat struct {

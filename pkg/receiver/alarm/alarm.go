@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/bbdshow/bkit/logs"
-	"github.com/bbdshow/bkit/util/net"
+	"github.com/bbdshow/bkit/util/inet"
 	"github.com/bbdshow/qelog/common/alert"
 	"github.com/bbdshow/qelog/pkg/model"
 	"go.uber.org/zap"
@@ -16,7 +16,7 @@ import (
 
 var (
 	ContentPrefix = "[QELOG]"
-	machineIP, _  = net.GetLocalIPV4()
+	machineIP, _  = inet.GetLocalIPV4()
 )
 
 type Alarm struct {

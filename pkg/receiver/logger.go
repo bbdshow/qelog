@@ -3,7 +3,6 @@ package receiver
 import (
 	"bytes"
 	"context"
-	"fmt"
 	"github.com/bbdshow/bkit/errc"
 	"github.com/bbdshow/qelog/api"
 	"github.com/bbdshow/qelog/api/receiverpb"
@@ -228,7 +227,7 @@ func (svc *Service) ifCreateCollIndex(ctx context.Context, m *module, collection
 	if _, ok := svc.collections[collectionName]; ok {
 		return nil
 	}
-	names, err := svc.d.ListCollectionNames(ctx, m.m.Database, fmt.Sprintf("%s%s%s", m.sc.Prefix, m.sc.Sep, m.m.Bucket))
+	names, err := svc.d.ListCollectionNames(ctx, m.m.Database, m.m.LoggingPrefix())
 	if err != nil {
 		return err
 	}

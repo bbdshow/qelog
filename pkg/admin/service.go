@@ -3,6 +3,7 @@ package admin
 import (
 	"github.com/bbdshow/qelog/pkg/conf"
 	"github.com/bbdshow/qelog/pkg/dao"
+	"github.com/bbdshow/qelog/pkg/model"
 
 	"sync"
 )
@@ -20,7 +21,20 @@ func NewService(cfg *conf.Config) *Service {
 	}
 	svc.once.Do(func() {
 		go svc.bgDelExpiredCollection()
+		go svc.bgMetricsCollectionStats()
+		go svc.bgMetricsDBStats()
 	})
+
+	if err := svc.d.AdminInst().UpsertCollectionIndexMany(
+		model.ModuleIndexMany(),
+		model.AlarmRuleIndexMany(),
+		model.DBStatsIndexMany(),
+		model.ModuleMetricsIndexMany(),
+		model.CollStatsIndexMany(),
+	); err != nil {
+		panic(err)
+	}
+
 	return svc
 }
 

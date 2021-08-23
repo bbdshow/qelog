@@ -233,3 +233,67 @@ func findLoggingByTraceId(c *gin.Context) {
 	}
 	ginutil.RespData(c, out)
 }
+
+func metricsDBStats(c *gin.Context) {
+	out := &model.ListResp{}
+	if err := adminSvc.MetricsDBStats(c.Request.Context(), out); err != nil {
+		ginutil.RespErr(c, err)
+		return
+	}
+	ginutil.RespData(c, out)
+}
+
+func metricsCollStats(c *gin.Context) {
+	in := &model.MetricsCollStatsReq{}
+	if err := ginutil.ShouldBind(c, in); err != nil {
+		ginutil.RespErr(c, err)
+		return
+	}
+	out := &model.ListResp{}
+	if err := adminSvc.MetricsCollStats(c.Request.Context(), in, out); err != nil {
+		ginutil.RespErr(c, err)
+		return
+	}
+	ginutil.RespData(c, out)
+}
+
+func metricsModuleList(c *gin.Context) {
+	in := &model.MetricsModuleListReq{}
+	if err := ginutil.ShouldBind(c, in); err != nil {
+		ginutil.RespErr(c, err)
+		return
+	}
+	out := &model.ListResp{}
+	if err := adminSvc.MetricsModuleList(c.Request.Context(), in, out); err != nil {
+		ginutil.RespErr(c, err)
+		return
+	}
+	ginutil.RespData(c, out)
+}
+
+func metricsModuleTrend(c *gin.Context) {
+	in := &model.MetricsModuleTrendReq{}
+	if err := ginutil.ShouldBind(c, in); err != nil {
+		ginutil.RespErr(c, err)
+		return
+	}
+	out := &model.MetricsModuleTrendResp{}
+	if err := adminSvc.MetricsModuleTrend(c.Request.Context(), in, out); err != nil {
+		ginutil.RespErr(c, err)
+		return
+	}
+	ginutil.RespData(c, out)
+}
+
+func dropLoggingCollection(c *gin.Context) {
+	in := &model.DropLoggingCollectionReq{}
+	if err := ginutil.ShouldBind(c, in); err != nil {
+		ginutil.RespErr(c, err)
+		return
+	}
+	if err := adminSvc.DropLoggingCollection(c.Request.Context(), in); err != nil {
+		ginutil.RespErr(c, err)
+		return
+	}
+	ginutil.RespSuccess(c)
+}

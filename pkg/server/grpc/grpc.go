@@ -5,7 +5,7 @@ import (
 	"github.com/bbdshow/bkit/errc"
 	"github.com/bbdshow/bkit/logs"
 	"github.com/bbdshow/bkit/runner"
-	inet "github.com/bbdshow/bkit/util/net"
+	"github.com/bbdshow/bkit/util/inet"
 	"github.com/bbdshow/qelog/api/receiverpb"
 	"github.com/bbdshow/qelog/pkg/conf"
 	"github.com/bbdshow/qelog/pkg/receiver"

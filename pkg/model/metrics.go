@@ -102,6 +102,7 @@ type DBStats struct {
 	StorageSize int64              `bson:"storage_size"`
 	Indexes     int64              `bson:"indexes"`
 	IndexSize   int64              `bson:"index_size"`
+	UpdatedAt   time.Time          `bson:"updated_at"`
 	CreatedAt   time.Time          `bson:"created_at"`
 }
 
@@ -139,6 +140,7 @@ type CollStats struct {
 	Capped         bool               `bson:"capped"`
 	TotalIndexSize int64              `bson:"total_index_size"`
 	IndexSizes     map[string]int64   `bson:"index_sizes"`
+	UpdatedAt      time.Time          `bson:"updated_at"`
 	CreatedAt      time.Time          `bson:"created_at"`
 }
 

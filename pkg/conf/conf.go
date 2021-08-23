@@ -95,6 +95,13 @@ func (mg MongoGroup) RandReceiverDatabase() string {
 	return mg.ReceiverDatabase[i]
 }
 
+func (mg MongoGroup) Databases() []string {
+	names := make([]string, 0)
+	names = append(names, mg.AdminDatabase)
+	names = append(names, mg.ReceiverDatabase...)
+	return names
+}
+
 type Receiver struct {
 	HttpListenAddr string `defval:"0.0.0.0:31081"` // 如果 "" 则不开启 http 服务
 	RpcListenAddr  string `defval:":31082"`

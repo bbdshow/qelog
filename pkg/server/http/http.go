@@ -55,10 +55,18 @@ func registerAdminRouter(e *gin.Engine) {
 		v1.GET("/alarmRule/hook/ping", pingHookURL)
 	}
 
-	// 搜索日志
+	// 日志
 	{
 		v1.POST("/logging/list", findLoggingList)
 		v1.POST("/logging/traceId", findLoggingByTraceId)
+		v1.DELETE("/logging/collection", dropLoggingCollection)
+	}
+	// 报表
+	{
+		v1.GET("/metrics/dbStats", metricsDBStats)
+		v1.GET("/metrics/collStats", metricsCollStats)
+		v1.GET("/metrics/module/list", metricsModuleList)
+		v1.GET("/metrics/module/trend", metricsModuleTrend)
 	}
 
 	// 单页应用

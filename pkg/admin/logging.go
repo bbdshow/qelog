@@ -171,7 +171,7 @@ func (svc *Service) bgDelExpiredCollection() {
 				continue
 			}
 			sc := mongo.NewShardCollection(m.Prefix, m.DaySpan)
-			cNames, err := svc.d.ListCollectionNames(context.Background(), m.Database, fmt.Sprintf("%s%s%s", sc.Prefix, sc.Sep, m.Bucket))
+			cNames, err := svc.d.ListCollectionNames(context.Background(), m.Database, m.LoggingPrefix())
 			if err != nil {
 				logs.Qezap.Error("bgDelExpiredCollection", zap.String("ListCollectionNames", err.Error()))
 				continue

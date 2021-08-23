@@ -1,6 +1,7 @@
 package model
 
 import (
+	"fmt"
 	"github.com/bbdshow/bkit/db/mongo"
 	"time"
 
@@ -29,6 +30,12 @@ type Module struct {
 func (m Module) CollectionName() string {
 	return CNModule
 }
+
+func (m Module) LoggingPrefix() string {
+	sc := mongo.NewShardCollection(m.Prefix, m.DaySpan)
+	return fmt.Sprintf("%s%s%s", sc.Prefix, sc.Sep, m.Bucket)
+}
+
 func ModuleIndexMany() []mongo.Index {
 	return []mongo.Index{
 		{

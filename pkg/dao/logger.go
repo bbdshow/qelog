@@ -172,6 +172,12 @@ func (d *Dao) DropLoggingCollection(ctx context.Context, m *model.Module, cName 
 	if err := inst.Collection(cName).Drop(ctx); err != nil {
 		return errc.ErrInternalErr.MultiErr(err)
 	}
-	// TODO 删除统计
+
+	filter := bson.M{
+		"db":   m.Database,
+		"name": cName,
+	}
+	_, _ = d.adminInst.Collection(model.CNCollStats).DeleteOne(ctx, filter)
+
 	return nil
 }
