@@ -15,8 +15,8 @@ func login(c *gin.Context) {
 		ginutil.RespErr(c, err)
 		return
 	}
-	if in.Username != cfg.AdminUser.Username ||
-		in.Password != cfg.AdminUser.Password {
+	if in.Username != cfg.Admin.Username ||
+		in.Password != cfg.Admin.Password {
 		ginutil.RespErr(c, errc.ErrAuthInvalid.MultiMsg("账户或密码错误"))
 		return
 	}

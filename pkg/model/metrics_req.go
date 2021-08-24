@@ -16,7 +16,7 @@ type DBStat struct {
 	IndexSize    int64  `json:"indexSize"`
 	Objects      int64  `json:"objects"`
 	Indexs       int64  `json:"indexs"`
-	CreatedTsSec int64  `json:"createdTsSec"`
+	UpdatedTsSec int64  `json:"updatedTsSec"`
 }
 
 type MetricsCollStatsReq struct {
@@ -24,6 +24,7 @@ type MetricsCollStatsReq struct {
 }
 
 type CollStat struct {
+	ModuleName     string           `json:"moduleName"`
 	Host           string           `json:"host"`
 	DBName         string           `json:"dbName"`
 	Name           string           `json:"name"`
@@ -34,6 +35,7 @@ type CollStat struct {
 	Capped         bool             `json:"capped"`
 	TotalIndexSize int64            `json:"totalIndexSize"`
 	IndexSizes     map[string]int64 `json:"indexSizes"`
+	UpdatedTsSec   int64            `json:"updatedTsSec"`
 	CreatedTsSec   int64            `json:"createdTsSec"`
 }
 

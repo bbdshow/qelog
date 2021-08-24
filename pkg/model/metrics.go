@@ -130,6 +130,7 @@ func DBStatsIndexMany() []mongo.Index {
 // CollStats 集合容量统计
 type CollStats struct {
 	ID             primitive.ObjectID `bson:"_id,omitempty"`
+	ModuleName     string             `bson:"module_name"`
 	Host           string             `bson:"host"`
 	DB             string             `bson:"db"`
 	Name           string             `bson:"name"`
@@ -154,13 +155,7 @@ func CollStatsIndexMany() []mongo.Index {
 			Collection: CNCollStats,
 			Keys: bson.D{
 				{
-					Key: "host", Value: 1,
-				},
-				{
-					Key: "db", Value: 1,
-				},
-				{
-					Key: "name", Value: 1,
+					Key: "module_name", Value: 1,
 				},
 			},
 			Background: true,

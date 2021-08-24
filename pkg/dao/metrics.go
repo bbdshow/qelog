@@ -148,9 +148,10 @@ func (d *Dao) FindCollStats(ctx context.Context, filter bson.M) ([]*model.CollSt
 
 func (d *Dao) UpsertCollStats(ctx context.Context, in *model.CollStats) error {
 	filter := bson.M{
-		"host": in.Host,
-		"db":   in.DB,
-		"name": in.Name,
+		"module_name": in.ModuleName,
+		"host":        in.Host,
+		"db":          in.DB,
+		"name":        in.Name,
 	}
 
 	opt := options.Update().SetUpsert(true)

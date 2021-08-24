@@ -23,6 +23,7 @@ import (
 func (svc *Service) bgMetricsDBStats() {
 	for {
 		time.Sleep(time.Duration(rand.Intn(30)+60) * time.Minute)
+		//time.Sleep(time.Duration(30) * time.Second)
 		databases := svc.cfg.MongoGroup.Databases()
 		for _, dbName := range databases {
 			// find conn
@@ -82,6 +83,7 @@ func (svc *Service) metricsDBStats(conn mongo.Conn) error {
 func (svc *Service) bgMetricsCollectionStats() {
 	for {
 		time.Sleep(time.Duration(rand.Intn(30)+30) * time.Minute)
+		//time.Sleep(time.Duration(30) * time.Second)
 		ctx := context.Background()
 		modules, err := svc.d.FindAllModule(ctx)
 		if err != nil {
@@ -97,7 +99,7 @@ func (svc *Service) bgMetricsCollectionStats() {
 						logs.Qezap.Error("bgMetricsCollectionStats", zap.String("ListCollectionNames", err.Error()))
 						continue
 					}
-					if err := svc.metricsCollStats(conn, colls); err != nil {
+					if err := svc.metricsCollStats(conn, m, colls); err != nil {
 						logs.Qezap.Error("bgMetricsDBStats", zap.String("metricsCollStats", err.Error()))
 						continue
 					}
@@ -108,16 +110,17 @@ func (svc *Service) bgMetricsCollectionStats() {
 	}
 }
 
-func (svc *Service) metricsCollStats(conn mongo.Conn, colls []string) error {
+func (svc *Service) metricsCollStats(conn mongo.Conn, m *model.Module, colls []string) error {
 	validColls := make([]string, 0)
 	host := strings.Join(mongo.URIToHosts(conn.URI), ",")
 	beforeDay := itime.BeforeDayDate(1)
 	for _, coll := range colls {
 		filter := bson.M{
-			"host":       host,
-			"db":         conn.Database,
-			"name":       coll,
-			"updated_at": bson.M{"$gt": beforeDay},
+			"module_name": m.Name,
+			"host":        host,
+			"db":          conn.Database,
+			"name":        coll,
+			"updated_at":  bson.M{"$gt": beforeDay},
 		}
 		ctx := context.Background()
 		exists, _, err := svc.d.GetCollStats(ctx, filter)
@@ -146,9 +149,9 @@ func (svc *Service) metricsCollStats(conn mongo.Conn, colls []string) error {
 			continue
 		}
 		doc := &model.CollStats{
+			ModuleName:     m.Name,
 			Host:           host,
 			DB:             conn.Database,
-			Name:           stats.Ns,
 			Size:           stats.Size,
 			Count:          stats.Count,
 			AvgObjSize:     stats.AvgObjSize,
@@ -157,6 +160,9 @@ func (svc *Service) metricsCollStats(conn mongo.Conn, colls []string) error {
 			TotalIndexSize: stats.TotalIndexSize,
 			IndexSizes:     stats.IndexSizes,
 		}
+		// ns 去除 db
+		ns := strings.Replace(stats.Ns, fmt.Sprintf("%s.", conn.Database), "", 1)
+		doc.Name = ns
 		if err := svc.d.UpsertCollStats(ctx, doc); err != nil {
 			logs.Qezap.Error("metricsCollStats", zap.String("UpsertCollStats", err.Error()))
 			continue
@@ -166,11 +172,7 @@ func (svc *Service) metricsCollStats(conn mongo.Conn, colls []string) error {
 }
 
 func (svc *Service) MetricsDBStats(ctx context.Context, out *model.ListResp) error {
-	dateStr := itime.DateString(time.Now())
-	filter := bson.M{
-		"date_str": dateStr,
-	}
-	docs, err := svc.d.FindDBStats(ctx, filter)
+	docs, err := svc.d.FindDBStats(ctx, bson.M{})
 	if err != nil {
 		return errc.ErrInternalErr.MultiErr(err)
 	}
@@ -186,7 +188,7 @@ func (svc *Service) MetricsDBStats(ctx context.Context, out *model.ListResp) err
 			IndexSize:    v.IndexSize,
 			Objects:      v.Objects,
 			Indexs:       v.Indexes,
-			CreatedTsSec: v.CreatedAt.Unix(),
+			UpdatedTsSec: v.UpdatedAt.Unix(),
 		})
 	}
 
@@ -216,13 +218,13 @@ func (svc *Service) MetricsCollStats(ctx context.Context, in *model.MetricsCollS
 	}
 	host := strings.Join(mongo.URIToHosts(validConn.URI), ",")
 	filter := bson.M{
-		"host": host,
-		"db":   m.Database,
+		"module_name": m.Name,
+		"host":        host,
+		"db":          m.Database,
 		"name": primitive.Regex{
 			Pattern: fmt.Sprintf("%s_", m.LoggingPrefix()),
 			Options: "i",
 		},
-		"date_str": itime.DateString(time.Now()),
 	}
 	docs, err := svc.d.FindCollStats(ctx, filter)
 	if err != nil {
@@ -232,6 +234,7 @@ func (svc *Service) MetricsCollStats(ctx context.Context, in *model.MetricsCollS
 	list := make([]*model.CollStat, 0, len(docs))
 	for _, v := range docs {
 		d := &model.CollStat{
+			ModuleName:     v.ModuleName,
 			Host:           v.Host,
 			DBName:         v.DB,
 			Name:           v.Name,
@@ -242,6 +245,7 @@ func (svc *Service) MetricsCollStats(ctx context.Context, in *model.MetricsCollS
 			Capped:         v.Capped,
 			TotalIndexSize: v.TotalIndexSize,
 			IndexSizes:     v.IndexSizes,
+			UpdatedTsSec:   v.UpdatedAt.Unix(),
 			CreatedTsSec:   v.CreatedAt.Unix(),
 		}
 		list = append(list, d)

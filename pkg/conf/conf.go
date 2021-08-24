@@ -20,9 +20,6 @@ type Config struct {
 	Mongo      *mongo.Config
 	Logging    *logs.Config
 
-	// 后台账号密码
-	AdminUser AdminUser
-
 	Admin    Admin
 	Receiver Receiver
 }
@@ -32,6 +29,9 @@ func InitConf(path ...string) error {
 }
 
 func (c *Config) Validate() error {
+	if c.Admin.Username == "" || c.Admin.Password == "" {
+		return fmt.Errorf("admin username password required")
+	}
 
 	mongoConn := map[string]struct{}{}
 	for _, v := range c.Mongo.Conns {
@@ -112,9 +112,6 @@ type Receiver struct {
 type Admin struct {
 	HttpListenAddr string `defval:"0.0.0.0:31080"`
 	AuthEnable     bool   `defval:"true"`
-}
-
-type AdminUser struct {
-	Username string `default:"admin"`
-	Password string `default:"111111"`
+	Username       string `defval:"admin"` // 后台账号密码
+	Password       string `defval:"111111"`
 }

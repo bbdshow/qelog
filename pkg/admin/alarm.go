@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/bbdshow/bkit/errc"
-	"github.com/bbdshow/qelog/common/alert"
+	"github.com/bbdshow/bkit/util/alert"
 	"github.com/bbdshow/qelog/common/types"
 	"github.com/bbdshow/qelog/pkg/model"
 

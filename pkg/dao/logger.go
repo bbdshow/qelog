@@ -174,8 +174,8 @@ func (d *Dao) DropLoggingCollection(ctx context.Context, m *model.Module, cName 
 	}
 
 	filter := bson.M{
-		"db":   m.Database,
-		"name": cName,
+		"module_name": m.Name,
+		"name":        cName,
 	}
 	_, _ = d.adminInst.Collection(model.CNCollStats).DeleteOne(ctx, filter)
 

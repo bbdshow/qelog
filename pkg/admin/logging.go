@@ -146,8 +146,8 @@ func (svc *Service) DropLoggingCollection(ctx context.Context, in *model.DropLog
 	if !exists {
 		return errc.ErrNotFound.MultiMsg("module")
 	}
-	if !strings.HasPrefix(in.Collection, "logging") {
-		return errc.ErrParamInvalid.MultiMsg("force collection name not 'logging_' prefix")
+	if !strings.HasPrefix(in.Collection, m.LoggingPrefix()) {
+		return errc.ErrParamInvalid.MultiMsg(fmt.Sprintf("collection name not '%s' prefix", m.LoggingPrefix()))
 	}
 
 	if err := svc.d.DropLoggingCollection(ctx, m, in.Collection); err != nil {

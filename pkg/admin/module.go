@@ -27,6 +27,8 @@ func (svc *Service) FindModuleList(ctx context.Context, in *model.FindModuleList
 			Bucket:       v.Bucket,
 			DaySpan:      v.DaySpan,
 			MaxMonth:     v.MaxMonth,
+			Database:     v.Database,
+			Prefix:       v.Prefix,
 			UpdatedTsSec: v.UpdatedAt.Unix(),
 		}
 		list = append(list, d)
