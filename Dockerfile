@@ -17,11 +17,9 @@ COPY . .
 RUN set -eux; \
         mkdir -p ./bin && rm -r ./bin; \
         # shellcheck disable=SC2006
-        go build -ldflags "-s -w -X 'main.buildTime=`date`' -X 'main.goVersion=`go version`' -X main.gitHash=`git rev-parse HEAD`"  \
-                -o bin/receiver/qelog_receiver cmd/receiver/main.go; \
+        go build -o bin/receiver/qelog_receiver cmd/receiver/main.go; \
         # shellcheck disable=SC2006
-        go build -ldflags "-s -w -X 'main.buildTime=`date`' -X 'main.goVersion=`go version`'-X main.gitHash=`git rev-parse HEAD`" \
-            -o bin/admin/qelog_admin cmd/admin/main.go;
+        go build -o bin/admin/qelog_admin cmd/admin/main.go;
 
 FROM alpine:3.12
 WORKDIR /app
