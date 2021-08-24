@@ -2,21 +2,21 @@ Env = "dev"
 
 # 用于存储配置信息，统计信息等
 [[Mongo.Conns]]
-Database = "qelog"
+Database = "qelog_admin"
 Uri = "mongodb://root:111111@192.168.10.14:27017,192.168.10.15:27017/?replicaSet=fbj&authSource=admin"
 
 # 用于存储日志信息
 [[Mongo.Conns]]
-Database = "qelog_sharding1"
+Database = "qelog_receiver_1"
 Uri = "mongodb://root:111111@192.168.10.14:27017,192.168.10.15:27017/?replicaSet=fbj&authSource=admin"
 # 用于存储日志信息
 [[Mongo.Conns]]
-Database = "qelog_sharding2"
+Database = "qelog_receiver_2"
 Uri = "mongodb://root:111111@192.168.10.14:27017,192.168.10.15:27017/?replicaSet=fbj&authSource=admin"
 
 [MongoGroup]
-AdminDatabase = "qelog"
-ReceiverDatabase = ["qelog_sharding1","qelog_sharding2"]
+AdminDatabase = "qelog_admin"
+ReceiverDatabase = ["qelog_receiver_1","qelog_receiver_2"]
 
 # 管理后台
 [Admin]
