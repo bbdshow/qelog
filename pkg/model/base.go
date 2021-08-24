@@ -9,8 +9,8 @@ import (
 )
 
 type PageReq struct {
-	Page  int64 `json:"page" form:"page" default:"1" `
-	Limit int64 `json:"limit" from:"limit" default:"20"`
+	Page  int64 `json:"page" form:"page,default=1"`
+	Limit int64 `json:"limit" form:"limit,default=20"`
 }
 
 func (v PageReq) SetPage(opt *options.FindOptions) *options.FindOptions {
