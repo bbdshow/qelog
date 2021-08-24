@@ -37,6 +37,6 @@ RUN set -eux; \
 
 COPY --from=builder ./app/bin .
 COPY --from=builder ./app/configs ./configs
-COPY --from=builder ./app/web ./admin/web
+COPY --from=builder ./app/web ./web
 
 CMD ["/bin/sh"]
