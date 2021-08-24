@@ -9,7 +9,7 @@ services:
       - '/data/log/receiver:/app/receiver/log'
      entrypoint:
       - /app/receiver/qelog_receiver
-      - -f=../configs/config.docker.toml
+      - -f=./configs/config.docker.toml
      restart: always
 
   qelog_admin:
@@ -20,7 +20,7 @@ services:
       - '/data/log/admin:/app/admin/log'
     entrypoint:
       - /app/admin/qelog_admin
-      - -f=../configs/config.docker.toml
+      - -f=./configs/config.docker.toml
     depends_on:
       - qelog_receiver
     restart: always
