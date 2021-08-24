@@ -55,8 +55,6 @@ github.com/armon/go-metrics v0.0.0-20180917152333-f0300d1749da/go.mod h1:Q73ZrmV
 github.com/armon/go-radix v0.0.0-20180808171621-7fddfc383310/go.mod h1:ufUuZ+zHj4x4TnLV4JWEpy2hxWSpsRywHrMgIH9cCH8=
 github.com/aws/aws-sdk-go v1.34.28 h1:sscPpn/Ns3i0F4HPEWAVcwdIRaZZCuL7llJ2/60yPIk=
 github.com/aws/aws-sdk-go v1.34.28/go.mod h1:H7NKnBqNVzoTJpGfLrQkkD+ytBA93eiDYi/+8rV9s48=
-github.com/bbdshow/bkit v0.0.0-20210823083601-fd7958073a5b h1:Hn8KFN9Ul6fU0ddhhTo00GAOVgisDfz/0kyyp8TDjsE=
-github.com/bbdshow/bkit v0.0.0-20210823083601-fd7958073a5b/go.mod h1:KyoH14BlfwUMjOCMnBN+EzaSGmX1653HlSAZVlJZr34=
 github.com/bbdshow/bkit v0.0.0-20210823092320-4cefbb469c08 h1:WQMFB60dMiPjbzg6lmt9unD09hPHsfxz6DCjtHy612s=
 github.com/bbdshow/bkit v0.0.0-20210823092320-4cefbb469c08/go.mod h1:KyoH14BlfwUMjOCMnBN+EzaSGmX1653HlSAZVlJZr34=
 github.com/bbdshow/gocache v0.0.0-20210618095529-db5ec942d800 h1:U9XBIz7AaWSTWNqu22KF0z/ssjzgyLnkuK0ER8IJ//k=

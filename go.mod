@@ -8,7 +8,6 @@ replace (
 )
 
 require (
-	github.com/BurntSushi/toml v0.3.1
 	github.com/bbdshow/bkit v0.0.0-20210823092320-4cefbb469c08
 	github.com/bbdshow/qelog/api v1.0.1
 	github.com/bbdshow/qelog/qezap v1.0.3
