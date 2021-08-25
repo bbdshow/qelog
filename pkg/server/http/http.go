@@ -58,7 +58,7 @@ func registerAdminRouter(e *gin.Engine) {
 	// 日志
 	{
 		v1.POST("/logging/list", findLoggingList)
-		v1.POST("/logging/traceId", findLoggingByTraceId)
+		v1.POST("/logging/traceid", findLoggingByTraceId)
 		v1.DELETE("/logging/collection", dropLoggingCollection)
 	}
 	// 报表
