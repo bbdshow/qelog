@@ -25,7 +25,6 @@ PS:目前已经过上千TB数据写入稳定性验证，不足之处目前Client
 1. 后端：语言Golang、协议GRPC HTTP、存储Mongodb
 2. 前端：Vue
 
-
 #### 设计简图
 
 ![设计简图](https://github.com/bbdshow/images/blob/master/qelog/qelog_design.png)
@@ -42,7 +41,27 @@ PS:目前已经过上千TB数据写入稳定性验证，不足之处目前Client
 
 <a href="https://github.com/bbdshow/qelog/blob/main/qezap/example/main.go">qezap/example/main.go</a>
 
-**更多内容，还请部署后查看**
+#### 部署参考
+- git clone 代码，进入项目根目录 
+- 选择Docker部署，修改好 configs 里面的 config.docker.toml
+```shell
+# 构建镜像
+make image
+docker-compose up -d
+```
+- 选择nohup直接部署
+```shell
+# 构建镜像
+make
+cd ./bin
+# 修改配置文件 configs/config.toml
+# 可参照 /scripts start.sh stop.sh
+# 也可以把 sh copy 到对应服务dir下 例如 admin/start.sh stop.sh
+# 例如启动 admin
+cd ./admin
+nohup ./qelog_admin -f ../configs/config.toml >> nohup.out 2>&1  &
+```
+- 建议只启动一个 admin 即可，admin服务有定时任务
 
 > 后台地址  http://localhost:31080/admin
 
