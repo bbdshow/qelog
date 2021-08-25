@@ -9,12 +9,6 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
-// 分片索引容量
-// 配置化把存储对象，映射到不同的索引下
-// 举例：如果存在4个存储对象，则分配规则为 [1,2] = db1 [3,4] = db2 ...类推
-// 通过此类设计，实现一个简单的存储横向扩展。
-// 横向扩展时，应在原有基础上增加此值，预留给扩展的DB实例，这样以前的数据可不用迁移
-
 type Logging struct {
 	ID         primitive.ObjectID `bson:"_id,omitempty"`
 	Module     string             `bson:"m"`

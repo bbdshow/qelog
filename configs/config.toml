@@ -6,7 +6,7 @@ Env = "dev"
     Database = "qelog_admin"
     Uri = "mongodb://127.0.0.1:27017/admin"
 
-# 用于存储日志信息
+# 用于存储日志信息，每个链接实例的Database应该都不同
 [[Mongo.Conns]]
     Database = "qelog_receiver_1"
     Uri = "mongodb://127.0.0.1:27017/admin"
@@ -14,7 +14,7 @@ Env = "dev"
 [[Mongo.Conns]]
     Database = "qelog_receiver_2"
     Uri = "mongodb://127.0.0.1:27017/admin"
-
+# 对链接配置进行分组
 [MongoGroup]
     AdminDatabase = "qelog_admin"
     ReceiverDatabase = ["qelog_receiver_1","qelog_receiver_2"]
