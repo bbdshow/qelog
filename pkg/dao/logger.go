@@ -2,6 +2,7 @@ package dao
 
 import (
 	"context"
+	"fmt"
 	"github.com/bbdshow/bkit/db/mongo"
 	"github.com/bbdshow/bkit/errc"
 	"github.com/bbdshow/bkit/logs"
@@ -134,8 +135,8 @@ func (d *Dao) FindLoggingByTraceID(ctx context.Context, m *model.Module, in *mod
 		}
 	}
 	if in.ForceCollectionName != "" {
-		if !strings.HasPrefix(in.ForceCollectionName, "logging") {
-			return nil, errc.ErrParamInvalid.MultiMsg("force collection name not 'logging_' prefix")
+		if !strings.HasPrefix(in.ForceCollectionName, m.Prefix) {
+			return nil, errc.ErrParamInvalid.MultiMsg(fmt.Sprintf("force collection name not '%s' prefix", m.Prefix))
 		}
 		cNames = append(cNames, in.ForceCollectionName)
 	} else {

@@ -81,8 +81,8 @@ func (svc *Service) FindLoggingList(ctx context.Context, in *model.FindLoggingLi
 		}
 	}
 	if in.ForceCollectionName != "" {
-		if !strings.HasPrefix(in.ForceCollectionName, "logging") {
-			return errc.ErrParamInvalid.MultiMsg("force collection name not 'logging_' prefix")
+		if !strings.HasPrefix(in.ForceCollectionName, m.Prefix) {
+			return errc.ErrParamInvalid.MultiMsg(fmt.Sprintf("force collection name not '%s' prefix", m.Prefix))
 		}
 		cName = in.ForceCollectionName
 	} else {
