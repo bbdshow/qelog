@@ -89,7 +89,7 @@ func (svc *Service) FindLoggingList(ctx context.Context, in *model.FindLoggingLi
 		// 计算集合名
 		names := sc.CollNameByStartEnd(m.Bucket, in.BeginTsSec, in.EndTsSec)
 		if len(names) >= 2 {
-			format := "2006-01-02 15:04:05"
+			format := "2006-01-02"
 			sepTime, err := sc.SepTime(names[0])
 			if err != nil {
 				return errc.ErrParamInvalid.MultiErr(err)
