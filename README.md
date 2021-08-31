@@ -6,6 +6,8 @@ Qelog是一款小巧且功能干练实用的日志系统(集成报警)。采用P
 
 PS:目前已经过上百TB数据写入稳定性验证，不足之处目前Client端只支持Uber-zap包, 支持写入协议(api/receiverpb)，可自行定制Client
 
+[后台示例地址](http://qelog.hoping.top:31086/admin)
+
 ### 日志系统特性:
 
 1. Client端采用 [Uber-zap](https://github.com/uber-go/zap) 的Format，高效格式化日志，友好迁移切换。实现 WriteSyncer&ZapCore的接口。一次格式化，多次写入。
@@ -63,10 +65,5 @@ nohup ./qelog_admin -f ../configs/config.toml >> nohup.out 2>&1  &
 ```
 - 建议只启动一个 admin 即可，admin服务有定时任务
 
-> 后台地址  http://localhost:31080/admin
-
-### Qelog & Loki
-
-
-#### 感谢支持,有问题请提 Issues，持续更新并解决问题。
+#### 感谢支持，点亮Start,有问题请提 Issues，持续更新并解决问题。
 

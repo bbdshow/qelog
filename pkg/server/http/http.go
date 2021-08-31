@@ -25,6 +25,9 @@ func NewAdminHttpServer(c *conf.Config, svc *admin.Service) runner.Server {
 	if cfg.Release() {
 		midFlag = ginutil.MRelease | ginutil.MTraceId | ginutil.MRecoverLogger
 	}
+	// 隐藏静态文件的读取
+	ginutil.AddSkipPaths("/static/*filepath", "/admin/*filepath")
+
 	httpHandler := ginutil.DefaultEngine(midFlag)
 	registerAdminRouter(httpHandler)
 

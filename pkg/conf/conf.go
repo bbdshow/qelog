@@ -17,7 +17,7 @@ type Config struct {
 	Env string `defval:"dev"`
 
 	MongoGroup MongoGroup
-	Mongo      *mongo.Config
+	Mongo      mongo.Config
 	Logging    *logs.Config
 
 	Admin    Admin
