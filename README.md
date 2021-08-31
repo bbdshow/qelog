@@ -9,8 +9,8 @@ PS:目前已经过上百TB数据写入稳定性验证，不足之处目前Client
 ### 日志系统特性:
 
 1. Client端采用 [Uber-zap](https://github.com/uber-go/zap) 的Format，高效格式化日志，友好迁移切换。实现 WriteSyncer&ZapCore的接口。一次格式化，多次写入。
-2. WriteSyncer接口实现，本地：日志的切割，压缩，保留期，动态切换等级等。远端：数据打包压缩传输，异常备份重试，传输方式支持 HTTP GRPC，网络带宽占用可控，内存占用低等特点。
-3. 支持携带额外查询信息，比如 TraceId、ClientIP、3级条件等查询筛选。
+2. WriteSyncer接口实现，本地：日志的切割，压缩，保留期，动态切换等级等。远端：数据打包压缩传输，异常备份重试，传输方式支持 HTTP GRPC(默认)，网络带宽占用可控，内存占用低等特点。
+3. 支持携带额外查询信息，比如 等级、关键字、TraceId、ClientIP、多级条件等联合查询筛选。
 4. 系统的Receiver版块可横向扩展，保证高可用，高性能，高容量。
 5. 报警模块，支持日志直接报警，可轻松制定关键词，报警频率，灵活开关，可实现多种报警方式(目前支持DingDing)。
 6. 存储采用自维护分实例分库分集合功能。支持自定义天级别数据分片，项目分库。配置较为简单，支持库容量监控管理。可一直横向扩展，而不影响写入速度。每个项目存储日志周期可单独调节，自动管控容量，节约存储空间。特别优化联合索引查询，保证查询速度，降低索引大小。
@@ -33,7 +33,7 @@ PS:目前已经过上百TB数据写入稳定性验证，不足之处目前Client
 
 #### 日志Client端
 
-> go get -u github.com/bbdshow/qelog/qezap
+> go get github.com/bbdshow/qelog/qezap
 
 配置文件参考 <a href="https://github.com/bbdshow/qelog/blob/main/configs/config.toml">configs/config.toml</a>
 
