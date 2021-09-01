@@ -17,9 +17,9 @@ COPY . .
 RUN set -eux; \
         mkdir -p ./bin && rm -r ./bin; \
         # shellcheck disable=SC2006
-        go build -o bin/receiver/qelog_receiver cmd/receiver/main.go; \
+        go build -ldflags "-s" -o bin/receiver/qelog_receiver cmd/receiver/main.go; \
         # shellcheck disable=SC2006
-        go build -o bin/admin/qelog_admin cmd/admin/main.go;
+        go build -ldflags "-s" -o bin/admin/qelog_admin cmd/admin/main.go;
 
 FROM alpine:3.12
 WORKDIR /app
