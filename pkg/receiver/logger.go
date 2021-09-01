@@ -29,7 +29,7 @@ func (svc *Service) JSONPacketToLogging(ctx context.Context, ip string, in *api.
 
 	if svc.cfg.Receiver.AlarmEnable && svc.alarm.ModuleIsEnable(in.Module) {
 		// 异步执行报警逻辑
-		go svc.alarm.AlarmIfHitRule(docs)
+		go svc.alarm.IsAlarm(docs)
 	}
 
 	if svc.cfg.Receiver.MetricsEnable {
@@ -55,7 +55,7 @@ func (svc *Service) PacketToLogging(ctx context.Context, ip string, in *receiver
 
 	if svc.cfg.Receiver.AlarmEnable && svc.alarm.ModuleIsEnable(in.Module) {
 		// 异步执行报警逻辑
-		go svc.alarm.AlarmIfHitRule(docs)
+		go svc.alarm.IsAlarm(docs)
 	}
 
 	if svc.cfg.Receiver.MetricsEnable {

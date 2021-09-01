@@ -55,7 +55,7 @@ func (a *Alarm) ModuleIsEnable(name string) bool {
 	return ok && enable
 }
 
-func (a *Alarm) AlarmIfHitRule(docs []*model.Logging) {
+func (a *Alarm) IsAlarm(docs []*model.Logging) {
 	a.mutex.RLock()
 	defer a.mutex.RUnlock()
 	for _, v := range docs {
@@ -77,20 +77,19 @@ func (a *Alarm) InitRuleState(rules []*model.AlarmRule, hooks []*model.HookURL) 
 		ruleState[rule.Key()] = new(RuleState).UpsertRule(rule, hooksMap[rule.HookID])
 		modules[rule.ModuleName] = true
 	}
-	a.mutex.RLock()
+	// 替换状态机
+	a.mutex.Lock()
+	defer a.mutex.Unlock()
 	for _, state := range a.ruleState {
 		v, ok := ruleState[state.Key()]
 		if ok {
 			ruleState[state.Key()] = state.UpsertRule(v.rule, v.hook)
 		}
 	}
-	a.mutex.RUnlock()
-	// 替换状态机
-	a.mutex.Lock()
+
 	a.ruleState = ruleState
 	a.modules = modules
 	a.hooks = hooksMap
-	a.mutex.Unlock()
 }
 
 type RuleState struct {
@@ -116,7 +115,8 @@ func (rs *RuleState) Send(v *model.Logging) {
 		isSend = true
 	}
 	if isSend {
-		ctx, _ := context.WithTimeout(context.Background(), 30*time.Second)
+		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+		defer cancel()
 		err := rs.method.Send(ctx, rs.parsingContent(v))
 		if err != nil {
 			logs.Qezap.Error("AlarmSend", zap.String(rs.method.Method(), err.Error()), zap.Any("content", rs.parsingContent(v)))

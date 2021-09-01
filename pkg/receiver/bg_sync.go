@@ -4,6 +4,7 @@ import (
 	"context"
 	"github.com/bbdshow/bkit/db/mongo"
 	"github.com/bbdshow/bkit/logs"
+	"github.com/bbdshow/qelog/pkg/model"
 	"go.uber.org/zap"
 	"time"
 )
@@ -36,34 +37,34 @@ func (svc *Service) bgSyncModuleSetting() {
 	}
 }
 
-func (svc *Service) updateAlarmRuleSetting(module string) error {
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
-	docs, err := svc.d.FindAlarmRule(ctx, module, true)
+func (svc *Service) updateAlarmRuleSetting() error {
+	modules := make([]string, 0)
+	svc.lock.RLock()
+	for _, m := range svc.modules {
+		modules = append(modules, m.m.Name)
+	}
+	svc.lock.RUnlock()
+
+	rules := make([]*model.AlarmRule, 0)
+	for _, name := range modules {
+		docs, err := svc.d.FindAlarmRule(context.Background(), name, true)
+		if err != nil {
+			return err
+		}
+		rules = append(rules, docs...)
+	}
+	hooks, err := svc.d.FindAllHookURL(context.Background())
 	if err != nil {
 		return err
 	}
-	hooks, err := svc.d.FindAllHookURL(ctx)
-	if err != nil {
-		return err
-	}
-	svc.alarm.InitRuleState(docs, hooks)
+	svc.alarm.InitRuleState(rules, hooks)
 	return nil
 }
 
 func (svc *Service) bgSyncAlarmRuleSetting() {
 	for {
-		modules := make([]string, 0)
-		svc.lock.RLock()
-		for _, m := range svc.modules {
-			modules = append(modules, m.m.Name)
-		}
-		svc.lock.RUnlock()
-		for _, name := range modules {
-			err := svc.updateAlarmRuleSetting(name)
-			if err != nil {
-				logs.Qezap.Error("bgSyncAlarmRuleSetting", zap.String("error", err.Error()))
-			}
+		if err := svc.updateAlarmRuleSetting(); err != nil {
+			logs.Qezap.Error("bgSyncAlarmRuleSetting", zap.String("updateAlarmRuleSetting", err.Error()))
 		}
 		time.Sleep(time.Minute)
 	}

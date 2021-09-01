@@ -65,5 +65,5 @@ nohup ./qelog_admin -f ../configs/config.toml >> nohup.out 2>&1  &
 ```
 - 建议只启动一个 admin 即可，admin服务有定时任务
 
-#### 感谢支持，点亮Start,有问题请提 Issues，持续更新并解决问题。
+#### 感谢支持，点亮Star,有问题请提 Issues，持续更新并解决问题。
 
