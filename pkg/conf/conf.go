@@ -56,9 +56,15 @@ func (c *Config) Release() bool {
 
 func (c *Config) EraseSensitive() Config {
 	// 脱敏数据，可用于打印
-	cc := *c
-	_ = defval.InitialNullVal(&cc)
-	return cc
+	cp := new(Config)
+	*cp = *c
+	conns := make([]mongo.Conn, 0)
+	for _, conn := range cp.Mongo.Conns {
+		conns = append(conns, conn)
+	}
+	cp.Mongo.Conns = conns
+	_ = defval.InitialNullVal(cp)
+	return *cp
 }
 
 type MongoGroup struct {
