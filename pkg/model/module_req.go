@@ -1,7 +1,7 @@
 package model
 
 type CreateModuleReq struct {
-	Name     string `json:"name" binding:"required,gte=2,lte=24,lowercase"`
+	Name     string `json:"name" binding:"required,gte=2,lte=64,lowercase"`
 	Desc     string `json:"desc" binding:"omitempty,gte=1,lte=128"`
 	DaySpan  int    `json:"daySpan" binding:"omitempty,gte=1,lte=31"`
 	MaxMonth int    `json:"maxMonth" binding:"omitempty,gte=1"`
