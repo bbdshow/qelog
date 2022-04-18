@@ -8,7 +8,7 @@ replace (
 )
 
 require (
-	github.com/bbdshow/bkit v0.1.0
+	github.com/bbdshow/bkit v0.2.7
 	github.com/bbdshow/bkit/db/mongo v0.1.1
 	github.com/bbdshow/qelog/api v1.0.1
 	github.com/bbdshow/qelog/qezap v1.0.3

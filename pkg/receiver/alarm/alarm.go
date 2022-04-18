@@ -47,7 +47,7 @@ func (a *Alarm) AddHideText(txt []string) {
 	}
 }
 
-// 如果模块没有设置报警，则不用判断具体的状态了
+// ModuleIsEnable 如果模块没有设置报警，则不用判断具体的状态了
 func (a *Alarm) ModuleIsEnable(name string) bool {
 	a.mutex.RLock()
 	enable, ok := a.modules[name]
@@ -178,6 +178,11 @@ func (rs *RuleState) UpsertRule(new *model.AlarmRule, hook *model.HookURL) *Rule
 		switch rs.rule.Method {
 		case model.MethodDingDing:
 			rs.method = alert.NewDingDing()
+			if rs.hook != nil {
+				rs.method.SetHookURL(rs.hook.URL)
+			}
+		case model.MethodTelegram:
+			rs.method = alert.NewTelegram()
 			if rs.hook != nil {
 				rs.method.SetHookURL(rs.hook.URL)
 			}

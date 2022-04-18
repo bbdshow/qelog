@@ -17,6 +17,7 @@ const (
 
 const (
 	MethodDingDing = iota + 1
+	MethodTelegram
 )
 
 // AlarmRule
@@ -65,6 +66,8 @@ func (m Method) String() string {
 	switch m {
 	case MethodDingDing:
 		v = "DingDing"
+	case MethodTelegram:
+		v = "Telegram"
 	}
 	return v
 }

@@ -156,6 +156,12 @@ func (svc *Service) PingHookURL(ctx context.Context, in *model.PingHookURLReq) e
 		if err := ding.Send(ctx, fmt.Sprintf("%s %s Ping hook Success", doc.KeyWord, doc.Name)); err != nil {
 			return errc.ErrParamInvalid.MultiErr(err)
 		}
+	case model.MethodTelegram:
+		tel := alert.NewTelegram()
+		tel.SetHookURL(doc.URL)
+		if err := tel.Send(ctx, fmt.Sprintf("%s %s Ping hook Success", doc.KeyWord, doc.Name)); err != nil {
+			return errc.ErrParamInvalid.MultiErr(err)
+		}
 	}
 	return nil
 }
