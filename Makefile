@@ -1,4 +1,4 @@
-SET_OS=""
+OS=""
 config=config.toml
 tag=qelog:latest
 
@@ -8,9 +8,9 @@ build:
 	mkdir -p ./bin && rm -r ./bin
 	mkdir -p ./bin/configs && cp -r configs ./bin
 	mkdir -p ./bin/admin/web && cp -r web ./bin/admin
-	@if [ ${SET_OS} != "" ]; then\
-		GOOS=${SET_OS} go build -ldflags "-s" -o bin/receiver/qelog_receiver cmd/receiver/main.go;\
-		GOOS=${SET_OS} go build -ldflags "-s" -o bin/admin/qelog_admin cmd/admin/main.go;\
+	@if [ ${OS} != "" ]; then\
+		GOOS=${OS} go build -ldflags "-s" -o bin/receiver/qelog_receiver cmd/receiver/main.go;\
+		GOOS=${OS} go build -ldflags "-s" -o bin/admin/qelog_admin cmd/admin/main.go;\
 	else\
 		go build -ldflags "-s" -o bin/receiver/qelog_receiver cmd/receiver/main.go;\
 		go build -ldflags "-s" -o bin/admin/qelog_admin cmd/admin/main.go;\

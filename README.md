@@ -6,7 +6,9 @@ Qelog是一款小巧且功能干练实用的日志系统(集成报警)。采用P
 
 PS:目前已经过上百TB数据写入稳定性验证，不足之处目前Client端只支持Uber-zap包, 支持写入协议(api/receiverpb)，可自行定制Client
 
-[后台示例地址](http://qelog.hoping.top:31086/admin)  账号：admin 密码：111111
+[后台示例地址](https://demoqelog.huzhongqing.com/admin)  账号：admin 密码：111111
+
+> 感谢文明使用，谢谢合作！
 
 ### 日志系统特性:
 
