@@ -86,7 +86,7 @@ func (d *Dao) FindLoggingList(ctx context.Context, dbName, cName string, in *mod
 	}
 	// 异步统计Count
 	calcCount := func(ctx context.Context) (int64, error) {
-		opt := options.Count().SetLimit(50000).SetMaxTime(d.CtxAfterSecDeadline(ctx, 20))
+		opt := options.Count().SetLimit(50000).SetMaxTime(d.CtxAfterSecDeadline(ctx, 15))
 		c, err := inst.Collection(cName).CountDocuments(ctx, filter, opt)
 		return c, err
 	}
