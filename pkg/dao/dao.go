@@ -1,9 +1,12 @@
 package dao
 
 import (
+	"context"
 	"fmt"
 	"github.com/bbdshow/bkit/db/mongo"
 	"github.com/bbdshow/qelog/pkg/conf"
+	"math"
+	"time"
 )
 
 type Dao struct {
@@ -49,4 +52,20 @@ func (d *Dao) ReceiverInst(dbName string) (*mongo.Database, error) {
 		return nil, fmt.Errorf("%s %v", dbName, err)
 	}
 	return db, nil
+}
+
+// CtxAfterSecDeadline if not deadline, return defSec, if defSec <= 0, return int32 max sec duration
+func (d *Dao) CtxAfterSecDeadline(ctx context.Context, defSec int32) time.Duration {
+	deadline, ok := ctx.Deadline()
+	if !ok {
+		if defSec <= 0 {
+			defSec = math.MaxInt32
+		}
+		return time.Duration(defSec) * time.Second
+	}
+	sec := int32(deadline.Sub(time.Now()).Seconds())
+	if sec <= 0 {
+		sec = defSec
+	}
+	return time.Duration(sec) * time.Second
 }

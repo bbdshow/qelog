@@ -86,7 +86,7 @@ func (d *Dao) FindLoggingList(ctx context.Context, dbName, cName string, in *mod
 	}
 	// 异步统计Count
 	calcCount := func(ctx context.Context) (int64, error) {
-		opt := options.Count().SetLimit(50000).SetMaxTime(3 * time.Second)
+		opt := options.Count().SetLimit(50000).SetMaxTime(d.CtxAfterSecDeadline(ctx, 20))
 		c, err := inst.Collection(cName).CountDocuments(ctx, filter, opt)
 		return c, err
 	}
@@ -108,6 +108,9 @@ func (d *Dao) FindLoggingList(ctx context.Context, dbName, cName string, in *mod
 
 	select {
 	case c := <-countResp:
+		if c <= 0 {
+			c = int64(len(docs))
+		}
 		logs.Qezap.Info("日志查询", zap.String("耗时", time.Since(s).String()),
 			zap.String("数据库", dbName),
 			zap.Any("集合", cName),
