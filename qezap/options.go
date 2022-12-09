@@ -63,49 +63,6 @@ func defaultLocalOption() *localOption {
 	}
 }
 
-//type setRemoteOption struct {
-//	f func(*remoteOption)
-//}
-//
-//func (s *setRemoteOption) apply(o *remoteOption) {s.f(o)}
-//
-//func newSetRemoteOption(f func(*remoteOption)) *setRemoteOption {
-//	return &setRemoteOption{f: f}
-//}
-//
-//// WithAddrs setting remote endpoint address
-//func WithAddrs(addrs []string) RemoteOption {
-//	return newSetRemoteOption(func(o *remoteOption) {
-//		o.Addrs = addrs
-//	})
-//}
-//
-//// WithBackupFilename setting backup filename
-//func WithBackupFilename(filename string) RemoteOption {
-//	return newSetRemoteOption(func(o *remoteOption) {
-//		dir, file := path.Split(filename)
-//		o.BackupFilename = path.Join(dir, "backup", fmt.Sprintf("bak.%s", file))
-//	})
-//}
-
-//type setLocalOption struct {
-//	f func(*localOption)
-//}
-//
-//func (s *setLocalOption) apply(o *localOption) {s.f(o)}
-//
-//func newSetLocalOption(f func(*localOption)) *setLocalOption {
-//	return &setLocalOption{f: f}
-//}
-//
-//// WithBackupFilename setting backup filename
-//func WithFilename(filename string) RemoteOption {
-//	return newSetRemoteOption(func(o *remoteOption) {
-//		dir, file := path.Split(filename)
-//		o.BackupFilename = path.Join(dir, "backup", fmt.Sprintf("bak.%s", file))
-//	})
-//}
-
 type options struct {
 	// Uber-zap logger level
 	Level zapcore.Level

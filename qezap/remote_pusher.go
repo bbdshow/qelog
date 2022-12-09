@@ -179,3 +179,45 @@ func (hp *HttpPush) Close() error {
 	}
 	return nil
 }
+
+type MockPush struct {
+	cChan chan struct{}
+}
+
+func NewMockPush(addrs []string, concurrent int) (*MockPush, error) {
+	if len(addrs) == 0 {
+		return nil, fmt.Errorf("addrs required")
+	}
+	if concurrent <= 0 {
+		concurrent = 5
+	}
+
+	mp := &MockPush{
+		cChan: make(chan struct{}, concurrent),
+	}
+	return mp, nil
+}
+
+var mockErr = 0
+
+func (mp *MockPush) PushPacket(ctx context.Context, in *receiverpb.Packet) error {
+	mp.cChan <- struct{}{}
+	defer func() {
+		<-mp.cChan
+	}()
+	if string(in.Data) == ErrUnavailable.Error() && mockErr == 0 {
+		log.Printf("Waiting Retry Data: ID %s DATA %s", in.Id, string(in.Data))
+		mockErr = 1
+		return ErrUnavailable
+	}
+	log.Printf("ID %s DATA %s", in.Id, string(in.Data))
+	return nil
+}
+
+func (mp *MockPush) Concurrent() int {
+	return len(mp.cChan)
+}
+
+func (mp *MockPush) Close() error {
+	return nil
+}

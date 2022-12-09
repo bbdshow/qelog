@@ -15,6 +15,7 @@ type (
 const (
 	TransportGRPC Transport = "GRPC"
 	TransportHTTP Transport = "HTTP"
+	TransportMock Transport = "MOCK"
 )
 
 var (

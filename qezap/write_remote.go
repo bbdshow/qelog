@@ -104,6 +104,8 @@ func (w *WriteRemote) initPusher() {
 			return NewHttpPush(addrs, c)
 		case TransportGRPC:
 			return NewGRPCPush(addrs, c)
+		case TransportMock:
+			return NewMockPush(addrs, c)
 		default:
 			return nil, fmt.Errorf("init %s transport pusher invalid", trans)
 		}
