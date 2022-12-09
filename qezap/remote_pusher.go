@@ -39,14 +39,17 @@ func NewGRPCPush(addrs []string, concurrent int) (*GRRCPush, error) {
 		return nil, fmt.Errorf("addrs required")
 	}
 	if concurrent <= 0 {
-		concurrent = 1
+		concurrent = 5
 	}
 
 	resolver.Register(NewLocalResolverBuilder(addrs))
 
-	ctx, _ := context.WithTimeout(context.Background(), 5*time.Second)
-	conn, err := grpc.DialContext(ctx, DialLocalServiceName, grpc.WithInsecure(),
-		grpc.WithDefaultServiceConfig(fmt.Sprintf(`{"LoadBalancingPolicy": "%s"}`, roundrobin.Name)))
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	// warning: disable permission verify
+	conn, err := grpc.DialContext(ctx, DialLocalServiceName,
+		grpc.WithDefaultServiceConfig(fmt.Sprintf(`{"LoadBalancingPolicy": "%s"}`, roundrobin.Name)),
+		grpc.WithInsecure())
 	if err != nil {
 		return nil, err
 	}
@@ -65,22 +68,11 @@ func (gp *GRRCPush) PushPacket(ctx context.Context, in *receiverpb.Packet) error
 	defer func() {
 		<-gp.cChan
 	}()
-	if ctx == nil {
-		ctx, _ = context.WithTimeout(context.Background(), 10*time.Second)
-	}
 
-	if err := gp.push(ctx, in); err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func (gp *GRRCPush) push(ctx context.Context, in *receiverpb.Packet) error {
 	resp, err := gp.cli.PushPacket(ctx, in)
 	if err != nil {
-		// 认为服务不可用
-		log.Printf("grpc push %s\n", err)
+		// any error, the server is considered unavailable
+		log.Printf("Pusher:grpc %s\n", err)
 		return ErrUnavailable
 	}
 
@@ -108,15 +100,15 @@ type HttpPush struct {
 	cChan chan struct{}
 }
 
-func NewHttpPush(addr string, concurrent int) (*HttpPush, error) {
-	if addr == "" {
+func NewHttpPush(addr []string, concurrent int) (*HttpPush, error) {
+	if len(addr) == 0 {
 		return nil, fmt.Errorf("addr required")
 	}
 	if concurrent <= 0 {
-		concurrent = 1
+		concurrent = 5
 	}
 	hp := &HttpPush{
-		addr:   addr,
+		addr:   addr[0],
 		client: &http.Client{},
 		cChan:  make(chan struct{}, concurrent),
 	}
@@ -129,14 +121,12 @@ func (hp *HttpPush) PushPacket(ctx context.Context, in *receiverpb.Packet) error
 	defer func() {
 		<-hp.cChan
 	}()
-	if ctx == nil {
-		ctx, _ = context.WithTimeout(context.Background(), 10*time.Second)
-	}
 	v := struct {
 		ID     string   `json:"id"`
 		Module string   `json:"module"`
 		Data   []string `json:"data"`
 	}{ID: in.Id, Module: in.Module}
+	// data split multi message and filter
 	byteItems := bytes.Split(in.Data, []byte{'\n'})
 	for _, b := range byteItems {
 		if b == nil || bytes.Equal(b, []byte{}) || bytes.Equal(b, []byte{'\n'}) {
@@ -149,21 +139,25 @@ func (hp *HttpPush) PushPacket(ctx context.Context, in *receiverpb.Packet) error
 }
 
 func (hp *HttpPush) push(ctx context.Context, body interface{}) error {
+	if ctx == nil {
+		var cancel context.CancelFunc
+		ctx, cancel = context.WithTimeout(context.Background(), 10*time.Second)
+		defer cancel()
+	}
+
 	byt, err := json.Marshal(body)
 	if err != nil {
 		return err
 	}
 
-	contentType := "application/json"
 	req, err := http.NewRequestWithContext(ctx, "POST", hp.addr, bytes.NewReader(byt))
 	if err != nil {
 		return err
 	}
-	req.Header.Set("Content-Type", contentType)
+	req.Header.Set("Content-Type", "application/json")
 	resp, err := hp.client.Do(req)
 	if err != nil {
-		// 认为服务不可用
-		log.Printf("http push %s\n", err)
+		log.Printf("Pusher:http %s\n", err)
 		return ErrUnavailable
 	}
 	defer resp.Body.Close()

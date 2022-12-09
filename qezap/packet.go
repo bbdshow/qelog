@@ -7,59 +7,87 @@ import (
 	apitypes "github.com/bbdshow/qelog/api/types"
 )
 
-var (
-	_maxPacketSize = 4 << 10
-	_module        = ""
+type Packet struct {
+	maxSize int
+	module  string
+	pool    sync.Pool
 
-	_packetPool = sync.Pool{New: func() interface{} {
-		return &packet{
-			p: &receiverpb.Packet{Module: _module, Data: make([]byte, 0, 1024)},
-		}
-	}}
-)
-
-func setMaxPacketSizeAndModule(size int, module string) {
-	_maxPacketSize = size
-	_module = module
+	data *DataPacket
 }
 
-type packet struct {
-	p      *receiverpb.Packet
-	isFree bool
+func NewPacket(module string, maxSize ...int) *Packet {
+	p := &Packet{
+		maxSize: 4 << 10, // 4KB
+		module:  module,
+		pool: sync.Pool{
+			New: func() interface{} {
+				return &DataPacket{
+					p: &receiverpb.Packet{Module: module, Data: make([]byte, 0, 1024)},
+				}
+			},
+		},
+	}
+	if len(maxSize) > 0 {
+		p.maxSize = maxSize[0]
+	}
+	return p
 }
 
-func (p *packet) free() {
-	if cap(p.p.Data) > 2*_maxPacketSize {
-		// 如果扩容的太大，就让 GC 回收
+// Append warning: concurrent not safe
+func (p *Packet) Append(b []byte) *DataPacket {
+	d := p.DataPacket()
+	d.p.Data = append(d.p.Data, b...)
+	if len(d.p.Data) >= p.maxSize {
+		p.SetCanPush(d)
+	}
+	return d
+}
+
+// SwitchNextDataPacket current data have been processed, so set nil, switch next data packet
+func (p *Packet) SwitchNextDataPacket() {
+	p.data = nil
+}
+
+func (p *Packet) SetCanPush(d *DataPacket) {
+	d.p.Id = id()
+	d.canPush = true
+}
+
+func (p *Packet) DataPacket() *DataPacket {
+	if p.data == nil {
+		p.data = p.pool.Get().(*DataPacket)
+	}
+	return p.data
+}
+
+func (p *Packet) PoolPutDataPacket(d *DataPacket) {
+	if cap(d.p.Data) > 2*p.maxSize {
+		// cap too large, waiting GC
 		return
 	}
-
-	p.p.Data = p.p.Data[:0]
-	p.p.Id = ""
-	p.isFree = false
-	_packetPool.Put(p)
+	// clear data, keep cap
+	d.p.Data = d.p.Data[:0]
+	d.p.Id = ""
+	d.canPush = false
+	p.pool.Put(d)
 }
 
-func (p *packet) append(b []byte) *packet {
-	p.p.Data = append(p.p.Data, b...)
-	if _maxPacketSize <= len(p.p.Data) {
-		p.p.Id = id()
-		p.isFree = true
-	}
-	return p
+type DataPacket struct {
+	p *receiverpb.Packet
+	// true: data full load or time of arrival, can push
+	canPush bool
 }
 
-func (p *packet) flush() *packet {
-	p.p.Id = id()
-	p.isFree = true
-	return p
+func (d *DataPacket) IsEmpty() bool {
+	return len(d.p.Data) <= 0
 }
 
-func newPacket() *packet {
-	p := _packetPool.Get().(*packet)
-	p.p.Id = ""
-	p.isFree = false
-	return p
+func (d *DataPacket) Data() *receiverpb.Packet {
+	return d.p
+}
+
+func (d *DataPacket) CanPush() bool {
+	return d.canPush
 }
 
 func id() string {

@@ -28,8 +28,8 @@ type Logger struct {
 	cfg         *Config
 	atomicLevel *zap.AtomicLevel
 
-	localW  *WriteSync
-	remoteW *WriteRemote
+	writeLocal  *WriteLocal
+	writeRemote *WriteRemote
 
 	core            zapcore.Core
 	ioWriterMessage string
@@ -104,57 +104,57 @@ func (mw *oneEncoderMultiWriter) clone() *oneEncoderMultiWriter {
 	}
 }
 
-func New(cfg *Config, level zapcore.Level, options ...zap.Option) *Logger {
-	if err := cfg.Validate(); err != nil {
-		panic(err)
-	}
-	atomicLevel := zap.NewAtomicLevelAt(level)
-
-	log := &Logger{
-		cfg:         cfg,
-		atomicLevel: &atomicLevel,
-		localW:      nil,
-		remoteW:     nil,
-	}
-
-	if mode == Release {
-		// 一次编码 多次写入
-		multiW := make([]zapcore.WriteSyncer, 0)
-		localW := NewWriteSync(cfg)
-		log.localW = localW
-
-		multiW = append(multiW, localW)
-
-		if cfg.EnableRemote {
-			remoteW := NewWriteRemote(cfg)
-			log.remoteW = remoteW
-			multiW = append(multiW, remoteW)
-		}
-		log.core = NewOneEncoderMultiWriterCore(jsonEncoder(), &atomicLevel, multiW)
-	} else {
-		localW := NewWriteSync(cfg)
-		log.localW = localW
-		localCore := zapcore.NewCore(consoleEncoder(), localW, &atomicLevel)
-		cores := []zapcore.Core{localCore}
-		if cfg.EnableRemote {
-			remoteW := NewWriteRemote(cfg)
-			log.remoteW = remoteW
-			cores = append(cores, zapcore.NewCore(jsonEncoder(), remoteW, &atomicLevel))
-		}
-		log.core = zapcore.NewTee(cores...)
-	}
-
-	// 设置默认的 options, caller 设置最前面
-	opts := make([]zap.Option, 0)
-	opts = append(opts, zap.AddCaller())
-	opts = append(opts, zap.AddStacktrace(zap.DPanicLevel))
-
-	opts = append(opts, options...)
-
-	log.Logger = zap.New(log.core, opts...)
-
-	return log
-}
+//func New(cfg *Config, level zapcore.Level, options ...zap.Option) *Logger {
+//	if err := cfg.Validate(); err != nil {
+//		panic(err)
+//	}
+//	atomicLevel := zap.NewAtomicLevelAt(level)
+//
+//	log := &Logger{
+//		cfg:         cfg,
+//		atomicLevel: &atomicLevel,
+//		writeLocal:  nil,
+//		writeRemote: nil,
+//	}
+//
+//	if mode == Release {
+//		// 一次编码 多次写入
+//		multiW := make([]zapcore.WriteSyncer, 0)
+//		localW := NewWriteSync(cfg)
+//		log.localW = localW
+//
+//		multiW = append(multiW, localW)
+//
+//		if cfg.EnableRemote {
+//			remoteW := NewWriteRemote(cfg)
+//			log.remoteW = remoteW
+//			multiW = append(multiW, remoteW)
+//		}
+//		log.core = NewOneEncoderMultiWriterCore(jsonEncoder(), &atomicLevel, multiW)
+//	} else {
+//		localW := NewWriteSync(cfg)
+//		log.localW = localW
+//		localCore := zapcore.NewCore(consoleEncoder(), localW, &atomicLevel)
+//		cores := []zapcore.Core{localCore}
+//		if cfg.EnableRemote {
+//			remoteW := NewWriteRemote(cfg)
+//			log.remoteW = remoteW
+//			cores = append(cores, zapcore.NewCore(jsonEncoder(), remoteW, &atomicLevel))
+//		}
+//		log.core = zapcore.NewTee(cores...)
+//	}
+//
+//	// 设置默认的 options, caller 设置最前面
+//	opts := make([]zap.Option, 0)
+//	opts = append(opts, zap.AddCaller())
+//	opts = append(opts, zap.AddStacktrace(zap.DPanicLevel))
+//
+//	opts = append(opts, options...)
+//
+//	log.Logger = zap.New(log.core, opts...)
+//
+//	return log
+//}
 
 type Writer struct {
 	level   zapcore.Level
@@ -214,11 +214,11 @@ func (log *Logger) Config() *Config {
 
 func (log *Logger) Close() error {
 	var err error
-	if log.localW != nil {
-		err = multierr.Append(err, log.localW.Close())
+	if log.writeLocal != nil {
+		err = multierr.Append(err, log.writeLocal.Close())
 	}
-	if log.remoteW != nil {
-		err = multierr.Append(err, log.remoteW.Close())
+	if log.writeRemote != nil {
+		err = multierr.Append(err, log.writeRemote.Close())
 	}
 	return err
 }

@@ -11,7 +11,7 @@ import (
 
 type BackupWrite struct {
 	mutex    sync.Mutex
-	w        *WriteSync
+	w        *WriteLocal
 	filename string
 	offset   int64
 }
@@ -27,12 +27,12 @@ func NewBackupWrite(filename string) *BackupWrite {
 }
 
 func (bw *BackupWrite) initWrite() {
-	bw.w = NewWriteSync(&Config{
-		Filename:     bw.filename,
-		MaxSize:      0, // 不滚动
-		MaxAge:       0, // 不切割
-		GzipCompress: false,
-	})
+	opt := defaultLocalOption()
+	opt.Filename = bw.filename
+	opt.MaxAge = 0
+	opt.MaxSize = 0
+	opt.GzipCompress = false
+	bw.w = NewWriteLocal(opt)
 }
 
 func (bw *BackupWrite) WriteBakPacket(b []byte) (n int, err error) {

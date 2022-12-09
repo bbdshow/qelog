@@ -8,69 +8,115 @@ import (
 	"time"
 )
 
+type (
+	Transport string
+)
+
+const (
+	TransportGRPC Transport = "GRPC"
+	TransportHTTP Transport = "HTTP"
+)
+
 var (
-	_logFilename    = "./log/logger.log"
-	_backupFilename = path.Join(path.Dir(_logFilename), "backup", "backup.log")
+	logFilename    = "./log/logger.log"
+	backupFilename = path.Join(path.Dir(logFilename), "backup", "backup.log")
 )
 
 type Config struct {
-	// 本地文件
+	// local fs filename
 	Filename string
-	// 超过大小 滚动 默认 0 不滚动
+	// single file max size, if 0 do not cut file. default: 500MB
 	MaxSize int64
-	// 保留文件时间
-	MaxAge time.Duration // 滚动日志文件最大时间， 默认 0 永久
-	// Gzip 压缩 滚动日志是否Gzip压缩， 默认 false 不压缩
+	// cut file max keep time. default: 0 keep forever
+	MaxAge time.Duration
+	// cut file enable Gzip compress. default: true
 	GzipCompress bool
-
-	// 是否开启远程传输
+	// when addrs not empty, enable remote transport
 	EnableRemote bool
-	// 远端传输协议 支持 HTTP、gRPC  默认 gRPC
-	Transport string
-	//  访问地址 HTTP["http://127.0.0.1:31081/v1/receiver/packet"] gRPC["127.0.0.1:31082"]
-	//  HTTP 只取第一个地址， gRPC 取所有地址，然后轮询负载
+	// remote transport protocol, support HTTP, GRPC, default: GRPC
+	Transport Transport
+	// remote endpoint address. eg HTTP:["http://xxx.com:31081/v1/receiver/packet"] GRPC:["192.168.10.1:31082","192.168.10.2:31082"]
+	// HTTP suggest config load balancing address
+	// GRPC qezap client impl local resolver, round_robin balancer
 	Addrs []string
-	// 管理后台注册的模块名
+	// qelog admin register module name, equal to access token.
 	ModuleName string
-	// 最大远端写入并发
-	// 如果超出并发限制，直接写入备份文件，并间隔背景发送
-	MaxConcurrent int // 默认 50 个并发
-	// 最大数据包缓冲容量
-	// 包的大小对写入效率有着比较重要的影响。 设置的相对大，有利于减少rpc调用次数，整体写入速度会更快。
-	// 但是因为使用 sync.Pool 占用内存会更高一点。
-	// 小对象对于GC与内存占用相对更加友好 (grpc 默认最大4MB一个包)
-	MaxPacketSize int           // 默认 32kb
-	WriteTimeout  time.Duration // 默认 5s
-	// 远程数据包发送失败，备份到文件
+	// remote push max concurrent. if concurrent setting, data will be written backup file, bg retry send.
+	// concurrent decision I/O max transfer. MAX=(MaxPacketSize*MaxConcurrent) default: 50
+	MaxConcurrent int
+	// send packet max size.  grpc client default body size max 4MB, but here default setting 32KB.
+	// this setting 32KB + sync.Pool impl, can reduces memory overhead and friendly GC
+	MaxPacketSize int
+	// writeTimeout default 5s, if timeout, will be written backup file
+	WriteTimeout time.Duration
+	// back fs filename
 	BackupFilename string
 }
 
-func NewConfig(addrs []string, moduleName string) *Config {
-	cfg := &Config{
-		Filename:     _logFilename,
-		MaxSize:      500 << 20,
-		MaxAge:       0,
-		GzipCompress: true,
+//func defaultConfig() *Config {
+//	return &Config{
+//		Filename:       logFilename,
+//		MaxSize:        500 << 20,
+//		MaxAge:         0,
+//		GzipCompress:   true,
+//		Transport:      TransportGRPC,
+//		MaxConcurrent:  50,
+//		MaxPacketSize:  32 << 10,
+//		WriteTimeout:   5 * time.Second,
+//		BackupFilename: backupFilename,
+//	}
+//}
+//
+//type OptionConfig interface {
+//	apply(*Config)
+//}
+//
+//type setOption struct {
+//	f func(*Config)
+//}
+//
+//func (s *setOption) apply(c *Config) {
+//	s.f(c)
+//}
+//
+//func newSetOption(f func(*Config)) *setOption {
+//	return &setOption{
+//		f: f,
+//	}
+//}
+//
+//// WithFilename setting
+//logger filename
+//func WithFilename(filename string) OptionConfig {
+//	return newSetOption(func(c *Config) {
+//		dir, file := path.Split(filename)
+//		c.Filename = filename
+//		c.BackupFilename = path.Join(dir, "backup", fmt.Sprintf("bak.%s", file))
+//	})
+//}
 
-		EnableRemote:   false,
-		Transport:      "grpc",
+// Deprecated: use defaultConfig
+func NewConfig(addrs []string, moduleName string) *Config {
+	return &Config{
+		Filename:       logFilename,
+		MaxSize:        500 << 20,
+		MaxAge:         0,
+		GzipCompress:   true,
+		EnableRemote:   len(addrs) > 0,
+		Transport:      TransportGRPC,
 		Addrs:          addrs,
 		ModuleName:     moduleName,
 		MaxConcurrent:  50,
 		MaxPacketSize:  32 << 10,
 		WriteTimeout:   5 * time.Second,
-		BackupFilename: _backupFilename,
+		BackupFilename: backupFilename,
 	}
-	if len(addrs) > 0 {
-		cfg.EnableRemote = true
-	}
-	return cfg
 }
 
 func (cfg *Config) SetFilename(filename string) *Config {
-	dir,file := path.Split(filename)
+	dir, file := path.Split(filename)
 	cfg.Filename = filename
-	cfg.BackupFilename = path.Join(dir, "backup", fmt.Sprintf("bak.%s",file))
+	cfg.BackupFilename = path.Join(dir, "backup", fmt.Sprintf("bak.%s", file))
 	return cfg
 }
 
