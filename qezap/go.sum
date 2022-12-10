@@ -1,8 +1,8 @@
 cloud.google.com/go v0.26.0/go.mod h1:aQUYkXzVsufM+DwF1aE+0xfcU+56JwCaLick0ClmMTw=
 github.com/BurntSushi/toml v0.3.1 h1:WXkYYl6Yr3qBf1K79EBnL4mak0OimBfB0XUf9Vl28OQ=
 github.com/BurntSushi/toml v0.3.1/go.mod h1:xHWCNGjB5oqiDr8zfno3MHue2Ht5sIBksp03qcyfWMU=
-github.com/bbdshow/qelog/api v1.0.1 h1:4GYKc61Jis08eeZKTXSD6CKUbT2nmqHraQ/nX+g59qo=
-github.com/bbdshow/qelog/api v1.0.1/go.mod h1:pRSYjL2jl+96/n/WVOHagochbRBHavyF8pylqIm6QWc=
+github.com/bbdshow/qelog/api v1.1.0 h1:fNTPVBIzSrFsI18meBPTFmeluw3RZHTkVm/+15UBh20=
+github.com/bbdshow/qelog/api v1.1.0/go.mod h1:pRSYjL2jl+96/n/WVOHagochbRBHavyF8pylqIm6QWc=
 github.com/census-instrumentation/opencensus-proto v0.2.1/go.mod h1:f6KPmirojxKA12rnyqOA5BBL4O983OfeGPqjHWSTneU=
 github.com/client9/misspell v0.3.4/go.mod h1:qj6jICC3Q7zFZvVWo7KLAzC3yx5G7kyvSDkc90ppPyw=
 github.com/cncf/udpa/go v0.0.0-20200629203442-efcf912fb354/go.mod h1:WmhPx2Nbnhtbo57+VJT5O0JRkEi1Wbu0z5j0R8u5Hbk=
