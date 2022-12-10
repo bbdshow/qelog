@@ -15,7 +15,7 @@ var (
 	DialLocalServiceName = fmt.Sprintf("%s:///%s", LocalScheme, LocalServiceName)
 )
 
-// LocalResolverBuilder impl local address resolver, used of GRPC load balancing
+// LocalResolverBuilder impl local address resolver, used for GRPC load balancing
 type LocalResolverBuilder struct {
 	address []string
 }

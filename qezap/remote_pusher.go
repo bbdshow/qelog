@@ -180,6 +180,7 @@ func (hp *HttpPush) Close() error {
 	return nil
 }
 
+// MockPush impl mock pusher used to test
 type MockPush struct {
 	cChan chan struct{}
 }
@@ -200,7 +201,7 @@ func NewMockPush(addrs []string, concurrent int) (*MockPush, error) {
 
 var mockErr = 0
 
-func (mp *MockPush) PushPacket(ctx context.Context, in *receiverpb.Packet) error {
+func (mp *MockPush) PushPacket(_ context.Context, in *receiverpb.Packet) error {
 	mp.cChan <- struct{}{}
 	defer func() {
 		<-mp.cChan

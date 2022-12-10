@@ -31,7 +31,7 @@ type WriteRemote struct {
 	exit    chan struct{}
 }
 
-// NewWriteRemote  impl remote io write, used of zap writer
+// NewWriteRemote  impl remote io write, used for zap writer
 func NewWriteRemote(opt *remoteOption) *WriteRemote {
 	w := &WriteRemote{
 		opt:  opt,
@@ -193,7 +193,7 @@ func (w *WriteRemote) bgRetrySendPacket() {
 				}
 			loop:
 				// read data must send success, because back up file have been offset.
-				// warning: if main process exception, back up file have content, packets are sent repeatedly, Packet.ID used of idempotent.
+				// warning: if main process exception, back up file have content, packets are sent repeatedly, Packet.ID used for idempotent.
 				if w.pusher != nil {
 					if err := w.pusher.PushPacket(context.Background(), v); err == nil {
 						break
