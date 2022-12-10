@@ -15,7 +15,7 @@ func TestNewWriteLocal(t *testing.T) {
 }
 
 func testNewWriteLocal(t *testing.T) *WriteLocal {
-	w := NewWriteLocal(defaultLocalOption())
+	w := NewWriteLocal(DefaultLocalOption())
 	if w == nil {
 		t.Fatal("write local nil")
 	}

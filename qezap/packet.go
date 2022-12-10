@@ -15,7 +15,7 @@ type Packet struct {
 	data *DataPacket
 }
 
-func NewPacket(module string, maxSize ...int) *Packet {
+func newPacket(module string, maxSize ...int) *Packet {
 	p := &Packet{
 		maxSize: 4 << 10, // 4KB
 		module:  module,

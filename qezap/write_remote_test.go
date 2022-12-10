@@ -11,7 +11,7 @@ func testNewWriteRemote(t *testing.T) *WriteRemote {
 	opt.Addrs = []string{"127.0.0.1:31082"}
 	opt.Transport = TransportMock
 	opt.MaxPacketSize = 1024
-	w := NewWriteRemote(opt)
+	w := newWriteRemote(opt)
 	if w == nil {
 		t.Fatal("write remote nil")
 	}

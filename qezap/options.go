@@ -23,7 +23,7 @@ const (
 	ModeDebug   Mode = "DEBUG"
 )
 
-type localOption struct {
+type LocalOption struct {
 	// local fs filename
 	Filename string
 	// single file max size, if 0 do not cut file. default: 500MB
@@ -34,8 +34,8 @@ type localOption struct {
 	GzipCompress bool
 }
 
-func defaultLocalOption() *localOption {
-	return &localOption{
+func DefaultLocalOption() *LocalOption {
+	return &LocalOption{
 		Filename:     "./log/logger.log",
 		MaxSize:      500 << 20,
 		MaxAge:       0,
@@ -84,7 +84,7 @@ type options struct {
 	// when addrs not empty, enable remote transport
 	EnableRemote bool
 
-	Local  *localOption
+	Local  *LocalOption
 	Remote *remoteOption
 }
 
@@ -92,7 +92,7 @@ func defaultOptions() *options {
 	return &options{
 		Mode:   ModeDebug,
 		Level:  zapcore.DebugLevel,
-		Local:  defaultLocalOption(),
+		Local:  DefaultLocalOption(),
 		Remote: defaultRemoteOption(),
 	}
 }
@@ -143,5 +143,65 @@ func WithZapOptions(opts ...zap.Option) Option {
 func WithTransport(trans Transport) Option {
 	return newSetOption(func(o *options) {
 		o.Remote.Transport = trans
+	})
+}
+
+// WithLevel setting logger level
+func WithLevel(lvl zapcore.Level) Option {
+	return newSetOption(func(o *options) {
+		o.Level = lvl
+	})
+}
+
+// WithMode setting logger mode
+func WithMode(mode Mode) Option {
+	return newSetOption(func(o *options) {
+		o.Mode = mode
+	})
+}
+
+// WithRotateMaxSizeAge setting logger local fs rotate
+func WithRotateMaxSizeAge(size uint64, age time.Duration) Option {
+	return newSetOption(func(o *options) {
+		o.Local.MaxSize = int64(size)
+		o.Local.MaxAge = age
+	})
+}
+
+// WithGzipCompress setting logger rotate gzip compress
+func WithGzipCompress(enable bool) Option {
+	return newSetOption(func(o *options) {
+		o.Local.GzipCompress = enable
+	})
+}
+
+// WithRemoteConcurrent setting logger remote max concurrent
+func WithRemoteConcurrent(n uint) Option {
+	return newSetOption(func(o *options) {
+		if n <= 0 {
+			n = 1
+		}
+		o.Remote.MaxConcurrent = int(n)
+	})
+}
+
+// WithRemotePacketSize setting logger remote max packet size, unit KB, limit 4MB
+func WithRemotePacketSize(n uint) Option {
+	return newSetOption(func(o *options) {
+		if n <= 0 {
+			n = 1
+		} else {
+			if n<<10 > 4<<20 {
+				n = 4000
+			}
+		}
+		o.Remote.MaxPacketSize = int(n) << 10
+	})
+}
+
+// WithRemoteWriteTimeout setting logger remote timeout
+func WithRemoteWriteTimeout(timeout time.Duration) Option {
+	return newSetOption(func(o *options) {
+		o.Remote.WriteTimeout = timeout
 	})
 }

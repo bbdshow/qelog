@@ -28,13 +28,13 @@ type Pusher interface {
 	Close() error
 }
 
-type GRRCPush struct {
+type gRRCPush struct {
 	cli   receiverpb.ReceiverClient
 	conn  *grpc.ClientConn
 	cChan chan struct{}
 }
 
-func NewGRPCPush(addrs []string, concurrent int) (*GRRCPush, error) {
+func newGRPCPush(addrs []string, concurrent int) (*gRRCPush, error) {
 	if len(addrs) == 0 {
 		return nil, fmt.Errorf("addrs required")
 	}
@@ -54,7 +54,7 @@ func NewGRPCPush(addrs []string, concurrent int) (*GRRCPush, error) {
 		return nil, err
 	}
 
-	gp := &GRRCPush{
+	gp := &gRRCPush{
 		cli:   receiverpb.NewReceiverClient(conn),
 		conn:  conn,
 		cChan: make(chan struct{}, concurrent),
@@ -63,7 +63,7 @@ func NewGRPCPush(addrs []string, concurrent int) (*GRRCPush, error) {
 	return gp, nil
 }
 
-func (gp *GRRCPush) PushPacket(ctx context.Context, in *receiverpb.Packet) error {
+func (gp *gRRCPush) PushPacket(ctx context.Context, in *receiverpb.Packet) error {
 	gp.cChan <- struct{}{}
 	defer func() {
 		<-gp.cChan
@@ -82,32 +82,32 @@ func (gp *GRRCPush) PushPacket(ctx context.Context, in *receiverpb.Packet) error
 	return nil
 }
 
-func (gp *GRRCPush) Concurrent() int {
+func (gp *gRRCPush) Concurrent() int {
 	return len(gp.cChan)
 }
 
-func (gp *GRRCPush) Close() error {
+func (gp *gRRCPush) Close() error {
 	if gp.conn != nil {
 		return gp.conn.Close()
 	}
 	return nil
 }
 
-type HttpPush struct {
+type httpPush struct {
 	addr   string
 	client *http.Client
 
 	cChan chan struct{}
 }
 
-func NewHttpPush(addr []string, concurrent int) (*HttpPush, error) {
+func newHttpPush(addr []string, concurrent int) (*httpPush, error) {
 	if len(addr) == 0 {
 		return nil, fmt.Errorf("addr required")
 	}
 	if concurrent <= 0 {
 		concurrent = 5
 	}
-	hp := &HttpPush{
+	hp := &httpPush{
 		addr:   addr[0],
 		client: &http.Client{},
 		cChan:  make(chan struct{}, concurrent),
@@ -116,7 +116,7 @@ func NewHttpPush(addr []string, concurrent int) (*HttpPush, error) {
 	return hp, nil
 }
 
-func (hp *HttpPush) PushPacket(ctx context.Context, in *receiverpb.Packet) error {
+func (hp *httpPush) PushPacket(ctx context.Context, in *receiverpb.Packet) error {
 	hp.cChan <- struct{}{}
 	defer func() {
 		<-hp.cChan
@@ -138,7 +138,7 @@ func (hp *HttpPush) PushPacket(ctx context.Context, in *receiverpb.Packet) error
 	return hp.push(ctx, v)
 }
 
-func (hp *HttpPush) push(ctx context.Context, body interface{}) error {
+func (hp *httpPush) push(ctx context.Context, body interface{}) error {
 	if ctx == nil {
 		var cancel context.CancelFunc
 		ctx, cancel = context.WithTimeout(context.Background(), 10*time.Second)
@@ -169,23 +169,23 @@ func (hp *HttpPush) push(ctx context.Context, body interface{}) error {
 	return fmt.Errorf("http status code %d, response body %s", resp.StatusCode, string(respBody))
 }
 
-func (hp *HttpPush) Concurrent() int {
+func (hp *httpPush) Concurrent() int {
 	return len(hp.cChan)
 }
 
-func (hp *HttpPush) Close() error {
+func (hp *httpPush) Close() error {
 	if hp.client != nil {
 		hp.client.CloseIdleConnections()
 	}
 	return nil
 }
 
-// MockPush impl mock pusher used to test
-type MockPush struct {
+// mockPush impl mock pusher used to test
+type mockPush struct {
 	cChan chan struct{}
 }
 
-func NewMockPush(addrs []string, concurrent int) (*MockPush, error) {
+func newMockPush(addrs []string, concurrent int) (*mockPush, error) {
 	if len(addrs) == 0 {
 		return nil, fmt.Errorf("addrs required")
 	}
@@ -193,7 +193,7 @@ func NewMockPush(addrs []string, concurrent int) (*MockPush, error) {
 		concurrent = 5
 	}
 
-	mp := &MockPush{
+	mp := &mockPush{
 		cChan: make(chan struct{}, concurrent),
 	}
 	return mp, nil
@@ -201,7 +201,7 @@ func NewMockPush(addrs []string, concurrent int) (*MockPush, error) {
 
 var mockErr = 0
 
-func (mp *MockPush) PushPacket(_ context.Context, in *receiverpb.Packet) error {
+func (mp *mockPush) PushPacket(_ context.Context, in *receiverpb.Packet) error {
 	mp.cChan <- struct{}{}
 	defer func() {
 		<-mp.cChan
@@ -215,10 +215,10 @@ func (mp *MockPush) PushPacket(_ context.Context, in *receiverpb.Packet) error {
 	return nil
 }
 
-func (mp *MockPush) Concurrent() int {
+func (mp *mockPush) Concurrent() int {
 	return len(mp.cChan)
 }
 
-func (mp *MockPush) Close() error {
+func (mp *mockPush) Close() error {
 	return nil
 }

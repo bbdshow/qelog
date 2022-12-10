@@ -54,7 +54,7 @@ func initCoreWriter(lg *Logger) {
 	lg.local = NewWriteLocal(lg.opt.Local)
 	multiWriter = append(multiWriter, lg.local)
 	if lg.opt.EnableRemote {
-		lg.remote = NewWriteRemote(lg.opt.Remote)
+		lg.remote = newWriteRemote(lg.opt.Remote)
 		multiWriter = append(multiWriter, lg.remote)
 	}
 	if lg.opt.Mode == ModeRelease {

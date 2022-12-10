@@ -2,92 +2,54 @@ package main
 
 import (
 	"context"
-	"fmt"
+	"errors"
 	"time"
 
-	"go.uber.org/zap/zapcore"
-
 	"github.com/bbdshow/qelog/qezap"
-
 	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
 )
 
-/*
-// Qezap 支持远端的 Zap, 是Zap的超集
-var Qezap *qezap.Logger
-
-func init() {
-	// 注册本地Log，不具有远程写入能力
-	Qezap = qezap.New(qezap.NewConfig(nil, ""), zap.DebugLevel)
-}
-
-type Config struct {
-	Addr     []string `defval:""`
-	Module   string   `defval:""`
-	Filename string   `defval:"./log/logger.log"`
-	Level    int      `defval:"-1"` // -1=debug 0=info ...
-}
-
-func InitQezap(cfg *Config) {
-	_ = Qezap.Close()
-	Qezap = qezap.New(qezap.NewConfig(cfg.Addr, cfg.Module).SetFilename(cfg.Filename), zapcore.Level(cfg.Level))
-}
-*/
-var qelog *qezap.Logger
-
-func init() {
-	// 一般使用上面的注释代码去init日志就行
-	cfg := qezap.NewConfig([]string{"127.0.0.1:31082"}, "example")
-	// 设置每一次发送远端的包大小
-	cfg.SetMaxPacketSize(64 << 10)
-	// 设置本地日志文件保存最大时间
-	cfg.SetMaxAge(30 * 24 * time.Hour)
-	// config 具体设置可查看响应的方法
-
-	cfg.SetFilename("./log/qelogger.log")
-
-	qelog = qezap.New(cfg, zap.DebugLevel, zap.AddStacktrace(zap.ErrorLevel))
-	// 测试，等待后台建立好 gRPC 连接
-	time.Sleep(time.Second)
-}
-
 func main() {
+	// 500MB rotate,keep 7days
+	local := qezap.New(
+		qezap.WithFilename("./log/local.log"),
+		qezap.WithRotateMaxSizeAge(500<<20, 7*24*time.Hour))
+	defer local.Close()
 
-	// 普通用法
-	qelog.Debug("Debug", zap.String("val", "i am string field"))
+	local.Debug("Debug", zap.String("val", "only written local file"))
 
-	// 动态修改日志等级
-	qelog.SetEnabledLevel(zapcore.InfoLevel)
+	// runtime change logger level
+	local.SetEnabledLevel(zapcore.InfoLevel)
+	local.Debug("Debug", zap.String("val", "this msg,not written to file"))
 
-	qelog.Debug("Debug", zap.String("val", "should not be output"))
+	// support remote storage
+	multi := qezap.New(qezap.WithAddrsAndModuleName([]string{"127.0.0.1:31082"}, "demo"))
+	defer multi.Close()
 
-	// 携带条件查询, 条件必需前置设置，只能 1 或 1,2 不能 2,3 这样后台不会提供查询
-	qelog.Error("condition example", qelog.ConditionOne("userid"), qelog.ConditionTwo("0001"), qelog.ConditionThree("phone"))
+	multi.Info("local fs and remote storage will be written")
 
-	// 携带 TraceID 打印到日志
-	// 这是初始上下文
-	ctx := context.Background()
-	// 已经携带好 TraceID
-	ctx = qelog.WithTraceID(ctx)
-	// 会获取 ctx 的 TraceID
-	qelog.Warn("have trace id field", zap.String("withCtx", "warn"), qelog.FieldTraceID(ctx))
-	qelog.Error("have trace id field", zap.String("withCtx", "error"), qelog.FieldTraceID(ctx))
+	// extension field
+	// context bind traceID
+	ctx := multi.WithTraceID(context.Background())
+	// multi.FieldTraceID(ctx): get traceId from context, generate zap.Field written this log
+	// admin manager can use traceId, find 'trace warn' and 'trace error' log
+	multi.Warn("trace warn", zap.String("xx", "xx"), multi.FieldTraceID(ctx))
+	multi.Error("trace error", zap.String("xx", "xx"), multi.FieldTraceID(ctx))
 
-	// 还可以获取 ctx 里面的 TraceID 写入到 Response Header 等
-	tid := qelog.TraceID(ctx)
-	fmt.Println(tid.Hex())
+	// if we need manger filtering log, we provide multi condition field bind to log
+	multi.Info("this msg as init filtering")
+	multi.Info("this msg as init filtering", multi.ConditionOne("first condition"),
+		multi.ConditionTwo("second condition"), multi.ConditionThree("third condition"))
 
-	replaceZapLogger := qelog.Logger
-	replaceZapLogger.Info("这种方式，可以替换之前项目用的 zap.Logger")
+	// if we need to io.Writer
+	// gin.RecoveryWithWriter(ioWrite)
+	ioWrite := multi.NewLevelWriter(zapcore.InfoLevel, "GIN logger output")
+	ioWrite.Write([]byte("logger impl io.Writer, eg: gin.RecoveryWithWriter(ioWrite)"))
 
-	w := qelog.NewWriter(zap.InfoLevel, "writer")
-	w.Write([]byte("io.Writer impl"))
-
-	qelog.DPanic("last message")
-	if err := qelog.Sync(); err != nil {
-		fmt.Println(err)
-	}
-	if err := qelog.Close(); err != nil {
-		fmt.Println(err)
-	}
+	// how to replace GO Logger
+	// use zap.Sugar()
+	slg := multi.Sugar()
+	slg.Info("This info log")
+	slg.Errorf("have err: %s", errors.New("mock error").Error())
 }

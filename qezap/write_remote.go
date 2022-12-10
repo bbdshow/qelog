@@ -24,21 +24,21 @@ type WriteRemote struct {
 
 	packet *Packet
 
-	// back up file writer
-	bw *BackupWrite
+	// write backup file
+	wBak *writeBackup
 
 	isClose int32
 	exit    chan struct{}
 }
 
-// NewWriteRemote  impl remote io write, used for zap writer
-func NewWriteRemote(opt *remoteOption) *WriteRemote {
+// newWriteRemote  impl remote io write, used for zap writer
+func newWriteRemote(opt *remoteOption) *WriteRemote {
 	w := &WriteRemote{
 		opt:  opt,
 		exit: make(chan struct{}),
 	}
-	w.bw = NewBackupWrite(w.opt.BackupFilename)
-	w.packet = NewPacket(w.opt.ModuleName, w.opt.MaxPacketSize)
+	w.wBak = newWriteBackup(w.opt.BackupFilename)
+	w.packet = newPacket(w.opt.ModuleName, w.opt.MaxPacketSize)
 
 	w.once.Do(func() {
 		go w.initPusher()
@@ -101,11 +101,11 @@ func (w *WriteRemote) initPusher() {
 	initPusher := func(trans Transport, addrs []string, c int) (Pusher, error) {
 		switch trans {
 		case TransportHTTP:
-			return NewHttpPush(addrs, c)
+			return newHttpPush(addrs, c)
 		case TransportGRPC:
-			return NewGRPCPush(addrs, c)
+			return newGRPCPush(addrs, c)
 		case TransportMock:
-			return NewMockPush(addrs, c)
+			return newMockPush(addrs, c)
 		default:
 			return nil, fmt.Errorf("init %s transport pusher invalid", trans)
 		}
@@ -147,7 +147,7 @@ func (w *WriteRemote) backup(in *receiverpb.Packet) error {
 	if err != nil {
 		return err
 	}
-	_, err = w.bw.WriteBakPacket(byt)
+	_, err = w.wBak.WriteBakPacket(byt)
 	return err
 }
 
@@ -176,7 +176,7 @@ func (w *WriteRemote) bgRetrySendPacket() {
 	for {
 		select {
 		case <-tick.C:
-			byt, err := w.bw.ReadBakPacket()
+			byt, err := w.wBak.ReadBakPacket()
 			if err != nil {
 				log.Println("Writer:packet retry", err.Error())
 			}
@@ -236,7 +236,7 @@ func (w *WriteRemote) Sync() error {
 	case <-wait:
 	}
 
-	return w.bw.Close()
+	return w.wBak.Close()
 }
 
 func (w *WriteRemote) Close() error {

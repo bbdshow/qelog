@@ -15,24 +15,28 @@ import (
 	"time"
 )
 
+// WriteLocal local fs writer impl
+// support rotate, gzip, maxAge
 type WriteLocal struct {
 	mutex sync.Mutex
 	once  sync.Once
 
-	opt *localOption
+	opt *LocalOption
 
 	dir  string
 	size int64
 
-	compressing chan struct{} // 正在压缩
+	// check compress
+	compressing chan struct{}
 
-	// 文件对象
+	// local fs object
 	file *os.File
 
-	exit bool
+	isExit int32
+	exit   chan struct{}
 }
 
-func NewWriteLocal(opt *localOption) *WriteLocal {
+func NewWriteLocal(opt *LocalOption) *WriteLocal {
 	w := &WriteLocal{
 		mutex: sync.Mutex{},
 		opt:   opt,
@@ -41,13 +45,16 @@ func NewWriteLocal(opt *localOption) *WriteLocal {
 
 		compressing: make(chan struct{}, 1),
 		file:        nil,
+
+		exit: make(chan struct{}),
 	}
 	w.once.Do(func() {
-		go w.backgroundDelExpiredFile()
+		go w.bgDelExpiredFile()
 	})
 	return w
 }
 
+// Write impl
 func (w *WriteLocal) Write(b []byte) (n int, err error) {
 	w.mutex.Lock()
 	defer w.mutex.Unlock()
@@ -71,24 +78,28 @@ func (w *WriteLocal) Write(b []byte) (n int, err error) {
 	return n, nil
 }
 
+// Sync empty impl
 func (w *WriteLocal) Sync() error {
 	return nil
 }
 
+// Close file handle
 func (w *WriteLocal) Close() error {
-	if w.exit {
+	if atomic.LoadInt32(&w.isExit) == 1 {
 		return nil
 	}
-	// 如果正在压缩，等压缩完再退出
+	atomic.StoreInt32(&w.isExit, 1)
+	close(w.exit)
+
+	// if compressing, waiting
 	w.compressing <- struct{}{}
-	w.exit = true
+
 	if w.file != nil {
 		return w.file.Close()
 	}
 	return nil
 }
 
-// 打开文件
 func (w *WriteLocal) openFile() error {
 	err := os.MkdirAll(w.dir, os.ModePerm|os.ModeDir)
 	if err != nil {
@@ -121,9 +132,9 @@ func (w *WriteLocal) openFile() error {
 	return nil
 }
 
-// 压缩文件
+// gzip compress file
 func (w *WriteLocal) gzipCompress(filename string) error {
-	if filename == "" || w.exit {
+	if filename == "" || atomic.LoadInt32(&w.isExit) == 1 {
 		return nil
 	}
 	w.compressing <- struct{}{}
@@ -155,10 +166,11 @@ func (w *WriteLocal) gzipCompress(filename string) error {
 	if err := gz.Flush(); err != nil {
 		return err
 	}
-	// 删除原文件
+	// delete src file
 	_ = src.Close()
 	return os.Remove(filename)
 }
+
 func (w *WriteLocal) isRotate(n int) error {
 	if w.opt.MaxSize <= 0 || atomic.AddInt64(&w.size, int64(n)) < w.opt.MaxSize {
 		return nil
@@ -198,8 +210,8 @@ func (w *WriteLocal) rotateFilename() string {
 	return filename
 }
 
-// 删除滚动切割出来的日志
-func (w *WriteLocal) backgroundDelExpiredFile() {
+// delete expired backup file
+func (w *WriteLocal) bgDelExpiredFile() {
 	if w.opt.MaxAge <= 0 {
 		return
 	}
@@ -208,16 +220,12 @@ func (w *WriteLocal) backgroundDelExpiredFile() {
 	for {
 		select {
 		case <-tick.C:
-			if w.exit {
-				return
-			}
-
 			expired := time.Now().Add(-w.opt.MaxAge)
 			fs, err := ioutil.ReadDir(w.dir)
 			if err == nil {
 				for _, f := range fs {
 					if !f.IsDir() {
-						// 只删除 .bak.log 或者 .bak.log.gz
+						// delete suffix *.bak.log *.bak.log.gz
 						if strings.HasSuffix(f.Name(), ".bak.log") ||
 							strings.HasSuffix(f.Name(), ".bak.log.gz") {
 							if f.ModTime().Before(expired) {
@@ -229,7 +237,8 @@ func (w *WriteLocal) backgroundDelExpiredFile() {
 					}
 				}
 			}
+		case <-w.exit:
+			return
 		}
 	}
-
 }
