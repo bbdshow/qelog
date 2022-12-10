@@ -1,10 +1,10 @@
 syntax = "proto3";
 
-// protoc --go_out=plugins=grpc:.  *.proto
+// protoc --go-grpc_opt=paths=source_relative,require_unimplemented_servers=false --go_opt=paths=source_relative --go-grpc_out=. --go_out=.  receiver.proto
 package receiverpb;
+option go_package = "github.com/bbdshow/qelog/api/receiverpb";
 
 service Receiver {
-    // 推送数据包
     rpc PushPacket(Packet) returns (BaseResp);
 }
 
@@ -14,10 +14,7 @@ message BaseResp {
 }
 
 message Packet {
-    // 包ID
     string id = 1;
-    // 包属于哪一个模块
     string module = 2;
-    // 包具体的数据
     bytes data = 3;
 }
