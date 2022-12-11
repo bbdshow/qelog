@@ -1,8 +1,9 @@
 package conf
 
 import (
-	"github.com/bbdshow/bkit/conf"
 	"testing"
+
+	"github.com/bbdshow/bkit/conf"
 )
 
 func TestConfigToFile(t *testing.T) {

@@ -6,7 +6,7 @@ type MetricsDBStatsResp struct {
 	DBStats []DBStat `json:"dbStats"`
 }
 
-// 数据库最新统计周期
+// DBStat database stat
 type DBStat struct {
 	Host         string `json:"host"`
 	DBName       string `json:"dbName"`
@@ -69,15 +69,13 @@ type MetricsModuleTrendReq struct {
 }
 
 type MetricsModuleTrendResp struct {
-	// X坐标
-	XData []string `json:"xData"`
-	// 说明
-	LegendData []string `json:"legendData"`
-	// 等级条目
-	LevelSeries []Serie `json:"levelSeries"`
-	IPSeries    []Serie `json:"ipSeries"`
-	Number      int64   `json:"number"`
-	Size        int64   `json:"size"`
+	// X coordinates
+	XData       []string `json:"xData"`
+	LegendData  []string `json:"legendData"`
+	LevelSeries []Serie  `json:"levelSeries"`
+	IPSeries    []Serie  `json:"ipSeries"`
+	Number      int64    `json:"number"`
+	Size        int64    `json:"size"`
 }
 
 type Serie struct {

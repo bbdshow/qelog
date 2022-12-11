@@ -2,8 +2,9 @@ package model
 
 import (
 	"fmt"
+
 	"github.com/bbdshow/bkit/db/mongo"
-	"github.com/bbdshow/qelog/common/types"
+	"github.com/bbdshow/qelog/pkg/types"
 
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -20,9 +21,9 @@ type Logging struct {
 	Condition2 string             `bson:"c2"`
 	Condition3 string             `bson:"c3"`
 	TraceID    string             `bson:"ti"`
-	TimeMill   int64              `bson:"tm"` // 日志打印时间
-	TimeSec    int64              `bson:"ts"` // 秒, 用于建立秒级别索引, ts 返回结果排序, 所以会存在毫秒级别一定的误差
-	MessageID  string             `bson:"mi"` // 如果重复写入，可以通过此ID忽略返回结果
+	TimeMill   int64              `bson:"tm"` // logging print time, /mill
+	TimeSec    int64              `bson:"ts"` // /sec ,used to create index, order by ts. if used tm created,index too large
+	MessageID  string             `bson:"mi"` // logging idempotent
 	Size       int                `bson:"-"`
 }
 
@@ -30,48 +31,40 @@ func (l Logging) Key() string {
 	return fmt.Sprintf("%s_%s_%s", l.Module, l.Short, l.Level)
 }
 
-// 多条件查询只建立了一个联合索引，减少索引大小，提升写入速度
-// 结合查询条件限制，保证此联合索引命中
+// LoggingIndexMany
+// only one joint index is created. reduce the index size, written performance
+// optimize query conditions to ensure index matching.
 func LoggingIndexMany(collectionName string) []mongo.Index {
 	return []mongo.Index{
 		{
 			Collection: collectionName,
 			Keys: bson.D{
-				// m, ts 是必要查询条件，所以放在最前面
+				// m, ts required condition, put it front
 				{
 					Key: "m", Value: 1,
 				},
 				{
 					Key: "ts", Value: 1,
 				},
-				// level 与 short 一般作为常用可选查询，建立索引,
-				// level筛选频率较高，同时索引的大小和速度比较平均
+				// level as a priority filter
 				{
 					Key: "l", Value: 1,
 				},
 				{
 					Key: "s", Value: 1,
 				},
-				// 条件索引，一般前面筛选后，还有大量日志，才会用到条件筛选，
-				// 且查询语句不能跳跃条件查询
-				// 正确示例 c1 c2 c3 或 c1 或 c1 c2
+				// condition rule combined eg:[c1]  [c1 & c2] [c1 & c2 & c3]
 				{
 					Key: "c1", Value: 1,
 				},
-				// c2,c3 不建立索引，是优化索引大小，及写入速度
-				//{
-				//	Key: "c2", Value: 1,
-				//},
-				//{
-				//	Key: "c3", Value: 1,
-				//},
+				// c2,c3 no indexing, because data filter little
 			},
 			Background: true,
 		},
 		{
 			Collection: collectionName,
 			Keys: bson.D{
-				// trace_id 作为单独索引，当排查问题作为查询条件更快
+				// trace_id as single index,improve query performance.
 				{Key: "ti", Value: -1},
 			},
 			Background: true,

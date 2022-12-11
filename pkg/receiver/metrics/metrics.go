@@ -2,19 +2,17 @@ package metrics
 
 import (
 	"context"
-	"github.com/bbdshow/bkit/logs"
-	"github.com/bbdshow/qelog/common/types"
-	"github.com/bbdshow/qelog/pkg/dao"
-	"github.com/bbdshow/qelog/pkg/model"
 	"sync"
 	"time"
+
+	"github.com/bbdshow/bkit/logs"
+	"github.com/bbdshow/qelog/pkg/dao"
+	"github.com/bbdshow/qelog/pkg/model"
+	"github.com/bbdshow/qelog/pkg/types"
 
 	"go.uber.org/zap"
 )
 
-// 粗略的统计日志的写入情况， 因为当receiver异常推出的时候，可能不能及时入库
-// 进行时统计，能够减少对Mongodb的资源消耗
-// 如果在更新的时候因为网络问题导致失败，那么将直接忽略
 var (
 	incIntervalSec int64 = 60
 )
@@ -70,7 +68,7 @@ func (m *Metrics) Statistics(moduleName, ip string, docs []*model.Logging) {
 		state = initState(moduleName)
 		m.states[moduleName] = state
 	} else if state.IsIncr() {
-		// 先检查是否超过周期
+		// check interval
 		m.incr(state)
 		state = initState(moduleName)
 		m.states[moduleName] = state

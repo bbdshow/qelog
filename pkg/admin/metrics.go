@@ -4,29 +4,29 @@ import (
 	"context"
 	"encoding/binary"
 	"fmt"
-	"github.com/bbdshow/bkit/db/mongo"
-	"github.com/bbdshow/bkit/errc"
-	"github.com/bbdshow/bkit/logs"
-	"github.com/bbdshow/bkit/util/itime"
-	"github.com/bbdshow/qelog/common/types"
-	"github.com/bbdshow/qelog/pkg/model"
-	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/bson/primitive"
-	"go.uber.org/zap"
 	"math/rand"
 	"sort"
 	"strings"
 	"time"
+
+	"github.com/bbdshow/bkit/db/mongo"
+	"github.com/bbdshow/bkit/errc"
+	"github.com/bbdshow/bkit/logs"
+	"github.com/bbdshow/bkit/util/itime"
+	"github.com/bbdshow/qelog/pkg/model"
+	"github.com/bbdshow/qelog/pkg/types"
+	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.uber.org/zap"
 )
 
-// bgMetricsDBStats 统计数据库状态
+// interval statistics mongodb stats info, and store
 func (svc *Service) bgMetricsDBStats() {
 	for {
 		time.Sleep(time.Duration(rand.Intn(30)+60) * time.Minute)
-		//time.Sleep(time.Duration(30) * time.Second)
 		databases := svc.cfg.MongoGroup.Databases()
 		for _, dbName := range databases {
-			// find conn
+			// find shard conn by module info
 			for _, conn := range svc.cfg.Mongo.Conns {
 				if conn.Database == dbName {
 					if err := svc.metricsDBStats(conn); err != nil {
@@ -79,19 +79,18 @@ func (svc *Service) metricsDBStats(conn mongo.Conn) error {
 	return svc.d.UpsertDBStats(ctx, doc)
 }
 
-// bgMetricsCollectionStats 统计集合状态
+// interval statistics mongo collection stats info, and store
 func (svc *Service) bgMetricsCollectionStats() {
 	for {
 		time.Sleep(time.Duration(rand.Intn(30)+30) * time.Minute)
-		//time.Sleep(time.Duration(30) * time.Second)
 		ctx := context.Background()
 		modules, err := svc.d.FindAllModule(ctx)
 		if err != nil {
 			logs.Qezap.Error("bgMetricsCollectionStats", zap.String("FindAllModule", err.Error()))
 			continue
 		}
+		// find shard conn by module info
 		for _, m := range modules {
-			// find conn
 			for _, conn := range svc.cfg.Mongo.Conns {
 				if conn.Database == m.Database {
 					colls, err := svc.d.ListCollectionNames(ctx, m.Database, m.LoggingPrefix())
@@ -160,7 +159,7 @@ func (svc *Service) metricsCollStats(conn mongo.Conn, m *model.Module, colls []s
 			TotalIndexSize: stats.TotalIndexSize,
 			IndexSizes:     stats.IndexSizes,
 		}
-		// ns 去除 db
+		// format ns string, delete db. string
 		ns := strings.Replace(stats.Ns, fmt.Sprintf("%s.", conn.Database), "", 1)
 		doc.Name = ns
 		if err := svc.d.UpsertCollStats(ctx, doc); err != nil {
@@ -171,6 +170,7 @@ func (svc *Service) metricsCollStats(conn mongo.Conn, m *model.Module, colls []s
 	return nil
 }
 
+// MetricsDBStats query mongodb db stats
 func (svc *Service) MetricsDBStats(ctx context.Context, out *model.ListResp) error {
 	docs, err := svc.d.FindDBStats(ctx, bson.M{})
 	if err != nil {
@@ -197,7 +197,7 @@ func (svc *Service) MetricsDBStats(ctx context.Context, out *model.ListResp) err
 	return nil
 }
 
-// MetricsCollStats 集合统计
+// MetricsCollStats query collection metrics info
 func (svc *Service) MetricsCollStats(ctx context.Context, in *model.MetricsCollStatsReq, out *model.ListResp) error {
 	exists, m, err := svc.d.GetModule(ctx, bson.M{"name": in.ModuleName})
 	if err != nil {
@@ -257,7 +257,7 @@ func (svc *Service) MetricsCollStats(ctx context.Context, in *model.MetricsCollS
 	return nil
 }
 
-// MetricsModuleList 模块列表
+// MetricsModuleList query module metrics info
 func (svc *Service) MetricsModuleList(ctx context.Context, in *model.MetricsModuleListReq, out *model.ListResp) error {
 	c, docs, err := svc.d.FindMetricsModuleList(ctx, in)
 	if err != nil {
@@ -280,7 +280,7 @@ func (svc *Service) MetricsModuleList(ctx context.Context, in *model.MetricsModu
 	return nil
 }
 
-// MetricsModuleTrend 模块日志趋势
+// MetricsModuleTrend query module metrics trend, draw chart
 func (svc *Service) MetricsModuleTrend(ctx context.Context, in *model.MetricsModuleTrendReq, out *model.MetricsModuleTrendResp) error {
 	beforeDay := itime.BeforeDayDate(in.LastDay)
 	filter := bson.M{
@@ -305,7 +305,9 @@ func (svc *Service) MetricsModuleTrend(ctx context.Context, in *model.MetricsMod
 				Ts:      ts,
 				Numbers: numbers,
 			})
-			// 需要找出这个时间段的所有 等级 和 ip， 在后面排序时，如果某个时间段不存在值， 则应该默认 0
+
+			// find all the levels and ip addresses for this time period.
+			// if this time period does not exist when sorting, it is set to zero
 			for lvl := range numbers.Levels {
 				allLevels[lvl] = true
 			}
@@ -329,7 +331,7 @@ func (svc *Service) MetricsModuleTrend(ctx context.Context, in *model.MetricsMod
 				data = make([]int32, 0, in.LastDay*24)
 				levelMapData[lvl] = data
 			}
-			// 这个时间段没有这个错误等级，默认设置为 0
+			// does not exist, it is set to zero
 			num := v.Levels[lvl]
 			levelMapData[lvl] = append(data, num)
 		}
@@ -340,7 +342,6 @@ func (svc *Service) MetricsModuleTrend(ctx context.Context, in *model.MetricsMod
 				data = make([]int32, 0, in.LastDay*24)
 				ipMapData[ip] = data
 			}
-			// 这个时间段没有这个错误等级，默认设置为 0
 			num := v.IPs[ip]
 			ipMapData[ip] = append(data, num)
 		}
@@ -407,6 +408,7 @@ func levelColor(lvl types.Level) string {
 	}
 	return "rgba(255,255,255,1)"
 }
+
 func ipColor() string {
 	return fmt.Sprintf("rgba(%d,%d,%d,1)", rand.Int31n(100)+150, rand.Int31n(80)+100, rand.Int31n(135)+100)
 }

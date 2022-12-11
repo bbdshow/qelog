@@ -3,21 +3,22 @@ package receiver
 import (
 	"bytes"
 	"context"
-	"github.com/bbdshow/bkit/errc"
-	"github.com/bbdshow/qelog/api"
-	"github.com/bbdshow/qelog/api/receiverpb"
-	"github.com/bbdshow/qelog/common/types"
-	"github.com/bbdshow/qelog/pkg/model"
 	"strconv"
 	"sync"
 	"time"
+
+	"github.com/bbdshow/bkit/errc"
+	"github.com/bbdshow/qelog/api"
+	"github.com/bbdshow/qelog/api/receiverpb"
+	"github.com/bbdshow/qelog/pkg/model"
+	"github.com/bbdshow/qelog/pkg/types"
 )
 
 func (svc *Service) JSONPacketToLogging(ctx context.Context, ip string, in *api.JSONPacket) error {
 	if len(in.Data) <= 0 {
 		return nil
 	}
-	// 判断 module 是否有效，如果无效，则不接受写入
+	// check module is registered
 	svc.lock.RLock()
 	m, ok := svc.modules[in.Module]
 	svc.lock.RUnlock()
@@ -28,7 +29,6 @@ func (svc *Service) JSONPacketToLogging(ctx context.Context, ip string, in *api.
 	docs := svc.decodeJSONPacket(ip, in)
 
 	if svc.cfg.Receiver.AlarmEnable && svc.alarm.ModuleIsEnable(in.Module) {
-		// 异步执行报警逻辑
 		go svc.alarm.IsAlarm(docs)
 	}
 
@@ -43,7 +43,6 @@ func (svc *Service) PacketToLogging(ctx context.Context, ip string, in *receiver
 	if len(in.Data) <= 0 {
 		return nil
 	}
-	// 判断 module 是否有效，如果无效，则不接受写入
 	svc.lock.RLock()
 	m, ok := svc.modules[in.Module]
 	svc.lock.RUnlock()
@@ -54,7 +53,6 @@ func (svc *Service) PacketToLogging(ctx context.Context, ip string, in *receiver
 	docs := svc.decodePacket(ip, in)
 
 	if svc.cfg.Receiver.AlarmEnable && svc.alarm.ModuleIsEnable(in.Module) {
-		// 异步执行报警逻辑
 		go svc.alarm.IsAlarm(docs)
 	}
 
@@ -91,7 +89,6 @@ func (svc *Service) decodePacket(ip string, in *receiverpb.Packet) []*model.Logg
 			r.TraceID = dec.TraceIDHex()
 			r.TimeMill = dec.TimeMill()
 			r.TimeSec = r.TimeMill / 1e3
-			// full 去掉已经提取出来的字段
 			r.Full = dec.Full()
 		}
 		records = append(records, r)
@@ -124,7 +121,6 @@ func (svc *Service) decodeJSONPacket(ip string, in *api.JSONPacket) []*model.Log
 			r.TraceID = dec.TraceIDHex()
 			r.TimeMill = dec.TimeMill()
 			r.TimeSec = r.TimeMill / 1e3
-			// full 去掉已经提取出来的字段
 			r.Full = dec.Full()
 		}
 		records = append(records, r)
@@ -192,9 +188,10 @@ func freeDocuments(docs ...*documents) {
 	}
 }
 
-// 因为是合并包，有少数情况下，根据时间分集合，一个包的内容会写入到不同的集合中区
+// rely on logging time, calc log should be written to that shard
+// because multi log in one packet,may be multi shard
 func (svc *Service) loggerDataShardingByTimestamp(m *module, docs []*model.Logging) (d1, d2 *documents) {
-	// 当前时间分片，一组数据最多只会出现在两片上
+	// current time shard setting, one packet max written two shard.
 	currentName := ""
 	d1 = initDocuments()
 	for _, v := range docs {
@@ -205,7 +202,7 @@ func (svc *Service) loggerDataShardingByTimestamp(m *module, docs []*model.Loggi
 			d1.bucket = m.m.Bucket
 		}
 		if name != currentName {
-			// 出现了两片的情况
+			// two shard
 			if d2 == nil {
 				d2 = initDocuments()
 				d2.CollectionName = name
@@ -219,8 +216,8 @@ func (svc *Service) loggerDataShardingByTimestamp(m *module, docs []*model.Loggi
 	return d1, d2
 }
 
-// 判断集合是否存在，如果不存在需要创建索引
-// 因为有序号绑定，每一个集合名都是唯一的
+// determine collection is exists, if not,it is created and index
+// collection name unique
 func (svc *Service) ifCreateCollIndex(ctx context.Context, m *module, collectionName string) error {
 	svc.lock.Lock()
 	defer svc.lock.Unlock()

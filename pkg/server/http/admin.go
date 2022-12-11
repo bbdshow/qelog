@@ -1,12 +1,13 @@
 package http
 
 import (
+	"time"
+
 	"github.com/bbdshow/bkit/auth/jwt"
 	"github.com/bbdshow/bkit/errc"
 	"github.com/bbdshow/bkit/ginutil"
 	"github.com/bbdshow/qelog/pkg/model"
 	"github.com/gin-gonic/gin"
-	"time"
 )
 
 func login(c *gin.Context) {
@@ -17,14 +18,14 @@ func login(c *gin.Context) {
 	}
 	if in.Username != cfg.Admin.Username ||
 		in.Password != cfg.Admin.Password {
-		ginutil.RespErr(c, errc.ErrAuthInvalid.MultiMsg("账户或密码错误"))
+		ginutil.RespErr(c, errc.ErrAuthInvalid.MultiMsg("user or passwd invalid"))
 		return
 	}
 
 	claims := jwt.NewCustomClaims("", 72*time.Hour)
 	token, err := jwt.GenerateJWTToken(claims)
 	if err != nil {
-		ginutil.RespErr(c, errc.ErrAuthInternalErr.MultiMsg("系统异常，联系管理员"))
+		ginutil.RespErr(c, errc.ErrAuthInternalErr.MultiMsg("system exception,try again"))
 		return
 	}
 	out := &model.LoginResp{

@@ -2,10 +2,11 @@ package admin
 
 import (
 	"context"
-	"github.com/bbdshow/qelog/pkg/conf"
-	"github.com/bbdshow/qelog/pkg/model"
 	"os"
 	"testing"
+
+	"github.com/bbdshow/qelog/pkg/conf"
+	"github.com/bbdshow/qelog/pkg/model"
 )
 
 var svc *Service

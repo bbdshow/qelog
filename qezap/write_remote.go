@@ -88,7 +88,7 @@ func (w *WriteRemote) push(data *DataPacket) {
 
 		if err := w.pusher.PushPacket(ctx, data.Data()); err != nil {
 			if err == ErrUnavailable {
-				// 只有当服务不可用时，放入错误备份文件里
+				// when ErrUnavailable, should be written backup file, waiting retry.
 				_ = w.backup(data.Data())
 			}
 			log.Printf("Writer:remote push packet %s\n", err.Error())
@@ -178,12 +178,12 @@ func (w *WriteRemote) bgRetrySendPacket() {
 		case <-tick.C:
 			byt, err := w.wBak.ReadBakPacket()
 			if err != nil {
-				log.Println("Writer:packet retry", err.Error())
+				log.Printf("Writer:packet retry ReadBakPacket %v\n", err)
 			}
 			if len(byt) > 0 {
 				bp := &bakPacket{}
 				if err := json.Unmarshal(byt, bp); err != nil {
-					log.Println("Writer:packet retry Unmarshal", err.Error())
+					log.Printf("Writer:packet retry Unmarshal %v\n", err)
 					break
 				}
 				v := &receiverpb.Packet{
@@ -195,10 +195,11 @@ func (w *WriteRemote) bgRetrySendPacket() {
 				// read data must send success, because back up file have been offset.
 				// warning: if main process exception, back up file have content, packets are sent repeatedly, Packet.ID used for idempotent.
 				if w.pusher != nil {
-					if err := w.pusher.PushPacket(context.Background(), v); err == nil {
+					err := w.pusher.PushPacket(context.Background(), v)
+					if err == nil {
 						break
 					}
-					log.Printf("Writer:packet retry push %v\n", err)
+					log.Printf("Writer:packet retry PushPacket %v\n", err)
 				}
 				time.Sleep(time.Second)
 				goto loop

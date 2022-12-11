@@ -3,16 +3,19 @@ package dao
 import (
 	"context"
 	"fmt"
-	"github.com/bbdshow/bkit/db/mongo"
-	"github.com/bbdshow/qelog/pkg/conf"
 	"math"
 	"time"
+
+	"github.com/bbdshow/bkit/db/mongo"
+	"github.com/bbdshow/qelog/pkg/conf"
 )
 
+// Dao all database operation
 type Dao struct {
-	cfg   *conf.Config
+	cfg *conf.Config
+	//custom mongo shard
 	mongo *mongo.Groups
-
+	// admin mongo inst
 	adminInst *mongo.Database
 }
 
@@ -46,6 +49,7 @@ func (d *Dao) AdminInst() *mongo.Database {
 	return db
 }
 
+// ReceiverInst query receiver server db inst by name
 func (d *Dao) ReceiverInst(dbName string) (*mongo.Database, error) {
 	db, err := d.mongo.GetInstance(dbName)
 	if err != nil {

@@ -8,7 +8,7 @@ type FindLoggingListReq struct {
 	ConditionOne   string `json:"conditionOne"`
 	ConditionTwo   string `json:"conditionTwo"`
 	ConditionThree string `json:"conditionThree"`
-	// 指定查询集合
+	// force collection name, used to when data is migrated shard
 	ForceCollectionName string `json:"forceCollectionName"`
 	ForceDatabase       string `json:"forceDatabase"`
 	TimeReq
@@ -16,9 +16,8 @@ type FindLoggingListReq struct {
 }
 
 type FindLoggingByTraceIDReq struct {
-	ModuleName string `json:"moduleName" binding:"required"`
-	TraceID    string `json:"traceId" binding:"required,gte=19"`
-	// 指定查询集合
+	ModuleName          string `json:"moduleName" binding:"required"`
+	TraceID             string `json:"traceId" binding:"required,gte=19"`
 	ForceCollectionName string `json:"forceCollectionName"`
 	ForceDatabase       string `json:"forceDatabase"`
 }

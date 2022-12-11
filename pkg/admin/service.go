@@ -1,13 +1,14 @@
 package admin
 
 import (
+	"sync"
+
 	"github.com/bbdshow/qelog/pkg/conf"
 	"github.com/bbdshow/qelog/pkg/dao"
 	"github.com/bbdshow/qelog/pkg/model"
-
-	"sync"
 )
 
+// Service admin
 type Service struct {
 	cfg  *conf.Config
 	d    *dao.Dao
@@ -25,6 +26,7 @@ func NewService(cfg *conf.Config) *Service {
 		go svc.bgMetricsDBStats()
 	})
 
+	// admin db inst, create collection and index
 	if err := svc.d.AdminInst().UpsertCollectionIndexMany(
 		model.ModuleIndexMany(),
 		model.AlarmRuleIndexMany(),
@@ -39,5 +41,7 @@ func NewService(cfg *conf.Config) *Service {
 }
 
 func (svc *Service) Close() {
-	svc.d.Close()
+	if svc.d != nil {
+		svc.d.Close()
+	}
 }

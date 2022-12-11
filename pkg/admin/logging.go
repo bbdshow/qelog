@@ -3,17 +3,19 @@ package admin
 import (
 	"context"
 	"fmt"
+	"math/rand"
+	"strings"
+	"time"
+
 	"github.com/bbdshow/bkit/db/mongo"
 	"github.com/bbdshow/bkit/errc"
 	"github.com/bbdshow/bkit/logs"
 	"github.com/bbdshow/qelog/pkg/model"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.uber.org/zap"
-	"math/rand"
-	"strings"
-	"time"
 )
 
+// FindLoggingByTraceID query logging by traceId, returns all bind this traceId logging info
 func (svc *Service) FindLoggingByTraceID(ctx context.Context, in *model.FindLoggingByTraceIDReq, out *model.ListResp) error {
 	exists, m, err := svc.d.GetModule(ctx, bson.M{"name": in.ModuleName})
 	if err != nil {
@@ -28,7 +30,8 @@ func (svc *Service) FindLoggingByTraceID(ctx context.Context, in *model.FindLogg
 		return errc.WithStack(err)
 	}
 	list := make([]*model.FindLoggingList, 0, len(docs))
-	// 过滤掉重复写入的数据
+	// there is a low probability of data being written repeatedly
+	// filtering duplicate written data
 	hitMap := map[string]struct{}{}
 	for _, v := range docs {
 		if _, ok := hitMap[v.MessageID]; ok {
@@ -57,6 +60,7 @@ func (svc *Service) FindLoggingByTraceID(ctx context.Context, in *model.FindLogg
 	return nil
 }
 
+// FindLoggingList query logging by common condition
 func (svc *Service) FindLoggingList(ctx context.Context, in *model.FindLoggingListReq, out *model.ListResp) error {
 	exists, m, err := svc.d.GetModule(ctx, bson.M{"name": in.ModuleName})
 	if err != nil {
@@ -66,12 +70,12 @@ func (svc *Service) FindLoggingList(ctx context.Context, in *model.FindLoggingLi
 		return errc.ErrNotFound.MultiMsg("module")
 	}
 
-	// 如果没有传入时间，则默认设置一个间隔时间
+	// if condition not time filter, default setting 1 hour
 	b, e := in.InitTimeSection(time.Hour)
 	in.BeginTsSec = b.Unix()
 	in.EndTsSec = e.Unix()
 
-	// 计算查询时间应该在哪个分片
+	// by querying the time, the data is calculated in which shard
 	sc := mongo.NewShardCollection(m.Prefix, m.DaySpan)
 	dbName := m.Database
 	cName := ""
@@ -86,7 +90,7 @@ func (svc *Service) FindLoggingList(ctx context.Context, in *model.FindLoggingLi
 		}
 		cName = in.ForceCollectionName
 	} else {
-		// 计算集合名
+		// calc collection name
 		names := sc.CollNameByStartEnd(m.Bucket, in.BeginTsSec, in.EndTsSec)
 		if len(names) >= 2 {
 			format := "2006-01-02"
@@ -95,7 +99,7 @@ func (svc *Service) FindLoggingList(ctx context.Context, in *model.FindLoggingLi
 				return errc.ErrParamInvalid.MultiErr(err)
 			}
 			sep := sepTime.Format(format)
-			return errc.ErrParamInvalid.MultiMsg(fmt.Sprintf("查询时间已跨分片集合,未不影响结果,建议查询时间: %s -- %s 或者 %s -- %s",
+			return errc.ErrParamInvalid.MultiMsg(fmt.Sprintf("Time has crossed shards,suggest time: %s -- %s || %s -- %s",
 				time.Unix(in.BeginTsSec, 0).Format(format), sep, sep, time.Unix(in.EndTsSec, 0).Format(format)))
 		}
 		if len(names) > 0 {
@@ -109,7 +113,8 @@ func (svc *Service) FindLoggingList(ctx context.Context, in *model.FindLoggingLi
 	}
 	out.Count = c
 
-	// 去除极低可能重复写入的日志信息
+	// there is a low probability of data being written repeatedly
+	// filtering duplicate written data
 	hitMap := map[string]struct{}{}
 	list := make([]*model.FindLoggingList, 0, len(docs))
 	for _, v := range docs {
@@ -138,6 +143,7 @@ func (svc *Service) FindLoggingList(ctx context.Context, in *model.FindLoggingLi
 	return nil
 }
 
+// DropLoggingCollection manual delete collection, release storage disk space
 func (svc *Service) DropLoggingCollection(ctx context.Context, in *model.DropLoggingCollectionReq) error {
 	exists, m, err := svc.d.GetModule(ctx, bson.M{"name": in.ModuleName})
 	if err != nil {
@@ -156,11 +162,11 @@ func (svc *Service) DropLoggingCollection(ctx context.Context, in *model.DropLog
 	return nil
 }
 
-// bgDelExpiredCollection 删除已经过期了的集合
+// auto delete expired collection, release storage disk space
 func (svc *Service) bgDelExpiredCollection() {
 	for {
 		time.Sleep(time.Duration(rand.Intn(30)+30) * time.Minute)
-		// 查找所有的 module
+		// find all module
 		modules, err := svc.d.FindAllModule(context.Background())
 		if err != nil {
 			logs.Qezap.Error("bgDelExpiredCollection", zap.String("FindAllModule", err.Error()))

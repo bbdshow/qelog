@@ -1,8 +1,9 @@
 package model
 
 import (
-	"github.com/bbdshow/bkit/errc"
 	"time"
+
+	"github.com/bbdshow/bkit/errc"
 
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo/options"
@@ -56,26 +57,21 @@ func (v TimeReq) EndTime() time.Time {
 }
 
 func (v TimeReq) InitTimeSection(t time.Duration) (b, e time.Time) {
-	// 没有查询时间
 	if v.BeginTsSec <= 0 && v.EndTsSec <= 0 {
 		e = time.Now()
 		b = e.Add(-t)
 		return b, e
 	}
-	// 只有结束时间
 	if v.BeginTsSec <= 0 && v.EndTsSec > 0 {
 		e = time.Unix(v.EndTsSec, 0)
 		b = e.Add(-t)
 		return b, e
 	}
-	// 只有开始时间
 	if v.BeginTsSec > 0 && v.EndTsSec <= 0 {
 		b = time.Unix(v.BeginTsSec, 0)
 		e = time.Now()
 		return b, e
 	}
-
-	// 时间都存在
 	return time.Unix(v.BeginTsSec, 0), time.Unix(v.EndTsSec, 0)
 }
 

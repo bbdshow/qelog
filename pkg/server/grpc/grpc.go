@@ -2,6 +2,8 @@ package grpc
 
 import (
 	"context"
+	"net"
+
 	"github.com/bbdshow/bkit/errc"
 	"github.com/bbdshow/bkit/logs"
 	"github.com/bbdshow/bkit/runner"
@@ -12,7 +14,6 @@ import (
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/peer"
-	"net"
 )
 
 var (
@@ -23,7 +24,7 @@ type ReceiverGrpc struct {
 	*runner.GrpcServer
 }
 
-func NewReceiverGRpc(cfg *conf.Config, svc *receiver.Service) runner.Server {
+func NewReceiverGRpc(_ *conf.Config, svc *receiver.Service) runner.Server {
 	receiverSvc = svc
 	rpc := &ReceiverGrpc{
 		GrpcServer: runner.NewGrpcServer(),
@@ -36,11 +37,9 @@ func NewReceiverGRpc(cfg *conf.Config, svc *receiver.Service) runner.Server {
 }
 
 func (rpc *ReceiverGrpc) PushPacket(ctx context.Context, in *receiverpb.Packet) (*receiverpb.BaseResp, error) {
-	// 获取 clientIP
 	if err := receiverSvc.PacketToLogging(ctx, clientIP(ctx), in); err != nil {
 		e, ok := err.(errc.Error)
 		if ok {
-			// 数据库操作错误
 			if e.Code == errc.InternalErr {
 				logs.Qezap.Error("PushPacket", zap.Error(e))
 				return nil, errc.ErrInternalErr
@@ -66,7 +65,7 @@ func clientIP(ctx context.Context) string {
 				return ipNet.IP.String()
 			}
 		}
-		// 上述解析不成功，则自行拼接
+		// if resolver failed, custom joining together
 		return inet.AddrStringToIP(ctxPeer.Addr)
 	}
 	return ""

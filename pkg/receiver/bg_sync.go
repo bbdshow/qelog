@@ -2,11 +2,12 @@ package receiver
 
 import (
 	"context"
+	"time"
+
 	"github.com/bbdshow/bkit/db/mongo"
 	"github.com/bbdshow/bkit/logs"
 	"github.com/bbdshow/qelog/pkg/model"
 	"go.uber.org/zap"
-	"time"
 )
 
 func (svc *Service) updateModuleSetting() error {

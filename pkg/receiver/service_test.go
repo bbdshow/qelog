@@ -1,9 +1,10 @@
 package receiver
 
 import (
-	"github.com/bbdshow/qelog/pkg/conf"
 	"os"
 	"testing"
+
+	"github.com/bbdshow/qelog/pkg/conf"
 )
 
 var svc *Service

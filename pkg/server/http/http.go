@@ -10,11 +10,9 @@ import (
 )
 
 var (
-	adminSvc *admin.Service
-
+	adminSvc    *admin.Service
 	receiverSvc *receiver.Service
-
-	cfg *conf.Config
+	cfg         *conf.Config
 )
 
 func NewAdminHttpServer(c *conf.Config, svc *admin.Service) runner.Server {
@@ -25,7 +23,7 @@ func NewAdminHttpServer(c *conf.Config, svc *admin.Service) runner.Server {
 	if cfg.Release() {
 		midFlag = ginutil.MRelease | ginutil.MTraceId | ginutil.MRecoverLogger
 	}
-	// 隐藏静态文件的读取
+	// skip static file log
 	ginutil.AddSkipPaths("/static/*filepath", "/admin/*filepath")
 
 	httpHandler := ginutil.DefaultEngine(midFlag)
@@ -45,7 +43,7 @@ func registerAdminRouter(e *gin.Engine) {
 		v1.DELETE("/module", delModule)
 	}
 
-	// 配置报警规则
+	// alarm rule set
 	{
 		v1.GET("/alarmRule/list", findAlarmRuleList)
 		v1.POST("/alarmRule", createAlarmRule)
@@ -58,13 +56,13 @@ func registerAdminRouter(e *gin.Engine) {
 		v1.GET("/alarmRule/hook/ping", pingHookURL)
 	}
 
-	// 日志
+	// log query
 	{
 		v1.POST("/logging/list", findLoggingList)
 		v1.POST("/logging/traceid", findLoggingByTraceId)
 		v1.DELETE("/logging/collection", dropLoggingCollection)
 	}
-	// 报表
+	// log metrics
 	{
 		v1.GET("/metrics/dbStats", metricsDBStats)
 		v1.GET("/metrics/collStats", metricsCollStats)
@@ -72,7 +70,7 @@ func registerAdminRouter(e *gin.Engine) {
 		v1.GET("/metrics/module/trend", metricsModuleTrend)
 	}
 
-	// 单页应用
+	// web static server
 	e.StaticFile("/favicon.ico", "web/favicon.ico")
 	e.Static("/static", "web/static")
 	e.Static("/admin", "web")

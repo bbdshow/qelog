@@ -2,9 +2,10 @@ package model
 
 import (
 	"fmt"
-	"github.com/bbdshow/bkit/db/mongo"
-	"github.com/bbdshow/qelog/common/types"
 	"time"
+
+	"github.com/bbdshow/bkit/db/mongo"
+	"github.com/bbdshow/qelog/pkg/types"
 
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -20,16 +21,16 @@ const (
 	MethodTelegram
 )
 
-// AlarmRule
+// AlarmRule alarm rule collection
 type AlarmRule struct {
 	ID         primitive.ObjectID `bson:"_id,omitempty"`
-	Enable     bool               `bson:"enable"`       // 是否开启
-	ModuleName string             `bson:"module_name" ` // 哪个模块
-	Short      string             `bson:"short"`        // 命中的短消息
-	Level      types.Level        `bson:"level"`        // 命中日志等级
-	Tag        string             `bson:"tag"`          // 报警Tag
-	RateSec    int64              `bson:"rate_sec"`     // 多少s之内，只发送一次
-	Method     Method             `bson:"method"`       // 支持方式  1-钉钉
+	Enable     bool               `bson:"enable"`
+	ModuleName string             `bson:"module_name" `
+	Short      string             `bson:"short"`
+	Level      types.Level        `bson:"level"`
+	Tag        string             `bson:"tag"`
+	RateSec    int64              `bson:"rate_sec"`
+	Method     Method             `bson:"method"`
 	HookID     string             `bson:"hook_id"`
 	UpdatedAt  time.Time          `bson:"updated_at"`
 }

@@ -2,17 +2,20 @@ package conf
 
 import (
 	"fmt"
+	"math/rand"
+
 	"github.com/bbdshow/bkit/conf"
 	"github.com/bbdshow/bkit/db/mongo"
 	"github.com/bbdshow/bkit/gen/defval"
 	"github.com/bbdshow/bkit/logs"
-	"math/rand"
 )
 
 var (
 	Conf = &Config{}
 )
 
+// Config required setting
+// if config.toml does not exist this filed, it is set 'defval' value
 type Config struct {
 	Env string `defval:"dev"`
 
@@ -55,7 +58,6 @@ func (c *Config) Release() bool {
 }
 
 func (c *Config) EraseSensitive() Config {
-	// 脱敏数据，可用于打印
 	cp := new(Config)
 	*cp = *c
 	conns := make([]mongo.Conn, 0)
@@ -109,7 +111,7 @@ func (mg MongoGroup) Databases() []string {
 }
 
 type Receiver struct {
-	HttpListenAddr string `defval:"0.0.0.0:31081"` // 如果 "" 则不开启 http 服务
+	HttpListenAddr string `defval:"0.0.0.0:31081"` // if empty, disable http server
 	RpcListenAddr  string `defval:":31082"`
 	AlarmEnable    bool   `defval:"true"`
 	MetricsEnable  bool   `defval:"true"`
@@ -118,6 +120,6 @@ type Receiver struct {
 type Admin struct {
 	HttpListenAddr string `defval:"0.0.0.0:31080"`
 	AuthEnable     bool   `defval:"true"`
-	Username       string `defval:"admin"` // 后台账号密码
+	Username       string `defval:"admin"` // manager: username/passwd
 	Password       string `defval:"111111"`
 }

@@ -3,15 +3,16 @@ package alarm
 import (
 	"context"
 	"fmt"
+	"strings"
+	"sync"
+	"sync/atomic"
+	"time"
+
 	"github.com/bbdshow/bkit/logs"
 	"github.com/bbdshow/bkit/util/alert"
 	"github.com/bbdshow/bkit/util/inet"
 	"github.com/bbdshow/qelog/pkg/model"
 	"go.uber.org/zap"
-	"strings"
-	"sync"
-	"sync/atomic"
-	"time"
 )
 
 var (
@@ -24,7 +25,7 @@ type Alarm struct {
 	ruleState map[string]*RuleState
 	hooks     map[string]*model.HookURL
 	modules   map[string]bool
-	// 报警信息隐藏文字
+	// hide some text
 	hideTexts []string
 }
 
@@ -47,7 +48,7 @@ func (a *Alarm) AddHideText(txt []string) {
 	}
 }
 
-// ModuleIsEnable 如果模块没有设置报警，则不用判断具体的状态了
+// ModuleIsEnable check module alarm is enable
 func (a *Alarm) ModuleIsEnable(name string) bool {
 	a.mutex.RLock()
 	enable, ok := a.modules[name]
@@ -77,7 +78,7 @@ func (a *Alarm) InitRuleState(rules []*model.AlarmRule, hooks []*model.HookURL) 
 		ruleState[rule.Key()] = new(RuleState).UpsertRule(rule, hooksMap[rule.HookID])
 		modules[rule.ModuleName] = true
 	}
-	// 替换状态机
+	// reset state
 	a.mutex.Lock()
 	defer a.mutex.Unlock()
 	for _, state := range a.ruleState {
@@ -108,10 +109,9 @@ func (rs *RuleState) Send(v *model.Logging) {
 	atomic.AddInt32(&rs.count, 1)
 	isSend := false
 	if atomic.LoadInt64(&rs.latestSendTime) == 0 {
-		//直接发送
 		isSend = true
 	} else if time.Now().Unix()-atomic.LoadInt64(&rs.latestSendTime) > rs.rule.RateSec {
-		// 超出了间隔
+		// over interval
 		isSend = true
 	}
 	if isSend {
@@ -122,7 +122,7 @@ func (rs *RuleState) Send(v *model.Logging) {
 			logs.Qezap.Error("AlarmSend", zap.String(rs.method.Method(), err.Error()), zap.Any("content", rs.parsingContent(v)))
 		} else {
 			atomic.StoreInt32(&rs.count, 0)
-			// 如果间隔时间 <= 0  那么每次都直接发送
+			// if interval time <= 0, send at once
 			latestSendTime := int64(0)
 			if rs.rule.RateSec > 0 {
 				latestSendTime = time.Now().Unix()
@@ -137,17 +137,17 @@ func (rs *RuleState) Send(v *model.Logging) {
 
 func (rs *RuleState) parsingContent(v *model.Logging) string {
 	str := fmt.Sprintf(`%s
-标签: %s
+Tag: %s
 IP: %s
-时间: %s
-等级: %s
-短消息: %s
-详情: %s
-频次: %d/%ds
-报警节点: %s`, rs.KeyWord(), rs.rule.Tag, v.IP, time.Unix(v.TimeSec, 0).Format("2006-01-02 15:04:05"), v.Level.String(),
+Time: %s
+Level: %s
+Msg: %s
+Detial: %s
+Rate: %d/%ds
+ReportNode: %s`, rs.KeyWord(), rs.rule.Tag, v.IP, time.Unix(v.TimeSec, 0).Format("2006-01-02 15:04:05"), v.Level.String(),
 		v.Short, v.Full, atomic.LoadInt32(&rs.count), rs.rule.RateSec, machineIP)
 
-	// 隐藏字段
+	// hide text
 	if rs.hook != nil {
 		for _, hide := range rs.hook.HideText {
 			str = strings.ReplaceAll(str, hide, "****")

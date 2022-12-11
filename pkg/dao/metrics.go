@@ -3,6 +3,8 @@ package dao
 import (
 	"context"
 	"fmt"
+	"time"
+
 	"github.com/bbdshow/bkit/db/mongo"
 	"github.com/bbdshow/bkit/errc"
 	"github.com/bbdshow/bkit/util/itime"
@@ -10,9 +12,9 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo/options"
-	"time"
 )
 
+// IncrModuleMetrics module metrics info insert
 func (d *Dao) IncrModuleMetrics(ctx context.Context, in *model.MetricsState) error {
 	filter := bson.M{
 		"module_name":  in.ModuleName,
@@ -43,6 +45,7 @@ func (d *Dao) IncrModuleMetrics(ctx context.Context, in *model.MetricsState) err
 	return nil
 }
 
+// GetModuleMetricsCountByDate aggregate module this time period logging count and data size
 func (d *Dao) GetModuleMetricsCountByDate(ctx context.Context, date time.Time) (*model.ModuleCount, error) {
 	coll := d.adminInst.Collection(model.CNModuleMetrics)
 
@@ -95,12 +98,14 @@ func (d *Dao) GetModuleMetricsCountByDate(ctx context.Context, date time.Time) (
 	return out, nil
 }
 
+// GetDBStats common db CRUD operation
 func (d *Dao) GetDBStats(ctx context.Context, filter bson.M) (bool, *model.DBStats, error) {
 	doc := &model.DBStats{}
 	exists, err := d.adminInst.FindOne(ctx, model.CNDBStats, filter, doc)
 	return exists, doc, errc.WithStack(err)
 }
 
+// FindDBStats common db CRUD operation
 func (d *Dao) FindDBStats(ctx context.Context, filter bson.M) ([]*model.DBStats, error) {
 	docs := make([]*model.DBStats, 0)
 	opt := options.Find().SetSort(bson.M{"_id": -1})
@@ -108,6 +113,7 @@ func (d *Dao) FindDBStats(ctx context.Context, filter bson.M) ([]*model.DBStats,
 	return docs, errc.WithStack(err)
 }
 
+// UpsertDBStats common db CRUD operation
 func (d *Dao) UpsertDBStats(ctx context.Context, in *model.DBStats) error {
 	filter := bson.M{
 		"host": in.Host,
@@ -133,12 +139,14 @@ func (d *Dao) UpsertDBStats(ctx context.Context, in *model.DBStats) error {
 	return err
 }
 
+// GetCollStats common db CRUD operation
 func (d *Dao) GetCollStats(ctx context.Context, filter bson.M) (bool, *model.CollStats, error) {
 	doc := &model.CollStats{}
 	exists, err := d.adminInst.FindOne(ctx, model.CNCollStats, filter, doc)
 	return exists, doc, errc.WithStack(err)
 }
 
+// FindCollStats common db CRUD operation
 func (d *Dao) FindCollStats(ctx context.Context, filter bson.M) ([]*model.CollStats, error) {
 	docs := make([]*model.CollStats, 0)
 	opt := options.Find().SetSort(bson.M{"_id": -1})
@@ -146,6 +154,7 @@ func (d *Dao) FindCollStats(ctx context.Context, filter bson.M) ([]*model.CollSt
 	return docs, errc.WithStack(err)
 }
 
+// UpsertCollStats common db CRUD operation
 func (d *Dao) UpsertCollStats(ctx context.Context, in *model.CollStats) error {
 	filter := bson.M{
 		"module_name": in.ModuleName,
@@ -175,22 +184,26 @@ func (d *Dao) UpsertCollStats(ctx context.Context, in *model.CollStats) error {
 	return err
 }
 
+// ReadDBStats exec db command
 func (d *Dao) ReadDBStats(ctx context.Context, db *mongo.Database) (mongo.DBStatsResp, error) {
 	c := mongo.NewCommand(db)
 	return c.DBStats(ctx)
 }
 
+// ReadCollStats exec db command
 func (d *Dao) ReadCollStats(ctx context.Context, db *mongo.Database, collection string) (mongo.CollStatsResp, error) {
 	c := mongo.NewCommand(db)
 	return c.CollStats(ctx, collection)
 }
 
+// FindMetricsModule common db CRUD operation
 func (d *Dao) FindMetricsModule(ctx context.Context, filter bson.M) ([]*model.ModuleMetrics, error) {
 	docs := make([]*model.ModuleMetrics, 0)
 	err := d.adminInst.Find(ctx, model.CNModuleMetrics, filter, &docs)
 	return docs, errc.WithStack(err)
 }
 
+// FindMetricsModuleList common db CRUD operation
 func (d *Dao) FindMetricsModuleList(ctx context.Context, in *model.MetricsModuleListReq) (int64, []*model.ModuleMetrics, error) {
 	date := itime.UnixSecToDate(in.DateTsSec)
 	filter := bson.M{

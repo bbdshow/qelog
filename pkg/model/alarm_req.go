@@ -33,7 +33,7 @@ type CreateAlarmRuleReq struct {
 type UpdateAlarmRuleReq struct {
 	ObjectIDReq
 	Enable bool `json:"enable"`
-	// module_name 不支持修改
+	// moduleName not support modify
 	CreateAlarmRuleReq
 }
 

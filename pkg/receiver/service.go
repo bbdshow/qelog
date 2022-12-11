@@ -1,16 +1,17 @@
 package receiver
 
 import (
+	"sync"
+
 	"github.com/bbdshow/bkit/db/mongo"
 	"github.com/bbdshow/qelog/pkg/conf"
 	"github.com/bbdshow/qelog/pkg/dao"
 	"github.com/bbdshow/qelog/pkg/model"
 	"github.com/bbdshow/qelog/pkg/receiver/alarm"
 	"github.com/bbdshow/qelog/pkg/receiver/metrics"
-
-	"sync"
 )
 
+// Service receiver
 type Service struct {
 	cfg *conf.Config
 	d   *dao.Dao

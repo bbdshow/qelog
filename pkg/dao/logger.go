@@ -3,6 +3,9 @@ package dao
 import (
 	"context"
 	"fmt"
+	"strings"
+	"time"
+
 	"github.com/bbdshow/bkit/db/mongo"
 	"github.com/bbdshow/bkit/errc"
 	"github.com/bbdshow/bkit/logs"
@@ -12,10 +15,9 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"go.uber.org/zap"
-	"strings"
-	"time"
 )
 
+// CreateManyLogging multi insert logging to db
 func (d *Dao) CreateManyLogging(ctx context.Context, dbName, cName string, docs []interface{}) error {
 	inst, err := d.mongo.GetInstance(dbName)
 	if err != nil {
@@ -25,6 +27,7 @@ func (d *Dao) CreateManyLogging(ctx context.Context, dbName, cName string, docs 
 	return errc.WithStack(err)
 }
 
+// ListCollectionNames query this db collection by prefix
 func (d *Dao) ListCollectionNames(ctx context.Context, dbName string, prefix ...string) ([]string, error) {
 	inst, err := d.mongo.GetInstance(dbName)
 	if err != nil {
@@ -33,6 +36,7 @@ func (d *Dao) ListCollectionNames(ctx context.Context, dbName string, prefix ...
 	return inst.ListCollectionNames(ctx, prefix...)
 }
 
+// CreateLoggingIndex db runtime create index, when new collection created
 func (d *Dao) CreateLoggingIndex(dbName, cName string) error {
 	inst, err := d.mongo.GetInstance(dbName)
 	if err != nil {
@@ -41,12 +45,13 @@ func (d *Dao) CreateLoggingIndex(dbName, cName string) error {
 	return inst.UpsertCollectionIndexMany(model.LoggingIndexMany(cName))
 }
 
+// FindLoggingList query logging
 func (d *Dao) FindLoggingList(ctx context.Context, dbName, cName string, in *model.FindLoggingListReq) (int64, []*model.Logging, error) {
 	s := time.Now()
 	filter := bson.M{
 		"m": strings.TrimSpace(in.ModuleName),
 	}
-	// 查询条件必须存在时间
+	// condition required time arg
 	filter["ts"] = bson.M{"$gte": in.BeginTsSec, "$lt": in.EndTsSec}
 
 	if in.Level > -2 {
@@ -55,7 +60,7 @@ func (d *Dao) FindLoggingList(ctx context.Context, dbName, cName string, in *mod
 
 	if in.Short != "" {
 		if _, ok := filter["l"]; !ok {
-			return 0, nil, errc.ErrParamInvalid.MultiMsg("必需传入[等级]，才能使用[短消息]筛选条件")
+			return 0, nil, errc.ErrParamInvalid.MultiMsg("required level condition before it can used short message condition")
 		}
 		filter["s"] = primitive.Regex{
 			Pattern: in.Short,
@@ -65,11 +70,12 @@ func (d *Dao) FindLoggingList(ctx context.Context, dbName, cName string, in *mod
 
 	if in.IP != "" {
 		if _, ok := filter["s"]; !ok {
-			return 0, nil, errc.ErrParamInvalid.MultiMsg("必需传入[短消息]，才能使用[IP]筛选条件")
+			return 0, nil, errc.ErrParamInvalid.MultiMsg("required short message condition before it can used IP condition")
 		}
 		filter["ip"] = in.IP
 	}
-	// 必需要有前置条件，才能查询后面的，以便命中索引
+
+	// condition of dependence,in order for index performance
 	if in.ConditionOne != "" {
 		filter["c1"] = in.ConditionOne
 		if in.ConditionTwo != "" {
@@ -84,7 +90,8 @@ func (d *Dao) FindLoggingList(ctx context.Context, dbName, cName string, in *mod
 	if err != nil {
 		return 0, nil, errc.ErrParamInvalid.MultiErr(err)
 	}
-	// 异步统计Count
+	// async count, max number 50000 or max time 15s
+	// too many bar counts, meaningless, and poor performance
 	calcCount := func(ctx context.Context) (int64, error) {
 		opt := options.Count().SetLimit(50000).SetMaxTime(d.CtxAfterSecDeadline(ctx, 15))
 		c, err := inst.Collection(cName).CountDocuments(ctx, filter, opt)
@@ -111,21 +118,21 @@ func (d *Dao) FindLoggingList(ctx context.Context, dbName, cName string, in *mod
 		if c <= 0 {
 			c = int64(len(docs))
 		}
-		logs.Qezap.Info("日志查询", zap.String("耗时", time.Since(s).String()),
-			zap.String("数据库", dbName),
-			zap.Any("集合", cName),
-			zap.Any("条件", filter))
+		logs.Qezap.Info("LoggingQuery", zap.String("latency", time.Since(s).String()),
+			zap.String("database", dbName),
+			zap.Any("collection", cName),
+			zap.Any("condition", filter))
 		return c, docs, nil
 	}
 }
 
+// FindLoggingByTraceID query logging by traceId
 func (d *Dao) FindLoggingByTraceID(ctx context.Context, m *model.Module, in *model.FindLoggingByTraceIDReq) ([]*model.Logging, error) {
 	tid, err := apiTypes.TraceIDFromHex(in.TraceID)
 	if err != nil {
 		return nil, errc.ErrParamInvalid.MultiErr(err)
 	}
-	// 如果查询条件存在TraceID, 则时间范围从 traceID 里面去解析
-	// 在TraceTime前后2小时
+	// traceId have time info, set it time condition +-2 hour
 	tidTime := tid.Time()
 	b := tidTime.Add(-2 * time.Hour)
 	e := tidTime.Add(2 * time.Hour)
@@ -157,8 +164,8 @@ func (d *Dao) FindLoggingByTraceID(ctx context.Context, m *model.Module, in *mod
 			"m":  in.ModuleName,
 			"ti": in.TraceID,
 		}
+		// asc logging by time
 		opt := options.Find().SetSort(bson.M{"ts": 1})
-		// 正序，调用流
 		docs := make([]*model.Logging, 0)
 		if err := inst.Find(ctx, cName, filter, &docs, opt); err != nil {
 			return nil, errc.ErrInternalErr.MultiErr(err)
@@ -168,6 +175,7 @@ func (d *Dao) FindLoggingByTraceID(ctx context.Context, m *model.Module, in *mod
 	return allDocs, nil
 }
 
+// DropLoggingCollection delete collection
 func (d *Dao) DropLoggingCollection(ctx context.Context, m *model.Module, cName string) error {
 	inst, err := d.mongo.GetInstance(m.Database)
 	if err != nil {

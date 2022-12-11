@@ -3,15 +3,16 @@ package admin
 import (
 	"context"
 	"fmt"
+	"time"
+
 	"github.com/bbdshow/bkit/errc"
 	"github.com/bbdshow/bkit/util/alert"
-	"github.com/bbdshow/qelog/common/types"
 	"github.com/bbdshow/qelog/pkg/model"
-
+	"github.com/bbdshow/qelog/pkg/types"
 	"go.mongodb.org/mongo-driver/bson"
-	"time"
 )
 
+// FindAlarmRuleList query alarm rule list
 func (svc *Service) FindAlarmRuleList(ctx context.Context, in *model.FindAlarmRuleListReq, out *model.ListResp) error {
 
 	c, docs, err := svc.d.FindAlarmRuleList(ctx, in)
@@ -41,6 +42,7 @@ func (svc *Service) FindAlarmRuleList(ctx context.Context, in *model.FindAlarmRu
 	return nil
 }
 
+// CreateAlarmRule create alarm rule
 func (svc *Service) CreateAlarmRule(ctx context.Context, in *model.CreateAlarmRuleReq) error {
 	doc := &model.AlarmRule{
 		Enable:     true,
@@ -61,6 +63,7 @@ func (svc *Service) CreateAlarmRule(ctx context.Context, in *model.CreateAlarmRu
 	return nil
 }
 
+// UpdateAlarmRule update alarm rule
 func (svc *Service) UpdateAlarmRule(ctx context.Context, in *model.UpdateAlarmRuleReq) error {
 	if err := svc.d.UpdateAlarmRule(ctx, in); err != nil {
 		return errc.ErrInternalErr.MultiErr(err)
@@ -68,6 +71,7 @@ func (svc *Service) UpdateAlarmRule(ctx context.Context, in *model.UpdateAlarmRu
 	return nil
 }
 
+// DelAlarmRule delete alarm rule
 func (svc *Service) DelAlarmRule(ctx context.Context, in *model.DelAlarmRuleReq) error {
 	id, err := in.ObjectID()
 	if err != nil {
@@ -79,7 +83,7 @@ func (svc *Service) DelAlarmRule(ctx context.Context, in *model.DelAlarmRuleReq)
 	return nil
 }
 
-// hook报警地址管理
+// FindHookURLList hooks address list
 func (svc *Service) FindHookURLList(ctx context.Context, in *model.FindHookURLListReq, out *model.ListResp) error {
 	c, docs, err := svc.d.FindHookURLList(ctx, in)
 	if err != nil {
@@ -107,6 +111,7 @@ func (svc *Service) FindHookURLList(ctx context.Context, in *model.FindHookURLLi
 	return nil
 }
 
+// CreateHookURL create alarm hook URL
 func (svc *Service) CreateHookURL(ctx context.Context, in *model.CreateHookURLReq) error {
 	doc := &model.HookURL{
 		Name:      in.Name,
@@ -123,6 +128,7 @@ func (svc *Service) CreateHookURL(ctx context.Context, in *model.CreateHookURLRe
 	return nil
 }
 
+// UpdateHookURL update alarm hook URL
 func (svc *Service) UpdateHookURL(ctx context.Context, in *model.UpdateHookURLReq) error {
 	if err := svc.d.UpdateHookURL(ctx, in); err != nil {
 		return errc.ErrInternalErr.MultiErr(err)
@@ -130,6 +136,7 @@ func (svc *Service) UpdateHookURL(ctx context.Context, in *model.UpdateHookURLRe
 	return nil
 }
 
+// DelHookURL delete alarm hook URL
 func (svc *Service) DelHookURL(ctx context.Context, in *model.DelHookURLReq) error {
 	if err := svc.d.DelHookURL(ctx, in); err != nil {
 		return errc.ErrInternalErr.MultiErr(err)
@@ -137,6 +144,7 @@ func (svc *Service) DelHookURL(ctx context.Context, in *model.DelHookURLReq) err
 	return nil
 }
 
+// PingHookURL ping test hook URL
 func (svc *Service) PingHookURL(ctx context.Context, in *model.PingHookURLReq) error {
 	id, err := in.ObjectID()
 	if err != nil {

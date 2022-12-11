@@ -3,16 +3,18 @@ package dao
 import (
 	"context"
 	"fmt"
+	"strings"
+	"time"
+
 	"github.com/bbdshow/bkit/db/mongo"
 	"github.com/bbdshow/bkit/errc"
 	"github.com/bbdshow/qelog/pkg/model"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo/options"
-	"strings"
-	"time"
 )
 
+// FindAlarmRule common db CRUD op
 func (d *Dao) FindAlarmRule(ctx context.Context, module string, enable bool) ([]*model.AlarmRule, error) {
 	filter := bson.M{
 		"module_name": module,
@@ -23,6 +25,7 @@ func (d *Dao) FindAlarmRule(ctx context.Context, module string, enable bool) ([]
 	return docs, errc.WithStack(err)
 }
 
+// FindAlarmRuleList common db CRUD op
 func (d *Dao) FindAlarmRuleList(ctx context.Context, in *model.FindAlarmRuleListReq) (int64, []*model.AlarmRule, error) {
 	filter := bson.M{}
 	if in.ModuleName != "" {
@@ -48,17 +51,20 @@ func (d *Dao) FindAlarmRuleList(ctx context.Context, in *model.FindAlarmRuleList
 	return c, docs, errc.WithStack(err)
 }
 
+// CreateAlarmRule common db CRUD op
 func (d *Dao) CreateAlarmRule(ctx context.Context, in *model.AlarmRule) error {
 	_, err := d.adminInst.Collection(model.CNAlarmRule).InsertOne(ctx, in)
 	return errc.WithStack(err)
 }
 
+// GetAlarmRule common db CRUD op
 func (d *Dao) GetAlarmRule(ctx context.Context, filter bson.M) (bool, *model.AlarmRule, error) {
 	doc := &model.AlarmRule{}
 	exists, err := d.adminInst.FindOne(ctx, model.CNAlarmRule, filter, doc)
 	return exists, doc, errc.WithStack(err)
 }
 
+// UpdateAlarmRule common db CRUD op
 func (d *Dao) UpdateAlarmRule(ctx context.Context, in *model.UpdateAlarmRuleReq) error {
 	id, err := in.ObjectID()
 	if err != nil {
@@ -118,11 +124,13 @@ func (d *Dao) UpdateAlarmRule(ctx context.Context, in *model.UpdateAlarmRuleReq)
 	return nil
 }
 
+// DelAlarmRule common db CRUD op
 func (d *Dao) DelAlarmRule(ctx context.Context, filter bson.M) error {
 	_, err := d.adminInst.Collection(model.CNAlarmRule).DeleteOne(ctx, filter)
 	return errc.WithStack(err)
 }
 
+// FindHookURLList common db CRUD op
 func (d *Dao) FindHookURLList(ctx context.Context, in *model.FindHookURLListReq) (int64, []*model.HookURL, error) {
 	filter := bson.M{}
 	if in.ID != "" {
@@ -148,23 +156,27 @@ func (d *Dao) FindHookURLList(ctx context.Context, in *model.FindHookURLListReq)
 	return c, docs, errc.WithStack(err)
 }
 
+// FindAllHookURL common db CRUD op
 func (d *Dao) FindAllHookURL(ctx context.Context) ([]*model.HookURL, error) {
 	docs := make([]*model.HookURL, 0)
 	err := d.adminInst.Find(ctx, model.CNHookURL, bson.M{}, &docs)
 	return docs, errc.WithStack(err)
 }
 
+// GetHookURL common db CRUD op
 func (d *Dao) GetHookURL(ctx context.Context, filter bson.M) (bool, *model.HookURL, error) {
 	doc := &model.HookURL{}
 	exists, err := d.adminInst.FindOne(ctx, model.CNHookURL, filter, doc)
 	return exists, doc, errc.WithStack(err)
 }
 
+// CreateHookURL common db CRUD op
 func (d *Dao) CreateHookURL(ctx context.Context, in *model.HookURL) error {
 	_, err := d.adminInst.Collection(model.CNHookURL).InsertOne(ctx, in)
 	return errc.WithStack(err)
 }
 
+// UpdateHookURL common db CRUD op
 func (d *Dao) UpdateHookURL(ctx context.Context, in *model.UpdateHookURLReq) error {
 	id, err := in.ObjectID()
 	if err != nil {
@@ -228,6 +240,7 @@ func (d *Dao) UpdateHookURL(ctx context.Context, in *model.UpdateHookURLReq) err
 	return nil
 }
 
+// DelHookURL common db CRUD op
 func (d *Dao) DelHookURL(ctx context.Context, in *model.DelHookURLReq) error {
 	id, err := in.ObjectID()
 	if err != nil {

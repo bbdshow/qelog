@@ -1,11 +1,12 @@
 package model
 
 import (
-	"github.com/bbdshow/bkit/db/mongo"
-	"github.com/bbdshow/qelog/common/types"
 	"strings"
 	"sync/atomic"
 	"time"
+
+	"github.com/bbdshow/bkit/db/mongo"
+	"github.com/bbdshow/qelog/pkg/types"
 
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -17,14 +18,14 @@ const (
 	CNCollStats     = "coll_stats"
 )
 
-// ModuleMetrics 模块写入日志数据分布统计
+// ModuleMetrics module insert logging data distribution statistics
 type ModuleMetrics struct {
 	ID          primitive.ObjectID `bson:"_id,omitempty"`
 	ModuleName  string             `bson:"module_name"`
 	Number      int64              `bson:"number"`
 	Size        int64              `bson:"size"`
-	Sections    map[int64]Numbers  `bson:"sections"`     // key 小时精度的时间戳
-	CreatedDate time.Time          `bson:"created_date"` // 创建日期
+	Sections    map[int64]Numbers  `bson:"sections"` // unit /hour, timestamp
+	CreatedDate time.Time          `bson:"created_date"`
 }
 
 type Numbers struct {
@@ -77,7 +78,7 @@ func ModuleMetricsIndexMany() []mongo.Index {
 			},
 			Background: true,
 		},
-		// ttl 30天
+		// ttl 30 days
 		{
 			Collection: CNModuleMetrics,
 			Keys: bson.D{
@@ -91,7 +92,7 @@ func ModuleMetricsIndexMany() []mongo.Index {
 	}
 }
 
-// DBStats 数据库容量统计
+// DBStats database storage capacity statistics
 type DBStats struct {
 	ID          primitive.ObjectID `bson:"_id,omitempty"`
 	Host        string             `bson:"host"`
@@ -127,7 +128,7 @@ func DBStatsIndexMany() []mongo.Index {
 	}
 }
 
-// CollStats 集合容量统计
+// CollStats collection capacity statistics
 type CollStats struct {
 	ID             primitive.ObjectID `bson:"_id,omitempty"`
 	ModuleName     string             `bson:"module_name"`
@@ -199,7 +200,7 @@ func (s *MetricsState) IncrIP(ip string, n int32) {
 		// ipv6
 		strs = strings.Split(ip, ":")
 	}
-	// 使用 _ 链接，便于mongodb更新
+	// use '_', avoid mongo function . conflict
 	ip = strings.Join(strs, "_")
 
 	v, ok := s.IPs[ip]
@@ -211,6 +212,5 @@ func (s *MetricsState) IncrIP(ip string, n int32) {
 }
 
 func (s *MetricsState) IsIncr() bool {
-	// 超过一定时间，就可以写入了
 	return time.Now().Unix()-s.Section >= s.IncIntervalSec
 }

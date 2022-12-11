@@ -1,13 +1,14 @@
 package main
 
 import (
+	"log"
+
 	"github.com/bbdshow/bkit/logs"
 	"github.com/bbdshow/bkit/runner"
 	"github.com/bbdshow/qelog/pkg/admin"
 	"github.com/bbdshow/qelog/pkg/conf"
 	"github.com/bbdshow/qelog/pkg/server/http"
 	"go.uber.org/zap"
-	"log"
 )
 
 func main() {
@@ -22,10 +23,8 @@ func main() {
 	defer svc.Close()
 
 	httpSvc := http.NewAdminHttpServer(conf.Conf, svc)
-	if err := runner.Run(httpSvc, func() error {
-		// dealloc
-		return nil
-	}, runner.WithListenAddr(conf.Conf.Admin.HttpListenAddr)); err != nil {
+	if err := runner.RunServer(httpSvc,
+		runner.WithListenAddr(conf.Conf.Admin.HttpListenAddr)); err != nil {
 		log.Printf("runner exit: %v\n", err)
 	}
 }

@@ -2,15 +2,17 @@ package dao
 
 import (
 	"context"
+	"time"
+
 	"github.com/bbdshow/bkit/db/mongo"
 	"github.com/bbdshow/bkit/errc"
 	"github.com/bbdshow/qelog/pkg/model"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo/options"
-	"time"
 )
 
+// FindModuleList common db CRUD operation
 func (d *Dao) FindModuleList(ctx context.Context, in *model.FindModuleListReq) (int64, []*model.Module, error) {
 	filter := bson.M{}
 	if in.Name != "" {
@@ -25,23 +27,27 @@ func (d *Dao) FindModuleList(ctx context.Context, in *model.FindModuleListReq) (
 	return c, docs, errc.WithStack(err)
 }
 
+// FindAllModule common db CRUD operation
 func (d *Dao) FindAllModule(ctx context.Context) ([]*model.Module, error) {
 	docs := make([]*model.Module, 0)
 	err := d.adminInst.Find(ctx, model.CNModule, bson.M{}, &docs)
 	return docs, errc.WithStack(err)
 }
 
+// CreateModule common db CRUD operation
 func (d *Dao) CreateModule(ctx context.Context, doc *model.Module) error {
 	_, err := d.adminInst.Collection(model.CNModule).InsertOne(ctx, doc)
 	return errc.WithStack(err)
 }
 
+// GetModule common db CRUD operation
 func (d *Dao) GetModule(ctx context.Context, filter bson.M) (bool, *model.Module, error) {
 	doc := &model.Module{}
 	exists, err := d.adminInst.FindOne(ctx, model.CNModule, filter, doc)
 	return exists, doc, errc.WithStack(err)
 }
 
+// UpdateModule common db CRUD operation
 func (d *Dao) UpdateModule(ctx context.Context, in *model.UpdateModuleReq) error {
 	id, err := in.ObjectID()
 	if err != nil {
@@ -100,6 +106,7 @@ func (d *Dao) UpdateModule(ctx context.Context, in *model.UpdateModuleReq) error
 	return nil
 }
 
+// DelModule common db CRUD operation
 func (d *Dao) DelModule(ctx context.Context, filter bson.M) error {
 	_, err := d.adminInst.Collection(model.CNModule).DeleteOne(ctx, filter)
 	return errc.WithStack(err)

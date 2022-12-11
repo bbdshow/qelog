@@ -1,9 +1,10 @@
 package types
 
 import (
+	"time"
+
 	apitypes "github.com/bbdshow/qelog/api/types"
 	jsoniterator "github.com/json-iterator/go"
-	"time"
 )
 
 type Decoder map[string]interface{}
@@ -71,7 +72,7 @@ func (dec Decoder) TraceIDHex() string {
 	return ""
 }
 
-// 删除一些不必要的字段，节约存储
+// Full delete some filter fields to save storage space
 func (dec Decoder) Full() string {
 	delFields := []string{apitypes.EncoderLevelKey, apitypes.EncoderTimeKey, apitypes.EncoderMessageKey,
 		apitypes.EncoderConditionOneKey, apitypes.EncoderConditionTwoKey, apitypes.EncoderConditionThreeKey, apitypes.EncoderTraceIDKey}
@@ -82,7 +83,7 @@ func (dec Decoder) Full() string {
 	return str
 }
 
-// 频繁调用，快速解析
+// Unmarshal replace encode/json package, improve performance
 func Unmarshal(data []byte, v interface{}) error {
 	return jsoniterator.Unmarshal(data, v)
 }
