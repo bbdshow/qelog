@@ -1,5 +1,8 @@
+# use GOOS build
 OS=""
+# default config file
 config=config.toml
+# default docker image tag version
 tag=qelog:latest
 
 .PHONY: build
@@ -22,7 +25,7 @@ clean:
 	rm -rf ./data
 	rm -rf ./log
 
-# 构建Docker镜像
+# build docker image
 .PHONY: image
 image:
 	docker build -t ${tag} .

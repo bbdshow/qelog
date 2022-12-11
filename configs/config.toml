@@ -1,44 +1,45 @@
-# 运行环境
+# runtime env
 Env = "dev"
 
-# 用于存储配置信息，统计信息等
+# admin service, database instance
 [[Mongo.Conns]]
     Database = "qelog_admin"
+    # Ref: https://www.mongodb.com/docs/manual/reference/connection-string/
     Uri = "mongodb://127.0.0.1:27017/admin"
-
-# 用于存储日志信息，每个链接实例的Database应该都不同
+# receiver service database instance，you can setting multi instance for capacity and shard.
 [[Mongo.Conns]]
     Database = "qelog_receiver_1"
     Uri = "mongodb://127.0.0.1:27017/admin"
-# 用于存储日志信息
 [[Mongo.Conns]]
     Database = "qelog_receiver_2"
     Uri = "mongodb://127.0.0.1:27017/admin"
-# 对链接配置进行分组
+# you need to group database instances
 [MongoGroup]
     AdminDatabase = "qelog_admin"
+    # receiver can support multi database instances, but at least one
     ReceiverDatabase = ["qelog_receiver_1","qelog_receiver_2"]
 
-# 管理后台
+# admin process config
 [Admin]
 HttpListenAddr = "0.0.0.0:31080"
 AuthEnable = true
 Username = "admin"
 Password = "111111"
 
-# 日志接收
+# receiver process config
 [Receiver]
 HttpListenAddr = "0.0.0.0:31081"
 RpcListenAddr = ":31082"
-# 报警功能开启
+# enable alarm feature
 AlarmEnable = true
-# 统计信息开启
+# enable metrics feature
 MetricsEnable = true
 
-# 这里是接入Qelog 所需要的配置，Qelog管理后台接入了Qelog
+# if this process use qezap, used this config
 [Logging]
-# 模块名，相当于接入应用的身份标识
+# module name, equal to access permission
 Module = "qelog"
-# receiver的地址， GRPC 使用数组的方式支持轮询负载。 HTTP 建议直接配置域名+Nginx
+# receiver server listen address, [Receiver].RpcListenAddr, transport oneof GRPC | HTTP
+# details view qezap options
 Addr = ["127.0.0.1:31082"]
 Filename = "./log/logger.log"

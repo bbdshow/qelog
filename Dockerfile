@@ -26,7 +26,7 @@ WORKDIR /app
 
 RUN sed -i 's/dl-cdn.alpinelinux.org/mirrors.aliyun.com/g' /etc/apk/repositories
 
-# 时区
+# tzdata default Asia/Shanghai
 RUN set -eux; \
         apk update && apk add --no-cache\
             tzdata \
