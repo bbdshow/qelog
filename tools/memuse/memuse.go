@@ -74,13 +74,16 @@ func main() {
 			break
 		}
 	}
+	_ = lg.Close()
+
 	fmt.Printf(`
 Duration: %s,
 Process init memory used: %s,
 Process exec memory used: %s,
-Total transport data size: %d MB,
+Total transport data size ≈: %d MB,
 Total log count: %d,
-`, d.String(), memStatsString(initMem), memStatsString(readMem()), sumSize>>20, count)
+Single log avg operation latency: %s
+`, d.String(), memStatsString(initMem), memStatsString(readMem()), sumSize>>20, count, time.Duration(d.Nanoseconds()/int64(count)).String())
 }
 
 func readMem() *runtime.MemStats {
@@ -90,6 +93,6 @@ func readMem() *runtime.MemStats {
 }
 
 func memStatsString(v *runtime.MemStats) string {
-	return fmt.Sprintf("Sys: %d mb, TotalAlloc: %d mb, Mallocs: %d, Frees:%d,HeapIdle: %d,HeapInuse: %d, HeapReleased: %d,GCCPUFraction:%f",
+	return fmt.Sprintf("Sys: %d MB, TotalAlloc: %d MB, Mallocs: %d, Frees:%d,HeapIdle: %d,HeapInuse: %d, HeapReleased: %d,GCCPUFraction:%f",
 		v.Sys>>20, v.TotalAlloc>>20, v.Mallocs, v.Frees, v.HeapIdle, v.HeapInuse, v.HeapReleased, v.GCCPUFraction)
 }

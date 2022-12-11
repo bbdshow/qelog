@@ -87,7 +87,7 @@ Level debug count: %d
 Level info count: %d
 Level warn count: %d
 Level error count: %d
-Single log size %d byte, operation latency: %s
+Single log size %d byte,avg operation latency: %s
 Total data size ≈ : %d MB
 `, d.String(), addr, count, debug, info, warn, errC, size+100,
 		time.Duration(d.Nanoseconds()/int64(count)).String(), (count*(size+100))>>20)
