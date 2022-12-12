@@ -35,7 +35,7 @@ PS: 生产环境中，该项目经过几轮死循环“攻击”。。。
 
 #### 设计简图
 
-![设计简图](https://github.com/bbdshow/images/blob/master/qelog/qelog_design.png)
+![设计简图](https://qnoss.bbdshow.top/notes/qelog.png)
 
 ### 使用建议
 
@@ -77,5 +77,5 @@ nohup ./qelog_receiver -f ../configs/config.toml >> nohup.out 2>&1  &
 
 ```
 
-#### 感谢支持，如果对您有用，希望Star以表支持,有问题请提 Issues，持续更新并解决问题。
+感谢支持，如果对您有用，希望**Star**以表支持,有问题请提 Issues，持续更新并解决问题。
 
