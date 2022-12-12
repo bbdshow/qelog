@@ -1,3 +1,3 @@
 #!/bin/bash
-process='qelog_admin'
-ps -ef | grep -w ${process} | grep -v grep | awk  '{print "kill " $2}' | sh
+app='qelog_receiver'
+ps -ef | grep -w ${app} | grep -v grep | awk  '{print "kill -9 " $2}' | sh

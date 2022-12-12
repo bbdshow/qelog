@@ -1,4 +1,5 @@
 # Qelog
+[![Build&Test](https://github.com/bbdshow/qelog/actions/workflows/tests.yaml/badge.svg)](https://github.com/bbdshow/qelog/actions/workflows/tests.yaml)
 [![Go Report Card](https://goreportcard.com/badge/github.com/bbdshow/qelog)](https://goreportcard.com/report/github.com/bbdshow/qelog)
 [![Go Reference](https://pkg.go.dev/badge/github.com/bbdshow/qelog/qezap.svg)](https://pkg.go.dev/github.com/bbdshow/qelog/qezap)
 [![codecov](https://codecov.io/gh/bbdshow/qelog/branch/main/graph/badge.svg?token=Fqaz5qvx2Q)](https://codecov.io/gh/bbdshow/qelog)
