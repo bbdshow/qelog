@@ -14,7 +14,7 @@ jobs:
         with:
           go-version: '1.17.x'
       - name: Build
-        run: make
+        run: go mod tidy && make
       - name: Test
         run: make clean && make test
       - name: Upload coverage
