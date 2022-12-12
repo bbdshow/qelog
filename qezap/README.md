@@ -1,4 +1,6 @@
 ## qezap
+[![Go Report Card](https://goreportcard.com/badge/github.com/bbdshow/qelog/qezap)](https://goreportcard.com/report/github.com/bbdshow/qelog/qezap)
+
 qelog service, wrap Uber-zap as this service **Go client**.
 #### Wrap Uber-zap
 - local fs: support rotate written, gzip compress, delete expired log file

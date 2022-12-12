@@ -37,7 +37,9 @@ func TestWriteSync_Write(t *testing.T) {
 }
 
 func TestWriteSync_isRotate(t *testing.T) {
-	w := testNewWriteLocal(t)
+	opt := DefaultLocalOption()
+	opt.Filename = "./log/isRotate/isRotate.log"
+	w := NewWriteLocal(opt)
 	w.opt.MaxSize = 1024
 	largeTxt := ""
 	for i := 0; i < int(w.opt.MaxSize); i++ {
@@ -106,7 +108,9 @@ func TestWriteSync_isRotate(t *testing.T) {
 }
 
 func TestWrite_delExpiredFile(t *testing.T) {
-	w := testNewWriteLocal(t)
+	opt := DefaultLocalOption()
+	opt.Filename = "./log/expiredFile/expiredFile.log"
+	w := NewWriteLocal(opt)
 	w.opt.MaxSize = 1024
 	w.opt.MaxAge = 20 * time.Second
 
@@ -127,7 +131,7 @@ func TestWrite_delExpiredFile(t *testing.T) {
 		},
 		{
 			In:       largeTxt,
-			Sleep:    30 * time.Second,
+			Sleep:    35 * time.Second,
 			IsDelete: true,
 		},
 	}

@@ -20,11 +20,13 @@ func NewService(cfg *conf.Config) *Service {
 		cfg: cfg,
 		d:   dao.New(cfg),
 	}
-	svc.once.Do(func() {
+
+	bgOp := func() {
 		go svc.bgDelExpiredCollection()
 		go svc.bgMetricsCollectionStats()
 		go svc.bgMetricsDBStats()
-	})
+	}
+	svc.once.Do(bgOp)
 
 	// admin db inst, create collection and index
 	if err := svc.d.AdminInst().UpsertCollectionIndexMany(

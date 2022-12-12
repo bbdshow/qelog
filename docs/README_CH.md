@@ -5,8 +5,6 @@
 
 [后台示例地址](https://qelogdemo.bbdshow.top/admin)  账号：admin 密码：111111
 
-> 创建资源时请文明用于，谢谢合作！
-
 ### 日志系统特性:
 
 #### Client
@@ -41,7 +39,7 @@ PS: 生产环境中，该项目经过几轮死循环“攻击”。。。
 
 #### Client端导入项目
 
-> go get github.com/bbdshow/qelog/qezap
+> go get -u github.com/bbdshow/qelog/qezap
 
 [Client示例](../qezap/example/main.go)
 

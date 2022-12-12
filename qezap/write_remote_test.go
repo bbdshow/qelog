@@ -160,9 +160,9 @@ func TestWriter_RetrySendPacket(t *testing.T) {
 		}
 
 		time.Sleep(v.Sleep)
-
-		if string(w.packet.DataPacket().Data().Data) != v.Data {
-			t.Fatalf("case %d: data not equal %s", i, v.Data)
+		d := string(w.packet.DataPacket().Data().Data)
+		if len(d) != 0 && d != v.Data {
+			t.Fatalf("case %d: data not equal %s", i, d)
 		}
 	}
 	time.Sleep(time.Second)

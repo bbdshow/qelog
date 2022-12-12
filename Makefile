@@ -24,8 +24,12 @@ clean:
 	rm -rf ./bin
 	rm -rf ./data
 	rm -rf ./log
+	rm -rf ./converage.txt
 
 # build docker image
 .PHONY: image
 image:
 	docker build -t ${tag} .
+
+test:
+	cd ./qezap && rm -r ./log||true && go test -v -coverprofile=../converage.txt ./ && rm -r ./log

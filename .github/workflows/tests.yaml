@@ -1,0 +1,25 @@
+name: QELOG tests
+on:
+  push:
+    branches:
+      - main
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+    setps:
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: Setup Go
+        uses: actions/setup-go@v3
+        with:
+          go-version: '1.14.x'
+      - name: Install dependencies
+        run: go get .
+      - name: Build
+        run: make
+      - name: Test
+        run: make clean && make test
+      - name: Upload coverage
+        uses: codecov/codecov-action@v3
+        with:
+          files: ./converage.txt

@@ -1,11 +1,14 @@
 # Qelog
+[![Go Report Card](https://goreportcard.com/badge/github.com/bbdshow/qelog)](https://goreportcard.com/report/github.com/bbdshow/qelog)
+[![Go Reference](https://pkg.go.dev/badge/github.com/bbdshow/qelog/qezap.svg)](https://pkg.go.dev/github.com/bbdshow/qelog/qezap)
+
 Qelog is a small, low cost and light operation and maintenance of the log service. The purpose of its birth is to solve the problem of small and medium-sized team multi-service group log and alarm.
 
 It has been running stably for 2+ years and has been rolling over 100+TB of data.
 
-[admin manager example address](https://qelogdemo.bbdshow.top/admin)  username：admin passwd：111111
+**[中文文档](./docs/README_CH.md)**
 
-> When creating resources, please use civilized, thank you for your cooperation!
+[admin manager example address](https://qelogdemo.bbdshow.top/admin)  username：admin passwd：111111
 
 ### Log System Features:
 
@@ -41,7 +44,7 @@ Due to cost and performance issues ** Full-text indexing ** is currently not sup
 
 #### Qezap Client import your project
 
-> go get github.com/bbdshow/qelog/qezap
+> go get -u github.com/bbdshow/qelog/qezap
 
 [Client use example](./qezap/example/main.go)
 

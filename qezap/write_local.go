@@ -19,7 +19,6 @@ import (
 // support rotate, gzip, maxAge
 type WriteLocal struct {
 	mutex sync.Mutex
-	once  sync.Once
 
 	opt *LocalOption
 
@@ -48,9 +47,7 @@ func NewWriteLocal(opt *LocalOption) *WriteLocal {
 
 		exit: make(chan struct{}),
 	}
-	w.once.Do(func() {
-		go w.bgDelExpiredFile()
-	})
+	go w.bgDelExpiredFile()
 	return w
 }
 

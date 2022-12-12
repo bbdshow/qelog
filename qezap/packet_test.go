@@ -11,7 +11,7 @@ func TestNewPacket(t *testing.T) {
 
 func testNewPacket(t *testing.T, maxSize int) *Packet {
 	module := "test"
-	p := NewPacket(module, maxSize)
+	p := newPacket(module, maxSize)
 	if p == nil {
 		t.Fatal("packet nil")
 	}
