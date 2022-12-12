@@ -1,6 +1,6 @@
 module github.com/bbdshow/qelog/qezap
 
-go 1.14
+go 1.17
 
 require (
 	github.com/bbdshow/qelog/api v1.1.0

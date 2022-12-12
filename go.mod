@@ -1,6 +1,6 @@
 module github.com/bbdshow/qelog
 
-go 1.14
+go 1.17
 
 replace (
 	github.com/bbdshow/qelog/api => ./api
