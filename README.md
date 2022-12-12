@@ -1,6 +1,7 @@
 # Qelog
 [![Go Report Card](https://goreportcard.com/badge/github.com/bbdshow/qelog)](https://goreportcard.com/report/github.com/bbdshow/qelog)
 [![Go Reference](https://pkg.go.dev/badge/github.com/bbdshow/qelog/qezap.svg)](https://pkg.go.dev/github.com/bbdshow/qelog/qezap)
+[![codecov](https://codecov.io/gh/bbdshow/qelog/branch/main/graph/badge.svg?token=Fqaz5qvx2Q)](https://codecov.io/gh/bbdshow/qelog)
 
 Qelog is a small, low cost and light operation and maintenance of the log service. The purpose of its birth is to solve the problem of small and medium-sized team multi-service group log and alarm.
 
