@@ -32,4 +32,4 @@ image:
 	docker build -t ${tag} .
 
 test:
-	cd ./qezap && rm -r ./log||true && go test -v -coverprofile=../converage.txt ./ && rm -r ./log
+	cd ./qezap && rm -r ./log||true && go mod tidy && go test -v -coverprofile=../converage.txt ./ && rm -r ./log
