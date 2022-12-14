@@ -11,6 +11,7 @@ build:
 	mkdir -p ./bin && rm -r ./bin
 	mkdir -p ./bin/configs && cp -r configs ./bin
 	mkdir -p ./bin/admin/web && cp -r web ./bin/admin
+	go mod tidy
 	@if [ ${OS} != "" ]; then\
 		GOOS=${OS} go build -ldflags "-s" -o bin/receiver/qelog_receiver cmd/receiver/main.go;\
 		GOOS=${OS} go build -ldflags "-s" -o bin/admin/qelog_admin cmd/admin/main.go;\

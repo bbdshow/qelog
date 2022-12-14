@@ -13,6 +13,8 @@ import (
 func main() {
 	// 500MB rotate,keep 7days
 	local := qezap.New(
+		//Default DEBUG level, You can set DEBUG INFO WARNING ERROR DPANIC PANIC FATAL
+		qezap.WithLevel(zapcore.DebugLevel),
 		qezap.WithFilename("./log/local.log"),
 		qezap.WithRotateMaxSizeAge(500<<20, 7*24*time.Hour))
 	defer local.Close()

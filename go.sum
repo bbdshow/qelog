@@ -15,10 +15,14 @@ github.com/alecthomas/template v0.0.0-20190718012654-fb15b899a751/go.mod h1:LOuy
 github.com/andybalholm/cascadia v1.0.0/go.mod h1:GsXiBklL0woXo1j/WYWtSYYC4ouU9PqHO0sqidkEA4Y=
 github.com/antihax/optional v1.0.0/go.mod h1:uupD/76wgC+ih3iEmQUL+0Ugr19nfwCT1kdvxnR2qWY=
 github.com/aokoli/goutils v1.0.1/go.mod h1:SijmP0QR8LtwsmDs8Yii5Z/S4trXFGFC2oO5g9DP+DQ=
-github.com/bbdshow/bkit v0.3.7 h1:aMsxPpWGh9Wtq8NfBrT4kNTav1DdyKZXCbHMjBKnHKw=
-github.com/bbdshow/bkit v0.3.7/go.mod h1:/NFIvCq5x8Lxw3cnxOWIg40MIMr3/HqGlFY/Grlrhwg=
+github.com/bbdshow/bkit v0.3.8 h1:1YGKVKjPU0q1nhljJHZeMTfLVeKFf5B2WnyrRKzmmXY=
+github.com/bbdshow/bkit v0.3.8/go.mod h1:5ZeuIf52cyuYpdSTK7wnAI8hEggWhcAPS4rJtSzPQCI=
 github.com/bbdshow/bkit/db/mongo v0.1.1 h1:ny4xPq9ps8DAubcvbD/RaFJfpmsToZmI1/a6B5EW6Es=
 github.com/bbdshow/bkit/db/mongo v0.1.1/go.mod h1:+KF0g6CKvUBufUKAAjQ/NsL27XX8MBB3hYg9n8Q5INE=
+github.com/bbdshow/qelog/api v1.1.0 h1:fNTPVBIzSrFsI18meBPTFmeluw3RZHTkVm/+15UBh20=
+github.com/bbdshow/qelog/api v1.1.0/go.mod h1:pRSYjL2jl+96/n/WVOHagochbRBHavyF8pylqIm6QWc=
+github.com/bbdshow/qelog/qezap v1.1.1 h1:fT0PTDoWIQALUv8QZishoImUwU7rA1y/ZPgLBGYxjWY=
+github.com/bbdshow/qelog/qezap v1.1.1/go.mod h1:MYb9ntWEqzP0N2+QtRqYzbTNYfOk+CWHTnZiMzLFLzk=
 github.com/census-instrumentation/opencensus-proto v0.2.1/go.mod h1:f6KPmirojxKA12rnyqOA5BBL4O983OfeGPqjHWSTneU=
 github.com/cespare/xxhash v1.1.0/go.mod h1:XrSqR1VqqWfGrhpAt58auRo0WTKS1nRRg3ghfAqPWnc=
 github.com/cespare/xxhash/v2 v2.1.1/go.mod h1:VGX0DQ3Q6kWi7AoAeZDth3/j3BFtOZR5XLFGgcrjCOs=

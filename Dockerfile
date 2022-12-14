@@ -1,8 +1,7 @@
-FROM golang:1.14.13-alpine3.12 as builder
+FROM golang:1.17.13-alpine3.16 as builder
 WORKDIR /app
 
-COPY api ./api
-COPY qezap ./qezap
+# when go.mod not change, use image cache
 COPY go.mod .
 COPY go.sum .
 
@@ -16,17 +15,18 @@ COPY . .
 
 RUN set -eux; \
         mkdir -p ./bin && rm -r ./bin; \
+        go mod tidy; \
         # shellcheck disable=SC2006
         go build -ldflags "-s" -o bin/receiver/qelog_receiver cmd/receiver/main.go; \
         # shellcheck disable=SC2006
         go build -ldflags "-s" -o bin/admin/qelog_admin cmd/admin/main.go;
 
-FROM alpine:3.12
+FROM alpine3.16
 WORKDIR /app
 
 RUN sed -i 's/dl-cdn.alpinelinux.org/mirrors.aliyun.com/g' /etc/apk/repositories
 
-# tzdata default Asia/Shanghai
+# NOTE: tzdata default Asia/Shanghai
 RUN set -eux; \
         apk update && apk add --no-cache\
             tzdata \
