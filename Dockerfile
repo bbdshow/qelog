@@ -21,7 +21,8 @@ RUN set -eux; \
         # shellcheck disable=SC2006
         go build -ldflags "-s" -o bin/admin/qelog_admin cmd/admin/main.go;
 
-FROM alpine3.16
+
+FROM alpine:3.16
 WORKDIR /app
 
 RUN sed -i 's/dl-cdn.alpinelinux.org/mirrors.aliyun.com/g' /etc/apk/repositories
