@@ -58,6 +58,7 @@ func registerAdminRouter(e *gin.Engine) {
 
 	// log query
 	{
+		// Why use POST as query request method? The query condition text may be truncated because it is too large
 		v1.POST("/logging/list", findLoggingList)
 		v1.POST("/logging/traceid", findLoggingByTraceId)
 		v1.DELETE("/logging/collection", dropLoggingCollection)

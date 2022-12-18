@@ -1,9 +1,9 @@
 package model
 
 type FindAlarmRuleListReq struct {
-	Enable     int    `json:"enable" binding:"omitempty,min=-1,max=1"`
-	ModuleName string `json:"moduleName"`
-	Short      string `json:"short"`
+	Enable     int    `json:"enable" form:"enable"  binding:"omitempty,min=-1,max=1"`
+	ModuleName string `json:"moduleName" form:"moduleName"`
+	Short      string `json:"short" form:"short"`
 	PageReq
 }
 
