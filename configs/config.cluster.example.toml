@@ -1,0 +1,47 @@
+# runtime env
+Env = "dev"
+
+# admin service, database instance
+[[Mongo.Conns]]
+    Database = "qelog_admin"
+    # Ref: https://www.mongodb.com/docs/manual/reference/connection-string/
+    Uri = "mongodb://root:111111@127.0.0.1:27017/admin"
+# receiver service database instance，you can setting multi instance for capacity and shard.
+[[Mongo.Conns]]
+    Database = "qelog_receiver"
+    Uri = "mongodb://root:111111@127.0.0.1:27017/admin"
+[[Mongo.Conns]]
+    Database = "qelog_receiver1"
+    Uri = "mongodb://root:111111@127.0.0.2:27017/admin"
+[[Mongo.Conns]]
+    Database = "qelog_receiver2"
+    Uri = "mongodb://root:111111@127.0.0.3:27017/admin"
+[MongoGroup]
+    AdminDatabase = "qelog_admin"
+    # receiver can support multi database instances, but at least one
+    ReceiverDatabase = ["qelog_receiver","qelog_receiver1","qelog_receiver2"]
+
+# admin process config
+[Admin]
+HttpListenAddr = "0.0.0.0:31080"
+AuthEnable = true
+Username = "admin"
+Password = "111111"
+
+# receiver process config
+[Receiver]
+HttpListenAddr = "0.0.0.0:31081"
+RpcListenAddr = ":31082"
+# enable alarm feature
+AlarmEnable = true
+# enable metrics feature
+MetricsEnable = true
+
+# if this process use qezap, used this config
+[Logging]
+# module name, equal to access permission
+Module = "qelog"
+# receiver server listen address, [Receiver].RpcListenAddr, transport oneof GRPC | HTTP
+# details view qezap options
+Addr = ["127.0.0.1:31082"]
+Filename = "./log/logger.log"

@@ -40,7 +40,7 @@ Due to cost and performance issues ** Full-text indexing ** is currently not sup
 
 #### Design drawing
 
-![Design drawing](https://qnoss.bbdshow.top/notes/qelog.png)
+![Design drawing](./docs/qelog_design.png)
 
 ### Usage
 
@@ -52,36 +52,30 @@ Due to cost and performance issues ** Full-text indexing ** is currently not sup
 
 
 #### Quick Deploy
-
+default use single node deploy
 ##### Docker Deploy
 
 ```shell
 git clone https://github.com/bbdshow/qelog.git
 cd qelog
-# custom you config
-vim config.docker.toml
 # build docker image
 make image
 # docker-compose start container
 docker-compose up -d
 ```
 
-##### Machine Deploy
-```shell
+##### Binary Deploy
 
+```shell
 git clone https://github.com/bbdshow/qelog.git
 cd qelog
-
-# go build, output ./bin
 make
-cd ./bin
-vim configs/config.toml
-cd ./admin
-# admin suggest single server, because have background task
-nohup ./qelog_admin -f ../configs/config.toml >> nohup.out 2>&1  &
-nohup ./qelog_receiver -f ../configs/config.toml >> nohup.out 2>&1  &
-
+cd bin
+# ./qelog or nohup ./qelog &
 ```
+
+#### Service cluster deployment
+Cluster deployment time, pay attention to mongo configuration file and qelog service running mode "cluster_admin" | "cluster_receiver", use docker-compose.yaml for cluster layout...
 
 Thank you for your support. If it is useful to you, I hope the **Star** can support you. If you have any questions, please **Issues**, keep updating and solve problems.
 

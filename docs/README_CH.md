@@ -33,7 +33,7 @@ PS: 生产环境中，该项目经过几轮死循环“攻击”。。。
 
 #### 设计简图
 
-![设计简图](https://qnoss.bbdshow.top/notes/qelog.png)
+![设计简图](./qelog_design.png)
 
 ### 使用建议
 
@@ -45,14 +45,12 @@ PS: 生产环境中，该项目经过几轮死循环“攻击”。。。
 
 
 #### 服务快速部署
-
+默认使用单节点部署
 ##### 容器部署
 
 ```shell
 git clone https://github.com/bbdshow/qelog.git
 cd qelog
-# custom you config
-vim config.docker.toml
 # build docker image
 make image
 # docker-compose start container
@@ -63,17 +61,12 @@ docker-compose up -d
 ```shell
 git clone https://github.com/bbdshow/qelog.git
 cd qelog
-
-# go build, output ./bin
 make
-cd ./bin
-vim configs/config.toml
-cd ./admin
-# admin suggest single server, because have background task
-nohup ./qelog_admin -f ../configs/config.toml >> nohup.out 2>&1  &
-nohup ./qelog_receiver -f ../configs/config.toml >> nohup.out 2>&1  &
-
+cd bin
+# ./qelog or nohup ./qelog &
 ```
+#### 服务集群部署
+集群部署时，注意Mongodb的配置文件以及服务运行模式 cluster_admin | cluster_receiver 再使用docker-compose.yaml 参考进行集群编排
 
 感谢支持，如果对您有用，希望**Star**以表支持,有问题请提 Issues，持续更新并解决问题。
 
