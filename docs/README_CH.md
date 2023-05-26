@@ -3,7 +3,7 @@
 
 已经稳定运行2年+，滚动写入超过100+TB数据。
 
-[后台示例地址](https://qelogdemo.bbdshow.top/admin)  账号：admin 密码：111111
+[后台示例地址](https://ws.bbdshow.top/admin)  账号：admin 密码：111111
 
 ### 日志系统特性:
 
