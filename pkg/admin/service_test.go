@@ -21,8 +21,8 @@ func TestMain(m *testing.M) {
 
 func TestService_CreateModule(t *testing.T) {
 	in := &model.CreateModuleReq{
-		Name:     "benchmark",
-		Desc:     "benchmark",
+		Name:     "qelog",
+		Desc:     "qelog",
 		DaySpan:  0,
 		MaxMonth: 0,
 	}

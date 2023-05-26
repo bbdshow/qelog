@@ -5,20 +5,15 @@ Env = "dev"
 [[Mongo.Conns]]
     Database = "qelog_admin"
     # Ref: https://www.mongodb.com/docs/manual/reference/connection-string/
-    Uri = "mongodb://root:111111@192.168.10.14:27017,192.168.10.15:27017/?replicaSet=fbj&authSource=admin"
-
+    Uri = "mongodb://root:111111@qelog_mongo:27017/admin"
 # receiver service database instance，you can setting multi instance for capacity and shard.
 [[Mongo.Conns]]
-    Database = "qelog_receiver_1"
-    Uri = "mongodb://root:111111@192.168.10.14:27017,192.168.10.15:27017/?replicaSet=fbj&authSource=admin"
-[[Mongo.Conns]]
-    Database = "qelog_receiver_2"
-    Uri = "mongodb://root:111111@192.168.10.14:27017,192.168.10.15:27017/?replicaSet=fbj&authSource=admin"
-    # you need to group database instances
+    Database = "qelog_receiver"
+    Uri = "mongodb://root:111111@qelog_mongo:27017/admin"
 [MongoGroup]
     AdminDatabase = "qelog_admin"
     # receiver can support multi database instances, but at least one
-    ReceiverDatabase = ["qelog_receiver_1","qelog_receiver_2"]
+    ReceiverDatabase = ["qelog_receiver"]
 
 # admin process config
 [Admin]

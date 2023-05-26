@@ -1,26 +1,37 @@
 version: '3'
+
+networks:
+  qelog:
+    external: true
+
 services:
-  qelog_receiver:
-     image: qelog:latest
-     ports:
-      - '31081:31081'
-      - '31082:31082'
+  mongodb:
+     image: mongo:4.2
+     container_name: qelog_mongo
      volumes:
-      - '/data/log/receiver:/app/log'
-     entrypoint:
-      - ./receiver/qelog_receiver
-      - -f=./configs/config.docker.toml
+     # 注意修改挂载路径
+      - '/var/lib/mongodb:/data/db'
+     environment:
+           MONGO_INITDB_ROOT_USERNAME: root
+           MONGO_INITDB_ROOT_PASSWORD: 111111
      restart: always
 
-  qelog_admin:
+  qelog:
     image: qelog:latest
+    container_name: qelog
     ports:
       - '31080:31080'
+      - '31082:31082'
     volumes:
-      - '/data/log/admin:/app/log'
-    entrypoint:
-      - ./admin/qelog_admin
-      - -f=./configs/config.docker.toml
+      - /etc/localtime:/etc/localtime:ro
+      - /var/log/qelog:/app/log
+      # 注意修改挂载路径
+      - ./configs/config.docker.toml:/app/configs/config.toml:ro
+    environment:
+        SERVER_MODE: single # single | cluster_admin | cluster_receiver
+        ADMIN_PASSWORD: 123456
+    command:
+      - -f=/app/configs/config.toml
     depends_on:
-      - qelog_receiver
+      - mongodb
     restart: always
