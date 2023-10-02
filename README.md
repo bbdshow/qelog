@@ -10,7 +10,7 @@ It has been running stably for 2+ years and has been rolling over 100+TB of data
 
 **[中文文档](./docs/README_CH.md)**
 
-[admin manager example address](https://ws.bbdshow.top/admin)  username：admin passwd：111111
+[admin manager example address](https://qelogdemo.bbdshow.top/admin)  username：admin passwd：123456
 
 ### Log System Features:
 
